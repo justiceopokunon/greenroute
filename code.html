@@ -10,7 +10,7 @@
 <body class="dashboard-page">
   <header class="topbar surface">
     <a class="brand-link" href="./index.html" aria-label="Green Route home">
-      <span class="brand-mark">U</span>
+      <span class="brand-mark">GR</span>
       <span>
         <strong>Green Route</strong>
         <small>Smart city mobility</small>
@@ -19,9 +19,10 @@
 
     <nav class="topnav" aria-label="Primary">
       <a class="active" href="./code.html">Dashboard</a>
-      <a href="./signin.html">Sign in</a>
-      <a href="./signup.html">Sign up</a>
-      <button id="theme-toggle" type="button">Dark theme</button>
+      <a href="./driver-signin.html">Driver Sign In</a>
+      <a href="./signin.html">Sign In</a>
+      <a href="./signup.html">Sign Up</a>
+      <button id="theme-toggle" type="button">Dark Theme</button>
     </nav>
   </header>
 
@@ -54,7 +55,7 @@
           <input id="destination" type="text" value="Circle" placeholder="Enter destination" />
         </label>
 
-        <div class="field-row">
+        <div class="schedule-stack">
           <label class="field">
             <span>Date</span>
             <input id="trip-date" type="date" />
@@ -115,7 +116,7 @@
     <section class="map-column">
       <div class="stats-bar surface">
         <div class="stat-card">
-          <small>Active trotro</small>
+          <small>Active Vehicles</small>
           <strong id="active-routes">0</strong>
         </div>
         <div class="stat-card">
@@ -143,6 +144,23 @@
         <div class="map-overlay">
           <div class="map-label primary" id="map-route-label">Madina → Circle</div>
           <div class="map-label secondary" id="map-vehicle-label">GR-214 · Toyota Hiace</div>
+          <div class="map-controls" aria-label="Map controls">
+            <button id="locate-me" class="ghost" type="button">Start live location</button>
+            <div class="map-mode">
+              <button id="map-mode-origin" class="ghost active" type="button">Select origin</button>
+              <button id="map-mode-destination" class="ghost" type="button">Select destination</button>
+            </div>
+          </div>
+          <div class="user-location-chip" id="user-location-chip">Live location off</div>
+          <div class="user-dot" id="user-dot" aria-hidden="true" hidden></div>
+          <div class="map-hotspots" aria-label="Select points on map">
+            <button class="map-hotspot" type="button" data-place="Madina" data-lat="5.678" data-lon="-0.165" style="--x: 30%; --y: 24%;">Madina</button>
+            <button class="map-hotspot" type="button" data-place="Circle" data-lat="5.560" data-lon="-0.205" style="--x: 22%; --y: 59%;">Circle</button>
+            <button class="map-hotspot" type="button" data-place="Adenta" data-lat="5.701" data-lon="-0.166" style="--x: 34%; --y: 16%;">Adenta</button>
+            <button class="map-hotspot" type="button" data-place="Kaneshie" data-lat="5.570" data-lon="-0.234" style="--x: 10%; --y: 55%;">Kaneshie</button>
+            <button class="map-hotspot" type="button" data-place="Tema Station" data-lat="5.614" data-lon="-0.072" style="--x: 88%; --y: 40%;">Tema Station</button>
+            <button class="map-hotspot" type="button" data-place="Accra Central" data-lat="5.550" data-lon="-0.206" style="--x: 24%; --y: 66%;">Accra Central</button>
+          </div>
           <div class="map-pin pin-a">MAD</div>
           <div class="map-pin pin-b">CIR</div>
         </div>
@@ -184,27 +202,35 @@
     </section>
 
     <aside class="alerts-column">
+      <article class="alert-card surface primary-alert live-trip-card">
+        <div class="alert-icon">⌁</div>
+        <div>
+          <strong id="live-trip-title">No Active Trip</strong>
+          <p id="live-trip-copy">Accepted driver assignments will appear here in real time.</p>
+        </div>
+      </article>
+
       <article class="alert-card surface primary-alert">
         <div class="alert-icon">⚑</div>
         <div>
-          <strong>Trotro approach</strong>
-          <p>Your trotro is 300m away at Kaneshie overhead.</p>
+          <strong id="approach-alert-title">Vehicle Arrival</strong>
+          <p id="approach-alert-copy">Your vehicle is approximately 300 meters away from Kaneshie Overhead.</p>
         </div>
       </article>
 
       <article class="alert-card surface">
         <div class="alert-icon muted">✦</div>
         <div>
-          <strong>Vehicle Alert</strong>
-          <p>Vehicle almost full. Only 2 seats remaining.</p>
+          <strong id="vehicle-alert-title">Vehicle Alert</strong>
+          <p id="vehicle-alert-copy">Vehicle almost full. Only 2 seats remaining.</p>
         </div>
       </article>
 
       <article class="alert-card surface">
         <div class="alert-icon muted">◎</div>
         <div>
-          <strong>Route activity</strong>
-          <p>Selected route updates will pulse on the map and in the tracker.</p>
+          <strong id="activity-alert-title">Route Activity</strong>
+          <p id="activity-alert-copy">Selected route updates are reflected on the map and in the tracker.</p>
         </div>
       </article>
     </aside>

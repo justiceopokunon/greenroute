@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Driver Dashboard</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body class="driver-page">
+  <header class="topbar surface">
+    <a class="brand-link" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span>
+        <strong>Green Route</strong>
+        <small>Smart city mobility</small>
+      </span>
+    </a>
+
+    <nav class="topnav" aria-label="Primary">
+      <a href="./code.html">Passenger</a>
+      <a class="active" href="./driver.html">Driver</a>
+      <a href="./signin.html">Passenger Sign In</a>
+      <a href="./driver-signin.html">Driver Sign In</a>
+      <a href="./signup.html">Sign Up</a>
+      <button id="theme-toggle" type="button">Dark Theme</button>
+    </nav>
+  </header>
+
+  <main class="driver-shell">
+    <aside class="driver-column driver-left">
+      <section class="surface driver-profile">
+        <div class="driver-head">
+          <div class="logo-mark" aria-hidden="true">D</div>
+          <div>
+            <p class="eyebrow">Driver identity</p>
+            <h1>Justice Opoku</h1>
+          </div>
+          <span class="status confirmed" id="driver-status-pill">Online</span>
+        </div>
+        <p class="driver-subtext">Vehicle GR-214 · Toyota Hiace · East Legon route cluster</p>
+        <div class="driver-controls">
+          <button class="cta" id="shift-toggle" type="button">Go Offline</button>
+          <button class="ghost" id="complete-ride" type="button">Complete active ride</button>
+        </div>
+      </section>
+
+      <section class="surface driver-stats-grid">
+        <article class="driver-stat">
+          <small>Trips today</small>
+          <strong id="today-trips">12</strong>
+        </article>
+        <article class="driver-stat">
+          <small>Earnings</small>
+          <strong id="today-earnings">GHS 186.00</strong>
+        </article>
+        <article class="driver-stat">
+          <small>Active rides</small>
+          <strong id="active-ride-count">1</strong>
+        </article>
+        <article class="driver-stat">
+          <small>Rating</small>
+          <strong id="rating-score">4.9</strong>
+        </article>
+      </section>
+
+      <section class="surface driver-next-stop">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">Next stop</span>
+            <h2 id="next-stop">Circle station pickup</h2>
+          </div>
+          <span class="mini-pill" id="queue-size">3 pending</span>
+        </div>
+        <p>Live queue updates based on proximity and pickup urgency.</p>
+      </section>
+    </aside>
+
+    <section class="driver-column driver-main">
+      <section class="surface driver-map-stage">
+        <iframe
+          class="map-frame"
+          title="Driver map"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
+        ></iframe>
+        <div class="driver-map-overlay">
+          <div class="map-label primary" id="driver-map-label">Heat zone: East Legon → Circle</div>
+          <div class="map-label secondary" id="driver-map-note">Prioritize passenger requests under 1.8km</div>
+        </div>
+      </section>
+
+      <section class="surface request-panel">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Ride requests</span>
+            <h2>Dispatch queue</h2>
+          </div>
+          <label class="checkbox auto-accept-toggle">
+            <input id="auto-accept" type="checkbox" />
+            <span>Auto-accept near pickups</span>
+          </label>
+        </div>
+        <div id="driver-request-list" class="driver-request-list"></div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
