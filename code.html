@@ -1,322 +1,682 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
-<meta charset="utf-8">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>Urban Flow | Green-Route Passenger Dashboard</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
-<script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          "colors": {
-                  "surface-bright": "#393939",
-                  "secondary-fixed": "#a6f2d1",
-                  "on-tertiary": "#1b3628",
-                  "surface-variant": "#353534",
-                  "tertiary": "#afceba",
-                  "surface-dim": "#131313",
-                  "on-primary": "#003914",
-                  "on-secondary-container": "#87d2b2",
-                  "on-tertiary-fixed-variant": "#314d3e",
-                  "inverse-on-surface": "#313030",
-                  "surface-container-lowest": "#0e0e0e",
-                  "surface": "#131313",
-                  "background": "#131313",
-                  "on-primary-container": "#003111",
-                  "on-primary-fixed-variant": "#005320",
-                  "on-error": "#690005",
-                  "outline-variant": "#3e4a3d",
-                  "on-secondary": "#003828",
-                  "outline": "#879485",
-                  "on-tertiary-container": "#142f21",
-                  "on-error-container": "#ffdad6",
-                  "tertiary-fixed": "#caead6",
-                  "on-secondary-fixed": "#002116",
-                  "secondary-container": "#005c43",
-                  "on-primary-fixed": "#002109",
-                  "inverse-primary": "#006e2d",
-                  "secondary": "#8bd6b6",
-                  "tertiary-fixed-dim": "#afceba",
-                  "on-surface": "#e5e2e1",
-                  "error-container": "#93000a",
-                  "on-tertiary-fixed": "#042014",
-                  "surface-tint": "#62df7d",
-                  "on-secondary-fixed-variant": "#00513b",
-                  "surface-container-low": "#1c1b1b",
-                  "surface-container-high": "#2a2a2a",
-                  "primary-fixed-dim": "#62df7d",
-                  "on-background": "#e5e2e1",
-                  "inverse-surface": "#e5e2e1",
-                  "surface-container": "#201f1f",
-                  "on-surface-variant": "#bdcaba",
-                  "primary-container": "#1ca64d",
-                  "error": "#ffb4ab",
-                  "tertiary-container": "#7a9785",
-                  "surface-container-highest": "#353534",
-                  "primary": "#62df7d",
-                  "secondary-fixed-dim": "#8bd6b6",
-                  "primary-fixed": "#7ffc97"
-          },
-          "borderRadius": {
-                  "DEFAULT": "1rem",
-                  "lg": "2rem",
-                  "xl": "3rem",
-                  "full": "9999px"
-          },
-          "fontFamily": {
-                  "headline": ["Plus Jakarta Sans"],
-                  "body": ["Inter"],
-                  "label": ["Inter"]
-          }
-        },
-      },
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GREENROUTE | Passenger Interface</title>
+  <style>
+    :root {
+      --bg: #ededed;
+      --panel: #ffffffcc;
+      --panel-soft: #e6e6e6;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #16a34a;
+      --primary-soft: #dcfce7;
+      --danger: #dc2626;
+      --info: #2563eb;
+      --radius: 18px;
+      --shadow: 0 25px 60px rgba(22, 163, 74, 0.08);
     }
-  </script>
-<style>
-    body { font-family: 'Inter', sans-serif; }
-    h1, h2, h3, .headline { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #3e4a3d; border-radius: 10px; }
-    .map-mask { mask-image: radial-gradient(circle at center, black 60%, transparent 100%); }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(circle at 10% 0%, #dcfce7 0%, #ededed 40%, #e6e6e6 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      width: min(1200px, 100% - 2rem);
+      margin: 1rem auto 2rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .brand h1 {
+      margin: 0;
+      letter-spacing: 0.08rem;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .brand p {
+      margin: 0.3rem 0 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .nav button {
+      border: 0;
+      border-radius: 999px;
+      padding: 0.55rem 0.9rem;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: linear-gradient(135deg, var(--primary), var(--primary-soft));
+      color: #052e16;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .hero h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2.3vw, 2.2rem);
+      line-height: 1.2;
+    }
+
+    .hero p {
+      color: var(--muted);
+      max-width: 60ch;
+      margin-bottom: 0;
+    }
+
+    .kpis {
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .kpi {
+      background: var(--panel-soft);
+      border-radius: 12px;
+      padding: 0.8rem;
+    }
+
+    .kpi .value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #052e16;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 0.72rem 0.8rem;
+      background: #fff;
+      color: var(--text);
+      font-size: 0.92rem;
+    }
+
+    .planner-grid {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .row {
+      display: grid;
+      gap: 0.8rem;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .passenger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      background: #fff;
+      padding: 0.45rem;
+      border-radius: 12px;
+    }
+
+    .passenger-controls {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .passenger-controls button,
+    .primary,
+    .secondary,
+    .route-card button {
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .2s ease;
+    }
+
+    .passenger-controls button {
+      width: 30px;
+      height: 30px;
+      font-size: 1rem;
+      background: var(--panel-soft);
+    }
+
+    .primary {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-soft));
+      color: #052e16;
+    }
+
+    .secondary {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      background: var(--panel-soft);
+      color: var(--text);
+      margin-top: 0.5rem;
+    }
+
+    .primary:hover,
+    .secondary:hover,
+    .route-card button:hover,
+    .passenger-controls button:hover { transform: translateY(-1px); }
+
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .badge.confirmed { color: #166534; background: #dcfce7; }
+    .badge.onroute { color: #1d4ed8; background: #dbeafe; }
+    .badge.pending { color: #854d0e; background: #fef9c3; }
+
+    .route-list {
+      display: grid;
+      gap: 0.7rem;
+      max-height: 560px;
+      overflow: auto;
+      padding-right: 0.2rem;
+    }
+
+    .route-card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 0.8rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .route-card.selected {
+      outline: 2px solid #86efac;
+      background: #f0fdf4;
+    }
+
+    .route-card-top,
+    .route-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .route-card h4 { margin: 0; font-size: 0.96rem; }
+    .route-card p { margin: 0; font-size: 0.82rem; color: var(--muted); }
+    .route-card button { padding: 0.6rem; background: #ecfdf5; color: #166534; }
+
+    .tracker {
+      display: grid;
+      gap: 0.85rem;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .pill {
+      font-size: 0.74rem;
+      color: #065f46;
+      background: #d1fae5;
+      border-radius: 999px;
+      padding: 0.26rem 0.55rem;
+      font-weight: 700;
+    }
+
+    .timeline { display: grid; gap: 0.55rem; }
+    .timeline-item {
+      background: #fff;
+      border-radius: 12px;
+      padding: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .timeline-item small { color: var(--muted); }
+
+    .booking {
+      display: grid;
+      gap: 0.85rem;
+      overflow-x: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 560px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 0.7rem;
+      font-size: 0.84rem;
+    }
+
+    thead { background: #dcfce7; color: #14532d; }
+
+    tbody tr:nth-child(even) { background: #f8fafc; }
+
+    .support {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .faq-item {
+      background: #fff;
+      border-radius: 12px;
+      padding: 0.7rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .faq-item h4 {
+      margin: 0 0 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .faq-item p { margin: 0; font-size: 0.82rem; color: var(--muted); }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin: 0.3rem 0;
+    }
+
+    @media (max-width: 1080px) {
+      .workspace { grid-template-columns: 1fr; }
+      .hero,
+      .support { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-<body class="bg-surface text-on-surface overflow-hidden">
-<!-- Desktop SideNavBar -->
-<aside class="hidden md:flex flex-col h-screen w-80 fixed left-0 top-0 bg-[#1c1b1b] z-50 py-8 px-5 shadow-[40px_0_60px_-15px_rgba(98,223,125,0.04)] custom-scrollbar overflow-y-auto">
-<!-- Brand Header -->
-<div class="flex items-center gap-3 mb-8">
-<div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-surface text-2xl" data-icon="route" style="">route</span>
-</div>
-<div>
-<h1 class="text-2xl font-bold tracking-tighter text-primary leading-none" style="">Green Route</h1>
-<p class="text-[10px] font-label font-medium uppercase tracking-[0.2em] text-on-surface-variant/60" style=""><br></p>
-</div>
-</div>
-<!-- User Profile Anchor -->
-<div class="flex items-center gap-3 p-3 bg-surface-container-high rounded-2xl mb-8">
-<img alt="User Profile" class="w-10 h-10 rounded-full border-2 border-primary/20" data-alt="close-up portrait of a young professional Ghanaian man named James Appiah with a friendly expression and sharp attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM-lowpVcd_Bj-w-jHaAk4cLos3IYFc1SDLgPVzSO6kOwDAiIxy51sHGyrLAJBDr-Y4BI-AFCPsU-GQvT4FsMxD9QYsENixN0jU_4uuMqLoA1M0SkVn3pm0ELBHO5vkmton3R-TUJStAF-YATLFWZx4hrhfxP73CGcvBuPmtJbAVWnwU6cRww8-4ILYqcdgsOUdpi7T2Gi43haF2MwXk7A3tXAbWVt33r1hEAHdf8zQm2q3FDwSjM5HM8-uptqEdfmLlhZeNl2__f3" style="">
-<div class="overflow-hidden">
-<p class="font-headline font-bold text-sm truncate" style="">James Appiah</p>
-<p class="text-xs text-on-surface-variant font-label uppercase tracking-wider" style="">Premium Passenger</p>
-</div>
-</div>
-<!-- Destination Input Section -->
-<section class="space-y-4 mb-8">
-<div class="relative flex flex-col gap-2">
-<div class="flex items-center gap-3 bg-surface-container p-4 rounded-xl">
-<span class="material-symbols-outlined text-primary text-xl" data-icon="location_on" style="">location_on</span>
-<div class="flex-1">
-<label class="block text-[10px] font-label font-semibold text-on-surface-variant uppercase tracking-widest" style="">Your Location</label>
-<input class="bg-transparent border-none p-0 text-sm focus:ring-0 w-full text-on-surface" type="text" value="East Legon, Accra">
-</div>
-</div>
-<!-- Swap Icon -->
-<button class="absolute right-6 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary shadow-lg border-4 border-surface-container-low hover:scale-110 transition-transform" style="">
-<span class="material-symbols-outlined text-lg" data-icon="swap_vert" style="">swap_vert</span>
-</button>
-<div class="flex items-center gap-3 bg-surface-container p-4 rounded-xl">
-<span class="material-symbols-outlined text-on-surface-variant text-xl" data-icon="search" style="">search</span>
-<div class="flex-1">
-<label class="block text-[10px] font-label font-semibold text-on-surface-variant uppercase tracking-widest" style="">Where to?</label>
-<input class="bg-transparent border-none p-0 text-sm focus:ring-0 w-full text-on-surface" placeholder="Search destination..." type="text">
-</div>
-</div>
-</div>
-<!-- Passenger Selector -->
-<div class="flex items-center justify-between px-2">
-<span class="text-xs font-label text-on-surface-variant" style="">PASSENGERS</span>
-<div class="flex items-center gap-4 bg-surface-container-low px-3 py-1 rounded-full">
-<button class="text-primary hover:bg-surface-variant rounded-full p-1" style=""><span class="material-symbols-outlined text-sm" data-icon="remove" style="">remove</span></button>
-<span class="font-bold text-sm" style="">1</span>
-<button class="text-primary hover:bg-surface-variant rounded-full p-1" style=""><span class="material-symbols-outlined text-sm" data-icon="add" style="">add</span></button>
-</div>
-</div>
-<!-- Quick Chips -->
-<div class="flex flex-wrap gap-2 pt-2">
-<button class="px-3 py-1.5 rounded-full bg-surface-container-high text-[11px] font-medium text-on-surface hover:bg-primary/20 hover:text-primary transition-colors" style="">Kaneshie</button>
-<button class="px-3 py-1.5 rounded-full bg-surface-container-high text-[11px] font-medium text-on-surface hover:bg-primary/20 hover:text-primary transition-colors" style="">Accra Central</button>
-<button class="px-3 py-1.5 rounded-full bg-surface-container-high text-[11px] font-medium text-on-surface hover:bg-primary/20 hover:text-primary transition-colors" style="">Tema Station</button>
-</div>
-</section>
-<!-- Vehicle List -->
-<section class="flex-1">
-<div class="flex items-center justify-between mb-4 px-1">
-<h3 class="text-xs font-label font-bold uppercase tracking-widest text-primary" style="">Nearby Green-Routes</h3>
-<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="tune" style="">tune</span>
-</div>
-<div class="space-y-4">
-<!-- Vehicle Card 1 (Active/Tracked) -->
-<div class="bg-surface-container-high p-4 rounded-2xl border-l-4 border-primary shadow-lg group hover:scale-[1.02] transition-all duration-300">
-<div class="flex justify-between items-start mb-3">
-<div>
-<p class="text-[10px] font-label font-bold text-primary-fixed uppercase mb-1" style="">On-Route • 6 mins away</p>
-<h4 class="font-headline font-bold text-sm" style="">Madina <span class="text-on-surface-variant mx-1" style="">→</span> Circle</h4>
-</div>
-<div class="bg-primary/10 px-2 py-1 rounded-md">
-<span class="text-[10px] font-bold text-primary" style="">GHS 2.50</span>
-</div>
-</div>
-<div class="flex items-center gap-4 mb-4">
-<div class="flex items-center gap-1">
-<span class="material-symbols-outlined text-on-surface-variant text-xs" data-icon="directions_bus" style="">directions_bus</span>
-<span class="text-xs text-on-surface-variant" style="">1.2km</span>
-</div>
-<div class="flex-1">
-<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[80%]"></div>
-</div>
-<p class="text-[9px] mt-1 text-primary font-medium italic" style="">2 seats left</p>
-</div>
-</div>
-<button class="w-full py-2.5 bg-primary text-surface font-headline font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 hover:brightness-110 transition-all" style="">
-<span class="material-symbols-outlined text-sm" data-icon="my_location" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">my_location</span>
-            TRACK VEHICLE
-          </button>
-</div>
-<!-- Vehicle Card 2 -->
-<div class="bg-surface-container-low p-4 rounded-2xl border-l-4 border-surface-variant hover:bg-surface-container-high transition-all">
-<div class="flex justify-between items-start mb-3">
-<div>
-<p class="text-[10px] font-label font-bold text-on-surface-variant uppercase mb-1" style="">Departing • 12 mins away</p>
-<h4 class="font-headline font-bold text-sm" style="">Adenta <span class="text-on-surface-variant mx-1" style="">→</span> Accra Central</h4>
-</div>
-<div class="bg-surface-variant px-2 py-1 rounded-md">
-<span class="text-[10px] font-bold text-on-surface" style="">GHS 3.20</span>
-</div>
-</div>
-<div class="flex items-center gap-4 mb-2">
-<div class="flex items-center gap-1">
-<span class="material-symbols-outlined text-on-surface-variant text-xs" data-icon="directions_bus" style="">directions_bus</span>
-<span class="text-xs text-on-surface-variant" style="">3.8km</span>
-</div>
-<div class="flex-1">
-<div class="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
-<div class="h-full bg-tertiary-container w-[40%]"></div>
-</div>
-<p class="text-[9px] mt-1 text-on-surface-variant" style="">Plenty space</p>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- Sidebar Footer -->
-<div class="mt-8 pt-6 border-t border-outline-variant/10 flex justify-around">
-<button class="p-2 text-on-surface-variant hover:text-primary transition-colors" style=""><span class="material-symbols-outlined" data-icon="settings" style="">settings</span></button>
-<button class="p-2 text-on-surface-variant hover:text-primary transition-colors" style=""><span class="material-symbols-outlined" data-icon="history" style="">history</span></button>
-<button class="p-2 text-on-surface-variant hover:text-error transition-colors" style=""><span class="material-symbols-outlined" data-icon="logout" style="">logout</span></button>
-</div>
-</aside>
-<!-- Main Map Content Area -->
-<main class="md:ml-80 h-screen relative bg-surface overflow-hidden">
-<!-- Map Canvas (Placeholder Aesthetic) -->
-<div class="absolute inset-0 z-0">
-<div class="w-full h-full bg-[#131313] relative overflow-hidden" data-location="Accra" style="">
-<!-- SVG Map Mockup -->
-<svg class="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="xMidYMid slice" viewBox="0 0 800 600">
-<path d="M0 100 Q 200 150 400 100 T 800 150" fill="none" stroke="#2a2a2a" stroke-width="40"></path>
-<path d="M100 0 Q 150 200 100 400 T 150 800" fill="none" stroke="#2a2a2a" stroke-width="40"></path>
-<path d="M-100 500 L 900 300" fill="none" stroke="#1c1b1b" stroke-width="60"></path>
-<!-- Animated Route Trail -->
-<path d="M400 500 Q 420 350 500 300 T 600 200" fill="none" stroke="#62df7d" stroke-dasharray="10 5" stroke-width="4">
-</path>
-</svg>
-<!-- Map Overlay Gradient for depth -->
-<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-surface/40 pointer-events-none"></div>
-<!-- Pulse User Location -->
-<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-<div class="relative flex items-center justify-center">
-<div class="absolute w-12 h-12 rounded-full bg-primary/20 animate-ping"></div>
-<div class="w-5 h-5 rounded-full bg-primary border-4 border-surface shadow-[0_0_20px_rgba(98,223,125,0.8)]"></div>
-</div>
-</div>
-<!-- Vehicle Markers (Capsules) -->
-<div class="absolute left-[55%] top-[35%] -translate-x-1/2">
-<div class="bg-primary px-3 py-1 rounded-full flex items-center gap-2 shadow-xl ring-4 ring-primary/20">
-<span class="text-[10px] font-bold text-surface" style="">MAD-CIR</span>
-<span class="material-symbols-outlined text-surface text-sm" data-icon="directions_bus" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">directions_bus</span>
-</div>
-<div class="w-1 h-4 bg-primary mx-auto"></div>
-</div>
-<div class="absolute left-[30%] top-[65%] -translate-x-1/2">
-<div class="bg-secondary-container px-3 py-1 rounded-full flex items-center gap-2 shadow-xl ring-4 ring-secondary-container/20">
-<span class="text-[10px] font-bold text-on-secondary-container" style="">ADE-ACC</span>
-<span class="material-symbols-outlined text-on-secondary-container text-sm" data-icon="directions_bus" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">directions_bus</span>
-</div>
-</div>
-</div>
-</div>
-<!-- Floating Top Stats Bar (Glassmorphism) -->
-<header class="absolute top-8 left-1/2 -translate-x-1/2 z-20 w-auto">
-<div class="bg-surface-container-high/70 backdrop-blur-xl border border-outline-variant/15 px-8 h-14 rounded-full flex items-center gap-8 shadow-2xl">
-<div class="flex items-center gap-2">
-<span class="w-2 h-2 rounded-full bg-primary"></span>
-<span class="text-xs font-bold whitespace-nowrap" style="">24 Active Trotros</span>
-</div>
-<div class="h-4 w-px bg-outline-variant/30"></div>
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-sm" data-icon="near_me" style="">near_me</span>
-<span class="text-xs font-bold whitespace-nowrap" style="">3 Nearby</span>
-</div>
-<div class="h-4 w-px bg-outline-variant/30"></div>
-<div class="flex items-center gap-2">
-<span class="text-xs font-headline font-extrabold text-primary uppercase" style="">ETA 4 MIN</span>
-</div>
-<div class="h-4 w-px bg-outline-variant/30 hidden lg:block"></div>
-<div class="hidden lg:flex items-center gap-2">
-<span class="text-xs font-bold text-on-surface-variant" style="">12 Seats Available</span>
-</div>
-</div>
-</header>
-<!-- Search bar mobile -->
-<div class="md:hidden absolute top-6 left-1/2 -translate-x-1/2 w-[90%] z-30">
-<div class="bg-[#1c1b1b] p-4 rounded-2xl shadow-2xl flex items-center gap-3">
-<span class="material-symbols-outlined text-primary" data-icon="search" style="">search</span>
-<input class="bg-transparent border-none p-0 text-sm focus:ring-0 flex-1 text-on-surface" placeholder="Where to?" type="text">
-<img alt="User" class="w-8 h-8 rounded-full border border-primary/20" data-alt="close up of user profile image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCTrG_pAZG8UWl9ebYVD5r8HW3vESUjT_UhrZeqZyGj8hhHRzkBysY2Ktj-4Jvu1FTAmseFpVVeEiwqLZrMgxpG0sO9thwq88z-UMWz4JAMfN6GVkljS2bobId9wcSnKngrHHiz3zMtn-zIhn1iAcxTwvEZpemLimNTCRYDRN_FxXRiTs-conyA0pYZqeQZRHqnkbnOyNsI266fW514N_kLcllQvmW25hkQL0gnTynxB9Opv_eg8kcLtUO_GIT5wDsA6rWQePWUP_a" style="">
-</div>
-</div>
-<!-- Notification Toast Bottom Right -->
-<div class="absolute bottom-10 right-8 z-30 space-y-3 flex flex-col items-end">
-<div class="bg-primary/10 backdrop-blur-md border border-primary/20 p-4 rounded-2xl shadow-xl flex items-center gap-4 max-w-xs transform hover:scale-105 transition-transform">
-<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-surface shrink-0">
-<span class="material-symbols-outlined" data-icon="notifications_active" style="">notifications_active</span>
-</div>
-<div>
-<p class="text-xs font-bold text-primary" style="">Trotro approach</p>
-<p class="text-[11px] text-on-surface-variant" style="">Your trotro is 300m away at Kaneshie overhead.</p>
-</div>
-</div>
-<div class="bg-surface-container-highest/60 backdrop-blur-md border border-outline-variant/15 p-4 rounded-2xl shadow-xl flex items-center gap-4 max-w-xs transform hover:scale-105 transition-transform">
-<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface shrink-0">
-<span class="material-symbols-outlined" data-icon="event_seat" style="">event_seat</span>
-</div>
-<div>
-<p class="text-xs font-bold" style="">Vehicle Alert</p>
-<p class="text-[11px] text-on-surface-variant" style="">Vehicle almost full. Only 2 seats remaining.</p>
-</div>
-</div>
-</div>
-<!-- Bottom Navigation Mobile -->
-<nav class="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] rounded-full bg-[#2a2a2a]/70 backdrop-blur-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex justify-around items-center px-6 z-50 h-16 border border-outline-variant/15">
-<button class="flex flex-col items-center justify-center bg-gradient-to-br from-[#62df7d] to-[#1ca64d] text-[#131313] rounded-full p-3 scale-95 active:scale-90 transition-all" style="">
-<span class="material-symbols-outlined" data-icon="grid_view" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">grid_view</span>
-</button>
-<button class="flex flex-col items-center justify-center text-gray-400 p-3 hover:scale-110 transition-transform" style="">
-<span class="material-symbols-outlined" data-icon="explore" style="">explore</span>
-</button>
-<button class="flex flex-col items-center justify-center text-gray-400 p-3 hover:scale-110 transition-transform" style="">
-<span class="material-symbols-outlined" data-icon="account_circle" style="">account_circle</span>
-</button>
-</nav>
-</main>
-<!-- Interactive Map Background Detail (Overlay Image) -->
-<div class="fixed inset-0 z-[-1] pointer-events-none opacity-20">
-<img alt="Map Texture" class="w-full h-full object-cover grayscale invert" data-alt="highly detailed dark night satellite view of complex urban city grid with glowing street lights and geometric patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBozJFMVQPfch4zAXB4GLhKjvsZZzXalgkX99SkPUdtp5Asa8__6SOgergw3axg2PIwnYVWGW8Vgw9W2zeR6km18tHUZ-vYI_HmbcO3daxZmBKN1Ii3bMPwrEi38gbsI_mgGGFuJiiePLUF_hMtvs0Wk-s64RSHJCYgtM1N4iOjN_U_M6wInB4nkV09rAC9rJ7SShbzXbeIUZ0wlqneZ44C-8_DuOn50B-oRP_nLdm4KUxHLs7r_UPq59vcOFgYmgYr2SPXDTO9K5JW" style="">
-</div>
-</body></html>
+<body>
+  <div class="app">
+    <header class="panel header">
+      <div class="brand">
+        <h1>GREENROUTE</h1>
+        <p>Smart passenger interface for booking, tracking and support.</p>
+      </div>
+      <nav class="nav" id="tabs">
+        <button class="active" data-target="planner">Planner</button>
+        <button data-target="routes">Routes</button>
+        <button data-target="tracker">Track</button>
+        <button data-target="bookings">Tickets</button>
+        <button data-target="support">Support</button>
+      </nav>
+    </header>
+
+    <section class="panel hero">
+      <div>
+        <h2>Move around the city with confidence using real-time GREENROUTE transport updates.</h2>
+        <p>Find routes quickly, track incoming vehicles, reserve your seat, and manage passenger trips from one responsive dashboard while backend APIs are being integrated.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="value" id="active-routes">0</div><div>Active routes</div></div>
+        <div class="kpi"><div class="value" id="available-seats">0</div><div>Available seats</div></div>
+        <div class="kpi"><div class="value" id="avg-wait">0 min</div><div>Average wait time</div></div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel" id="planner">
+        <h3>Trip planner</h3>
+        <div class="planner-grid">
+          <div>
+            <label for="from">From</label>
+            <input id="from" value="East Legon" />
+          </div>
+          <div>
+            <label for="to">To</label>
+            <input id="to" value="Circle" />
+          </div>
+          <div class="row">
+            <div>
+              <label for="date">Date</label>
+              <input id="date" type="date" />
+            </div>
+            <div>
+              <label for="time">Time</label>
+              <input id="time" type="time" value="08:00" />
+            </div>
+          </div>
+          <div>
+            <label>Passengers</label>
+            <div class="passenger">
+              <span>Seats</span>
+              <div class="passenger-controls">
+                <button id="minus" type="button">−</button>
+                <strong id="passenger-count">1</strong>
+                <button id="plus" type="button">+</button>
+              </div>
+            </div>
+          </div>
+          <button class="secondary" id="swap" type="button">Swap locations</button>
+          <button class="primary" id="search" type="button">Find route</button>
+        </div>
+      </aside>
+
+      <article class="panel" id="routes">
+        <div class="results-head">
+          <h3 style="margin:0;">Available routes</h3>
+          <span class="badge confirmed" id="results-count">0 results</span>
+        </div>
+        <div class="route-list" id="route-list"></div>
+      </article>
+
+      <aside class="panel tracker" id="tracker">
+        <h3 style="margin:0;">Live tracker</h3>
+        <div class="pill-row">
+          <span class="pill" id="selected-route">No route selected</span>
+          <span class="pill" id="selected-fare">Fare: —</span>
+        </div>
+        <div>
+          <strong id="eta">ETA: —</strong>
+          <p id="vehicle" style="margin:0.3rem 0 0;color:var(--muted);">Vehicle details will appear here.</p>
+        </div>
+        <h4 style="margin:0.3rem 0 0;">Stop timeline</h4>
+        <div class="timeline" id="timeline"></div>
+        <button class="primary" id="book" type="button">Book selected route</button>
+      </aside>
+    </section>
+
+    <section class="panel booking" id="bookings">
+      <div class="results-head">
+        <h3 style="margin:0;">My tickets</h3>
+        <span class="badge pending" id="ticket-count">0 bookings</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Route</th><th>Date</th><th>Passengers</th><th>Fare</th><th>Status</th></tr>
+        </thead>
+        <tbody id="booking-body"></tbody>
+      </table>
+    </section>
+
+    <section class="panel support" id="support">
+      <div>
+        <h3 style="margin-top:0;">Support</h3>
+        <form id="support-form">
+          <label for="name">Name</label>
+          <input id="name" placeholder="Your full name" required />
+          <label for="email" style="margin-top:0.6rem;">Email</label>
+          <input id="email" type="email" placeholder="you@example.com" required />
+          <label for="message" style="margin-top:0.6rem;">Message</label>
+          <textarea id="message" rows="4" placeholder="How can we help?" required></textarea>
+          <button class="primary" style="margin-top:0.6rem;" type="submit">Send message</button>
+        </form>
+      </div>
+      <div>
+        <h3 style="margin-top:0;">Frequently asked questions</h3>
+        <div class="faq-item"><h4>How do I track my bus?</h4><p>Select a route from the route list and live tracker updates instantly.</p></div>
+        <div class="faq-item"><h4>Can I reserve for groups?</h4><p>Yes. Increase passenger seats from the planner and book the selected route.</p></div>
+        <div class="faq-item"><h4>How are fares calculated?</h4><p>Fares shown are per seat. Total fare updates when booking based on passengers.</p></div>
+        <div class="faq-item"><h4>Is backend integration ready?</h4><p>This UI is fully prepared for API hookup by backend and database teams.</p></div>
+      </div>
+    </section>
+
+    <p class="footer">© GREENROUTE · Frontend UI implemented with HTML, CSS and JavaScript.</p>
+  </div>
+
+  <script>
+    const routes = [
+      { id: 1, from: "East Legon", to: "Circle", fare: 2.5, eta: 6, seats: 2, vehicle: "GR-214 · Toyota Hiace", status: "On-Route", timeline: [["East Legon", "Departed"], ["37 Junction", "In transit"], ["Airport", "2 mins"], ["Circle", "ETA 6 mins"]] },
+      { id: 2, from: "Adenta", to: "Accra Central", fare: 3.2, eta: 12, seats: 8, vehicle: "GR-301 · Hyundai County", status: "Pending", timeline: [["Adenta", "Boarding"], ["Madina", "Upcoming"], ["Nkrumah Circle", "Upcoming"], ["Accra Central", "ETA 12 mins"]] },
+      { id: 3, from: "Kaneshie", to: "Tema Station", fare: 3.8, eta: 10, seats: 5, vehicle: "GR-119 · Ford Transit", status: "Confirmed", timeline: [["Kaneshie", "Departed"], ["Odorkor", "In transit"], ["Abossey Okai", "In transit"], ["Tema Station", "ETA 10 mins"]] },
+      { id: 4, from: "Spintex", to: "Lapaz", fare: 4.1, eta: 14, seats: 12, vehicle: "GR-410 · Benz Sprinter", status: "Confirmed", timeline: [["Spintex", "Boarding"], ["Nungua", "Upcoming"], ["37", "Upcoming"], ["Lapaz", "ETA 14 mins"]] }
+    ];
+
+    let selectedRoute = null;
+    let passengers = 1;
+    const bookings = [];
+
+    const routeList = document.getElementById("route-list");
+    const resultsCount = document.getElementById("results-count");
+    const selectedRouteLabel = document.getElementById("selected-route");
+    const selectedFareLabel = document.getElementById("selected-fare");
+    const etaLabel = document.getElementById("eta");
+    const vehicleLabel = document.getElementById("vehicle");
+    const timeline = document.getElementById("timeline");
+    const bookingBody = document.getElementById("booking-body");
+    const ticketCount = document.getElementById("ticket-count");
+
+    const renderKPIs = (dataset = routes) => {
+      document.getElementById("active-routes").textContent = dataset.length;
+      document.getElementById("available-seats").textContent = dataset.reduce((acc, r) => acc + r.seats, 0);
+      const avg = dataset.length ? Math.round(dataset.reduce((acc, r) => acc + r.eta, 0) / dataset.length) : 0;
+      document.getElementById("avg-wait").textContent = `${avg} min`;
+    };
+
+    const statusClass = status => status.toLowerCase().replace("-", "") === "onroute" ? "onroute" : status.toLowerCase();
+
+    const renderRoutes = (dataset = routes) => {
+      routeList.innerHTML = "";
+      resultsCount.textContent = `${dataset.length} results`;
+
+      if (!dataset.length) {
+        routeList.innerHTML = `<div class="route-card"><strong>No routes found.</strong><p>Try a different origin or destination.</p></div>`;
+        selectedRoute = null;
+        updateTracker();
+        renderKPIs(dataset);
+        return;
+      }
+
+      dataset.forEach(route => {
+        const card = document.createElement("div");
+        card.className = `route-card ${selectedRoute?.id === route.id ? "selected" : ""}`;
+        card.innerHTML = `
+          <div class="route-card-top">
+            <div>
+              <h4>${route.from} → ${route.to}</h4>
+              <p>${route.vehicle}</p>
+            </div>
+            <span class="badge ${statusClass(route.status)}">${route.status}</span>
+          </div>
+          <div class="route-meta">
+            <small>ETA ${route.eta} mins · ${route.seats} seats left</small>
+            <strong>GHS ${route.fare.toFixed(2)}</strong>
+          </div>
+          <button type="button">Select route</button>
+        `;
+
+        card.querySelector("button").addEventListener("click", () => {
+          selectedRoute = route;
+          renderRoutes(dataset);
+          updateTracker();
+        });
+
+        routeList.appendChild(card);
+      });
+
+      renderKPIs(dataset);
+    };
+
+    const updateTracker = () => {
+      if (!selectedRoute) {
+        selectedRouteLabel.textContent = "No route selected";
+        selectedFareLabel.textContent = "Fare: —";
+        etaLabel.textContent = "ETA: —";
+        vehicleLabel.textContent = "Vehicle details will appear here.";
+        timeline.innerHTML = "";
+        return;
+      }
+
+      selectedRouteLabel.textContent = `${selectedRoute.from} → ${selectedRoute.to}`;
+      selectedFareLabel.textContent = `Fare: GHS ${selectedRoute.fare.toFixed(2)} / seat`;
+      etaLabel.textContent = `ETA: ${selectedRoute.eta} mins`;
+      vehicleLabel.textContent = `${selectedRoute.vehicle} · ${selectedRoute.seats} seats remaining`;
+      timeline.innerHTML = "";
+
+      selectedRoute.timeline.forEach(([stop, state]) => {
+        const item = document.createElement("div");
+        item.className = "timeline-item";
+        item.innerHTML = `<span>${stop}</span><small>${state}</small>`;
+        timeline.appendChild(item);
+      });
+    };
+
+    const renderBookings = () => {
+      bookingBody.innerHTML = bookings.map(booking => `
+        <tr>
+          <td>${booking.route}</td>
+          <td>${booking.date}</td>
+          <td>${booking.passengers}</td>
+          <td>GHS ${booking.total.toFixed(2)}</td>
+          <td><span class="badge confirmed">Booked</span></td>
+        </tr>
+      `).join("");
+
+      if (!bookings.length) {
+        bookingBody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">No bookings yet. Select and book a route.</td></tr>`;
+      }
+
+      ticketCount.textContent = `${bookings.length} booking${bookings.length === 1 ? "" : "s"}`;
+    };
+
+    document.getElementById("plus").addEventListener("click", () => {
+      passengers = Math.min(passengers + 1, 8);
+      document.getElementById("passenger-count").textContent = passengers;
+    });
+
+    document.getElementById("minus").addEventListener("click", () => {
+      passengers = Math.max(passengers - 1, 1);
+      document.getElementById("passenger-count").textContent = passengers;
+    });
+
+    document.getElementById("swap").addEventListener("click", () => {
+      const from = document.getElementById("from");
+      const to = document.getElementById("to");
+      [from.value, to.value] = [to.value, from.value];
+    });
+
+    document.getElementById("search").addEventListener("click", () => {
+      const from = document.getElementById("from").value.trim().toLowerCase();
+      const to = document.getElementById("to").value.trim().toLowerCase();
+      const filtered = routes.filter(route =>
+        route.seats >= passengers &&
+        (!from || route.from.toLowerCase().includes(from)) &&
+        (!to || route.to.toLowerCase().includes(to))
+      );
+      selectedRoute = filtered[0] || null;
+      renderRoutes(filtered);
+      updateTracker();
+    });
+
+    document.getElementById("book").addEventListener("click", () => {
+      if (!selectedRoute) {
+        alert("Please select a route before booking.");
+        return;
+      }
+
+      const dateInput = document.getElementById("date");
+      const date = dateInput.value || new Date().toISOString().slice(0, 10);
+      bookings.unshift({
+        route: `${selectedRoute.from} → ${selectedRoute.to}`,
+        date,
+        passengers,
+        total: selectedRoute.fare * passengers
+      });
+
+      renderBookings();
+      ticketCount.className = "badge confirmed";
+    });
+
+    document.getElementById("support-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      alert("Support request sent. Our team will contact you shortly.");
+      event.target.reset();
+    });
+
+    document.getElementById("tabs").addEventListener("click", (event) => {
+      if (event.target.tagName !== "BUTTON") return;
+      document.querySelectorAll(".nav button").forEach(btn => btn.classList.remove("active"));
+      event.target.classList.add("active");
+      const targetId = event.target.dataset.target;
+      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    const initialize = () => {
+      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      selectedRoute = routes[0];
+      renderRoutes(routes);
+      updateTracker();
+      renderBookings();
+      renderKPIs(routes);
+    };
+
+    initialize();
+  </script>
+</body>
+</html>
