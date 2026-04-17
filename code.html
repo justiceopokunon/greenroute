@@ -498,6 +498,7 @@
       { id: 4, from: "Spintex", to: "Lapaz", fare: 4.1, eta: 14, seats: 12, vehicle: "GR-410 · Benz Sprinter", status: "Confirmed", timeline: [["Spintex", "Boarding"], ["Nungua", "Upcoming"], ["37", "Upcoming"], ["Lapaz", "ETA 14 mins"]] }
     ];
 
+    const MAX_PASSENGERS = 8;
     let selectedRoute = null;
     let passengers = 1;
     const bookings = [];
@@ -512,14 +513,34 @@
     const bookingBody = document.getElementById("booking-body");
     const ticketCount = document.getElementById("ticket-count");
 
+    const getTodayISO = () => new Date().toISOString().slice(0, 10);
+
+    const showToast = (message) => {
+      const toast = document.createElement("div");
+      toast.textContent = message;
+      toast.setAttribute("role", "alert");
+      toast.style.position = "fixed";
+      toast.style.bottom = "1rem";
+      toast.style.right = "1rem";
+      toast.style.zIndex = "9999";
+      toast.style.background = "#052e16";
+      toast.style.color = "#dcfce7";
+      toast.style.padding = "0.65rem 0.8rem";
+      toast.style.borderRadius = "10px";
+      toast.style.fontSize = "0.85rem";
+      toast.style.boxShadow = "0 10px 25px rgba(5,46,22,0.25)";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    };
+
     const renderKPIs = (dataset = routes) => {
       document.getElementById("active-routes").textContent = dataset.length;
       document.getElementById("available-seats").textContent = dataset.reduce((acc, r) => acc + r.seats, 0);
-      const avg = dataset.length ? Math.round(dataset.reduce((acc, r) => acc + r.eta, 0) / dataset.length) : 0;
-      document.getElementById("avg-wait").textContent = `${avg} min`;
+      const avgWaitTime = dataset.length ? Math.round(dataset.reduce((acc, r) => acc + r.eta, 0) / dataset.length) : 0;
+      document.getElementById("avg-wait").textContent = `${avgWaitTime} min`;
     };
 
-    const statusClass = status => status.toLowerCase().replace("-", "") === "onroute" ? "onroute" : status.toLowerCase();
+    const getStatusBadgeClassName = status => status.toLowerCase().replace("-", "") === "onroute" ? "onroute" : status.toLowerCase();
 
     const renderRoutes = (dataset = routes) => {
       routeList.innerHTML = "";
@@ -542,7 +563,7 @@
               <h4>${route.from} → ${route.to}</h4>
               <p>${route.vehicle}</p>
             </div>
-            <span class="badge ${statusClass(route.status)}">${route.status}</span>
+            <span class="badge ${getStatusBadgeClassName(route.status)}">${route.status}</span>
           </div>
           <div class="route-meta">
             <small>ETA ${route.eta} mins · ${route.seats} seats left</small>
@@ -606,7 +627,7 @@
     };
 
     document.getElementById("plus").addEventListener("click", () => {
-      passengers = Math.min(passengers + 1, 8);
+      passengers = Math.min(passengers + 1, MAX_PASSENGERS);
       document.getElementById("passenger-count").textContent = passengers;
     });
 
@@ -629,33 +650,41 @@
         (!from || route.from.toLowerCase().includes(from)) &&
         (!to || route.to.toLowerCase().includes(to))
       );
-      selectedRoute = filtered[0] || null;
+      selectedRoute = filtered.find(route => route.id === selectedRoute?.id) || filtered[0] || null;
       renderRoutes(filtered);
       updateTracker();
     });
 
     document.getElementById("book").addEventListener("click", () => {
       if (!selectedRoute) {
-        alert("Please select a route before booking.");
+        showToast("Please select a route before booking.");
+        return;
+      }
+      if (passengers > selectedRoute.seats) {
+        showToast(`Only ${selectedRoute.seats} seat(s) left on this route.`);
         return;
       }
 
       const dateInput = document.getElementById("date");
-      const date = dateInput.value || new Date().toISOString().slice(0, 10);
+      const date = dateInput.value || getTodayISO();
       bookings.unshift({
         route: `${selectedRoute.from} → ${selectedRoute.to}`,
         date,
         passengers,
         total: selectedRoute.fare * passengers
       });
+      selectedRoute.seats -= passengers;
 
       renderBookings();
+      renderRoutes(routes);
+      updateTracker();
       ticketCount.className = "badge confirmed";
+      showToast("Booking confirmed.");
     });
 
     document.getElementById("support-form").addEventListener("submit", (event) => {
       event.preventDefault();
-      alert("Support request sent. Our team will contact you shortly.");
+      showToast("Support request sent. Our team will contact you shortly.");
       event.target.reset();
     });
 
@@ -668,7 +697,7 @@
     });
 
     const initialize = () => {
-      document.getElementById("date").value = new Date().toISOString().slice(0, 10);
+      document.getElementById("date").value = getTodayISO();
       selectedRoute = routes[0];
       renderRoutes(routes);
       updateTracker();
