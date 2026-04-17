@@ -3,32 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Green Route | Dashboard</title>
+  <title>Green Route | Passenger</title>
   <link rel="stylesheet" href="./app.css" />
   <script defer src="./app.js"></script>
 </head>
-<body class="dashboard-page">
-  <header class="topbar surface">
-    <a class="brand-link" href="./index.html" aria-label="Green Route home">
-      <span class="brand-mark">GR</span>
-      <span>
-        <strong>Green Route</strong>
-        <small>Smart city mobility</small>
-      </span>
-    </a>
+<body class="dashboard-page focus-page">
+  <main class="dashboard-shell focus-shell">
+    <aside class="sidebar-card surface focus-sidebar">
+      <a class="brand-link focus-brand" href="./index.html" aria-label="Green Route home">
+        <span class="brand-mark">GR</span>
+        <span>
+          <strong>Green Route</strong>
+          <small>Easy daily transport</small>
+        </span>
+      </a>
 
-    <nav class="topnav" aria-label="Primary">
-      <a class="active" href="./code.html">Dashboard</a>
-      <a href="./driver-signin.html">Driver Sign In</a>
-      <a href="./signin.html">Sign In</a>
-      <a href="./signup.html">Sign Up</a>
-      <button id="theme-toggle" type="button">Dark Theme</button>
-    </nav>
-  </header>
-
-  <main class="dashboard-shell">
-    <aside class="sidebar-card surface">
-      <div class="profile surface card surface-elevated">
+      <div class="profile surface card surface-elevated focus-profile">
         <div class="avatar" aria-hidden="true"></div>
         <div>
           <strong>Justice Opoku</strong>
@@ -36,43 +26,29 @@
         </div>
       </div>
 
-      <section class="stack-block">
-        <div class="section-head">
+      <section class="stack-block focus-search-block">
+        <div class="section-head compact">
           <div>
-            <span class="eyebrow">Trip planner</span>
-            <h1>Find a route</h1>
+            <span class="eyebrow">Your trip</span>
+            <h1 id="main-title">Find your ride quickly</h1>
           </div>
-          <span class="mini-pill">Live</span>
+          <span class="mini-pill" id="guest-note">Guest mode</span>
         </div>
 
         <label class="field">
-          <span>Origin</span>
-          <input id="origin" type="text" value="East Legon" placeholder="Enter pickup area" />
+          <span id="origin-label">Your location</span>
+          <input id="origin" type="text" value="East Legon" placeholder="Detecting location" readonly />
         </label>
 
         <label class="field">
-          <span>Destination</span>
-          <input id="destination" type="text" value="Circle" placeholder="Enter destination" />
+          <span id="destination-label">Where are you going?</span>
+          <div class="destination-row">
+            <input id="destination" type="text" value="Circle" placeholder="Type or speak destination" />
+            <button id="voice-destination" class="ghost" type="button" aria-label="Speak destination">🎤</button>
+          </div>
         </label>
 
-        <div class="schedule-stack">
-          <label class="field">
-            <span>Date</span>
-            <input id="trip-date" type="date" />
-          </label>
-          <label class="field">
-            <span>Time</span>
-            <input id="trip-time" type="time" value="08:00" />
-          </label>
-        </div>
-
-        <div class="choice-grid" aria-label="Top ride choices">
-          <button class="choice-btn active" type="button" data-choice="greenx" data-passengers="1">GreenX</button>
-          <button class="choice-btn" type="button" data-choice="comfort" data-passengers="2">Comfort</button>
-          <button class="choice-btn" type="button" data-choice="xl" data-passengers="4">XL</button>
-        </div>
-
-        <div class="counter-card">
+        <div class="counter-card focus-counter-card">
           <div>
             <span class="counter-label">Passengers</span>
             <strong id="passenger-count">1</strong>
@@ -83,57 +59,102 @@
           </div>
         </div>
 
-        <div class="chips">
-          <button class="chip active" type="button">Kaneshie</button>
-          <button class="chip" type="button">Accra Central</button>
-          <button class="chip" type="button">Tema Station</button>
-        </div>
-
-        <div class="recent-grid" aria-label="Saved places">
-          <button class="recent-btn" type="button" data-recent-place="Home">Home</button>
-          <button class="recent-btn" type="button" data-recent-place="Work">Work</button>
-          <button class="recent-btn" type="button" data-recent-place="Airport">Airport</button>
+        <div class="quick-routes" aria-label="Frequent routes">
+          <button class="ghost" type="button" data-quick-route-from="Madina" data-quick-route-to="Circle">Home → Circle</button>
+          <button class="ghost" type="button" data-quick-route-from="Kaneshie" data-quick-route-to="Tema Station">Kaneshie → Tema Station</button>
+          <button class="ghost" type="button" data-quick-route-from="Adenta" data-quick-route-to="Kasoa">School → Kasoa</button>
         </div>
 
         <div class="action-row">
-          <button id="search-routes" class="cta" type="button">Search routes</button>
+          <button id="search-routes" class="cta" type="button">Find a car</button>
           <button id="reset-search" class="ghost" type="button">Reset</button>
         </div>
+
+        <details class="focus-advanced">
+          <summary>More options</summary>
+
+          <div class="action-row">
+            <button id="easy-mode-toggle" class="ghost" type="button">Easy Mode: On</button>
+            <select id="language-toggle" aria-label="Language selection">
+              <option value="en">English</option>
+              <option value="twi">Twi</option>
+            </select>
+          </div>
+
+          <div class="no-stress-controls">
+            <button id="no-stress-toggle" class="ghost" type="button">Avoid crowded cars: Off</button>
+            <button id="follow-route-toggle" class="ghost" type="button">Ride updates: Off</button>
+          </div>
+
+          <div class="intelligence-chips">
+            <span class="chip">Less waiting</span>
+            <span class="chip">More comfort</span>
+          </div>
+
+          <div class="schedule-stack">
+            <label class="field">
+              <span>Date</span>
+              <input id="trip-date" type="date" />
+            </label>
+            <label class="field">
+              <span>Time</span>
+              <input id="trip-time" type="time" value="08:00" />
+            </label>
+          </div>
+
+          <div class="service-toggle" role="group" aria-label="Service mode toggle">
+            <button class="service-toggle-btn active" type="button" data-service-mode="trotro" aria-pressed="true">Trotro</button>
+            <button class="service-toggle-btn" type="button" data-service-mode="taxi" aria-pressed="false">Taxi</button>
+            <span class="mini-pill" id="service-mode-pill">Trotro mode</span>
+          </div>
+
+          <div class="choice-grid" aria-label="Top ride choices">
+            <button class="choice-btn active" type="button" data-choice="greenx" data-passengers="1">GreenX</button>
+            <button class="choice-btn" type="button" data-choice="comfort" data-passengers="2">Comfort</button>
+            <button class="choice-btn" type="button" data-choice="xl" data-passengers="4">XL</button>
+          </div>
+        </details>
       </section>
 
-      <section class="stack-block">
+      <section class="stack-block focus-routes-block">
         <div class="section-head">
           <div>
-            <span class="eyebrow">Nearby routes</span>
-            <h2>Available vehicles</h2>
+            <span class="eyebrow">Available rides</span>
+            <h2 id="results-title">Cars near you</h2>
           </div>
           <span class="mini-pill" id="results-count">0</span>
         </div>
         <div class="route-list" id="route-list"></div>
       </section>
+
+      <div class="focus-sidebar-footer" aria-label="Passenger quick actions">
+        <a class="ghost" href="./driver-signin.html">Driver</a>
+        <a class="ghost" href="./signin.html">Sign In</a>
+        <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      </div>
     </aside>
 
-    <section class="map-column">
-      <div class="stats-bar surface">
+    <section class="map-column focus-map-column">
+      <div class="stats-bar surface stats-pill">
         <div class="stat-card">
-          <small>Active Vehicles</small>
+          <small>Cars running</small>
           <strong id="active-routes">0</strong>
         </div>
         <div class="stat-card">
-          <small>Nearby</small>
+          <small>Near you</small>
           <strong id="nearby-routes">0</strong>
         </div>
         <div class="stat-card accent">
-          <small>ETA</small>
+          <small>Arrives in</small>
           <strong id="selected-eta">—</strong>
         </div>
         <div class="stat-card">
-          <small>Seats available</small>
+          <small>Open seats</small>
           <strong id="available-seats">0</strong>
         </div>
       </div>
 
-      <section class="map-stage surface">
+      <section class="map-stage surface focus-map-stage">
         <iframe
           class="map-frame"
           title="Accra route map"
@@ -144,36 +165,28 @@
         <div class="map-overlay">
           <div class="map-label primary" id="map-route-label">Madina → Circle</div>
           <div class="map-label secondary" id="map-vehicle-label">GR-214 · Toyota Hiace</div>
+          <div class="map-label secondary" id="map-distance-label">Distance — · ETA — · Seats —</div>
           <div class="map-controls" aria-label="Map controls">
-            <button id="locate-me" class="ghost" type="button">Start live location</button>
-            <div class="map-mode">
-              <button id="map-mode-origin" class="ghost active" type="button">Select origin</button>
-              <button id="map-mode-destination" class="ghost" type="button">Select destination</button>
-            </div>
+            <button id="locate-me" class="ghost" type="button">Start Live Location</button>
           </div>
-          <div class="user-location-chip" id="user-location-chip">Live location off</div>
+          <div class="user-location-chip" id="user-location-chip">Live Location: Off</div>
           <div class="user-dot" id="user-dot" aria-hidden="true" hidden></div>
-          <div class="map-hotspots" aria-label="Select points on map">
-            <button class="map-hotspot" type="button" data-place="Madina" data-lat="5.678" data-lon="-0.165" style="--x: 30%; --y: 24%;">Madina</button>
-            <button class="map-hotspot" type="button" data-place="Circle" data-lat="5.560" data-lon="-0.205" style="--x: 22%; --y: 59%;">Circle</button>
-            <button class="map-hotspot" type="button" data-place="Adenta" data-lat="5.701" data-lon="-0.166" style="--x: 34%; --y: 16%;">Adenta</button>
-            <button class="map-hotspot" type="button" data-place="Kaneshie" data-lat="5.570" data-lon="-0.234" style="--x: 10%; --y: 55%;">Kaneshie</button>
-            <button class="map-hotspot" type="button" data-place="Tema Station" data-lat="5.614" data-lon="-0.072" style="--x: 88%; --y: 40%;">Tema Station</button>
-            <button class="map-hotspot" type="button" data-place="Accra Central" data-lat="5.550" data-lon="-0.206" style="--x: 24%; --y: 66%;">Accra Central</button>
-          </div>
-          <div class="map-pin pin-a">MAD</div>
-          <div class="map-pin pin-b">CIR</div>
         </div>
-      </section>
 
-      <div class="tracker-grid">
-        <article class="tracker-card surface">
+        <article class="tracker-card surface focus-tracker-card">
           <div class="section-head compact">
             <div>
-              <span class="eyebrow">Live tracker</span>
+              <span class="eyebrow">Trip details</span>
               <h2 id="selected-route-name">Madina → Circle</h2>
             </div>
             <span class="status confirmed" id="selected-fare">GHS 2.50</span>
+          </div>
+          <div class="driver-trust">
+            <img id="driver-photo" src="" alt="Driver photo" />
+            <div>
+              <strong id="driver-name">Driver: Justice</strong>
+              <span id="driver-plate">Plate: GR-214</span>
+            </div>
           </div>
           <p id="vehicle">GR-214 · Toyota Hiace</p>
           <div class="progress-track"><span id="route-progress" style="width:82%"></span></div>
@@ -181,64 +194,38 @@
             <span id="selected-route-note">2 seats left</span>
             <span id="selected-seat-note">1 seat requested</span>
           </div>
-          <button id="book-route" class="cta full-width" type="button">Reserve seat</button>
+          <button id="book-route" class="cta full-width" type="button">I'm boarding</button>
           <div class="tracker-actions">
-            <button id="share-trip" class="ghost full-width" type="button">Share my trip</button>
-            <button id="spotlight-toggle" class="ghost full-width" type="button">Enable spotlight</button>
+            <button id="call-driver" class="ghost full-width" type="button">📞 Call driver (taxi only)</button>
+            <button id="share-trip" class="ghost full-width" type="button">Share trip</button>
+            <button id="panic-button" class="ghost full-width" type="button">Safety</button>
           </div>
         </article>
 
-        <article class="tracker-card surface">
-          <div class="section-head compact">
+        <div class="focus-alert-stack" aria-label="Ride alerts">
+          <article class="alert-card live-trip-card">
+            <span class="alert-icon">🔔</span>
             <div>
-              <span class="eyebrow">Route timeline</span>
-              <h2>Stop sequence</h2>
+              <strong id="approach-alert-title">Trotro approach</strong>
+              <p id="approach-alert-copy">Your vehicle is nearby and arriving soon.</p>
             </div>
-            <span class="mini-pill">Realtime</span>
-          </div>
-          <div class="timeline" id="timeline"></div>
-        </article>
-      </div>
+          </article>
+
+          <article class="alert-card">
+            <span class="alert-icon muted">🪑</span>
+            <div>
+              <strong id="vehicle-alert-title">Seat update</strong>
+              <p id="vehicle-alert-copy">Only a few seats remain on this route.</p>
+            </div>
+          </article>
+        </div>
+      </section>
     </section>
-
-    <aside class="alerts-column">
-      <article class="alert-card surface primary-alert live-trip-card">
-        <div class="alert-icon">⌁</div>
-        <div>
-          <strong id="live-trip-title">No Active Trip</strong>
-          <p id="live-trip-copy">Accepted driver assignments will appear here in real time.</p>
-        </div>
-      </article>
-
-      <article class="alert-card surface primary-alert">
-        <div class="alert-icon">⚑</div>
-        <div>
-          <strong id="approach-alert-title">Vehicle Arrival</strong>
-          <p id="approach-alert-copy">Your vehicle is approximately 300 meters away from Kaneshie Overhead.</p>
-        </div>
-      </article>
-
-      <article class="alert-card surface">
-        <div class="alert-icon muted">✦</div>
-        <div>
-          <strong id="vehicle-alert-title">Vehicle Alert</strong>
-          <p id="vehicle-alert-copy">Vehicle almost full. Only 2 seats remaining.</p>
-        </div>
-      </article>
-
-      <article class="alert-card surface">
-        <div class="alert-icon muted">◎</div>
-        <div>
-          <strong id="activity-alert-title">Route Activity</strong>
-          <p id="activity-alert-copy">Selected route updates are reflected on the map and in the tracker.</p>
-        </div>
-      </article>
-    </aside>
   </main>
 
   <div class="mobile-action-bar" aria-label="Quick mobile actions">
     <button id="share-trip-mobile" class="ghost" type="button">Share</button>
-    <button id="book-route-mobile" class="cta" type="button">Reserve</button>
+    <button id="book-route-mobile" class="cta" type="button">Boarding</button>
   </div>
 </body>
 </html>

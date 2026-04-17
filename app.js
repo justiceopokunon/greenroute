@@ -7,18 +7,35 @@
   const lastDestinationStorageKey = 'greenroute-last-destination';
   const lastRecentPlacesStorageKey = 'greenroute-recent-places';
   const activeTripStorageKey = 'greenroute-active-trip';
+  const fleetStateStorageKey = 'greenroute-fleet-state';
+  const trackedRouteStorageKey = 'greenroute-tracked-route-id';
+  const dispatchQueueStorageKey = 'greenroute-dispatch-queue';
+  const easyModeStorageKey = 'greenroute-easy-mode';
+  const languageStorageKey = 'greenroute-language';
+  const noStressStorageKey = 'greenroute-no-stress-mode';
+  const followRouteStorageKey = 'greenroute-follow-route-mode';
   const root = document.documentElement;
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
   const routes = [
     {
       id: 1,
+      serviceType: 'trotro',
       from: 'Madina',
       to: 'Circle',
       fare: 2.5,
       eta: 6,
       seats: 2,
+      capacity: 14,
+      onboard: 12,
+      vehicleLat: 5.616,
+      vehicleLon: -0.196,
       vehicle: 'GR-214 · Toyota Hiace',
+      driverName: 'Kwame Mensah',
+      driverPhone: '+233201234567',
+      plate: 'GR-214',
+      driverPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80&fit=crop',
+      trustScore: 4.8,
       status: 'On-Route',
       note: '2 seats left',
       progress: 82,
@@ -26,12 +43,22 @@
     },
     {
       id: 2,
+      serviceType: 'trotro',
       from: 'Adenta',
       to: 'Accra Central',
       fare: 3.2,
       eta: 12,
       seats: 8,
+      capacity: 18,
+      onboard: 10,
+      vehicleLat: 5.634,
+      vehicleLon: -0.181,
       vehicle: 'GR-301 · Hyundai County',
+      driverName: 'Yaw Boateng',
+      driverPhone: '+233244567890',
+      plate: 'GR-301',
+      driverPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&q=80&fit=crop',
+      trustScore: 4.6,
       status: 'Departing',
       note: 'Plenty space',
       progress: 44,
@@ -39,16 +66,95 @@
     },
     {
       id: 3,
+      serviceType: 'trotro',
       from: 'Kaneshie',
       to: 'Tema Station',
       fare: 3.8,
       eta: 9,
       seats: 4,
+      capacity: 16,
+      onboard: 12,
+      vehicleLat: 5.584,
+      vehicleLon: -0.214,
       vehicle: 'GR-119 · Ford Transit',
+      driverName: 'Kojo Asare',
+      driverPhone: '+233277654321',
+      plate: 'GR-119',
+      driverPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&q=80&fit=crop',
+      trustScore: 4.7,
       status: 'Confirmed',
       note: 'Boarding soon',
       progress: 67,
       timeline: [['Kaneshie', 'Departed'], ['Odorkor', 'In transit'], ['Abossey Okai', 'In transit'], ['Tema Station', 'ETA 9 mins']]
+    },
+    {
+      id: 101,
+      serviceType: 'taxi',
+      from: 'East Legon',
+      to: 'Airport',
+      fare: 24,
+      eta: 5,
+      seats: 4,
+      capacity: 4,
+      onboard: 1,
+      vehicleLat: 5.628,
+      vehicleLon: -0.166,
+      vehicle: 'TX-501 · Toyota Corolla',
+      driverName: 'Esi Arthur',
+      driverPhone: '+233208889900',
+      plate: 'TX-501',
+      driverPhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80&fit=crop',
+      trustScore: 4.9,
+      status: 'Available',
+      note: 'Private ride',
+      progress: 30,
+      timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
+    },
+    {
+      id: 102,
+      serviceType: 'taxi',
+      from: 'Madina',
+      to: 'Accra Central',
+      fare: 27,
+      eta: 7,
+      seats: 4,
+      capacity: 4,
+      onboard: 1,
+      vehicleLat: 5.664,
+      vehicleLon: -0.176,
+      vehicle: 'TX-213 · Kia Rio',
+      driverName: 'Ama Ofori',
+      driverPhone: '+233206667788',
+      plate: 'TX-213',
+      driverPhoto: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&q=80&fit=crop',
+      trustScore: 4.8,
+      status: 'Available',
+      note: 'Private ride',
+      progress: 26,
+      timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
+    },
+    {
+      id: 103,
+      serviceType: 'taxi',
+      from: 'Kaneshie',
+      to: 'Circle',
+      fare: 21,
+      eta: 6,
+      seats: 4,
+      capacity: 4,
+      onboard: 1,
+      vehicleLat: 5.578,
+      vehicleLon: -0.224,
+      vehicle: 'TX-118 · Hyundai Elantra',
+      driverName: 'Nana Adu',
+      driverPhone: '+233209991122',
+      plate: 'TX-118',
+      driverPhoto: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=120&q=80&fit=crop',
+      trustScore: 4.6,
+      status: 'Available',
+      note: 'Private ride',
+      progress: 34,
+      timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
     }
   ];
 
@@ -66,7 +172,9 @@
     selectedSeatNote: document.getElementById('selected-seat-note'),
     mapRouteLabel: document.getElementById('map-route-label'),
     mapVehicleLabel: document.getElementById('map-vehicle-label'),
+    mapDistanceLabel: document.getElementById('map-distance-label'),
     mapFrame: document.querySelector('.map-frame'),
+    mapOverlay: document.querySelector('.map-overlay'),
     mapHotspots: Array.from(document.querySelectorAll('.map-hotspot')),
     mapModeOrigin: document.getElementById('map-mode-origin'),
     mapModeDestination: document.getElementById('map-mode-destination'),
@@ -81,6 +189,17 @@
     passengerCount: document.getElementById('passenger-count'),
     origin: document.getElementById('origin'),
     destination: document.getElementById('destination'),
+    voiceDestination: document.getElementById('voice-destination'),
+    languageToggle: document.getElementById('language-toggle'),
+    easyModeToggle: document.getElementById('easy-mode-toggle'),
+    noStressControls: document.querySelector('.no-stress-controls'),
+    noStressToggle: document.getElementById('no-stress-toggle'),
+    followRouteToggle: document.getElementById('follow-route-toggle'),
+    panicButton: document.getElementById('panic-button'),
+    callDriver: document.getElementById('call-driver'),
+    quickRouteButtons: Array.from(document.querySelectorAll('[data-quick-route-to]')),
+    scheduleStack: document.querySelector('.schedule-stack'),
+    choiceGrid: document.querySelector('.choice-grid'),
     searchRoutes: document.getElementById('search-routes'),
     resetSearch: document.getElementById('reset-search'),
     plus: document.getElementById('plus'),
@@ -92,6 +211,8 @@
     shareTrip: document.getElementById('share-trip'),
     shareTripMobile: document.getElementById('share-trip-mobile'),
     bookRouteMobile: document.getElementById('book-route-mobile'),
+    serviceModeButtons: Array.from(document.querySelectorAll('[data-service-mode]')),
+    serviceModePill: document.getElementById('service-mode-pill'),
     choiceButtons: Array.from(document.querySelectorAll('[data-choice]')),
     recentPlaceButtons: Array.from(document.querySelectorAll('[data-recent-place]')),
     authForms: Array.from(document.querySelectorAll('[data-auth-form]')),
@@ -109,6 +230,22 @@
     driverStatusPill: document.getElementById('driver-status-pill'),
     driverMapLabel: document.getElementById('driver-map-label'),
     driverMapNote: document.getElementById('driver-map-note'),
+    driverMapOverlay: document.querySelector('.driver-map-overlay'),
+    driverServiceModeButtons: Array.from(document.querySelectorAll('[data-driver-service-mode]')),
+    driverServiceModePill: document.getElementById('driver-service-mode-pill'),
+    driverFareInput: document.getElementById('driver-fare-input'),
+    driverFareLabel: document.getElementById('driver-fare-label'),
+    driverRouteSelect: document.getElementById('driver-route-select'),
+    driverStartPoint: document.getElementById('driver-start-point'),
+    driverTelemetryCard: document.getElementById('driver-telemetry-card'),
+    trackingCount: document.getElementById('tracking-count'),
+    boardingDemand: document.getElementById('boarding-demand'),
+    driverAvailableSeats: document.getElementById('driver-available-seats'),
+    onboardDisplay: document.getElementById('onboard-display'),
+    onboardMinus: document.getElementById('onboard-minus'),
+    onboardPlus: document.getElementById('onboard-plus'),
+    onboardCountInput: document.getElementById('onboard-count-input'),
+    syncOnboard: document.getElementById('sync-onboard'),
     liveTripTitle: document.getElementById('live-trip-title'),
     liveTripCopy: document.getElementById('live-trip-copy'),
     approachAlertTitle: document.getElementById('approach-alert-title'),
@@ -116,17 +253,29 @@
     vehicleAlertTitle: document.getElementById('vehicle-alert-title'),
     vehicleAlertCopy: document.getElementById('vehicle-alert-copy'),
     activityAlertTitle: document.getElementById('activity-alert-title'),
-    activityAlertCopy: document.getElementById('activity-alert-copy')
+    activityAlertCopy: document.getElementById('activity-alert-copy'),
+    trustScorePill: document.getElementById('trust-score-pill'),
+    crowdMoodPill: document.getElementById('crowd-mood-pill'),
+    driverTrustScore: document.getElementById('driver-trust-score'),
+    driverDemandZone: document.getElementById('driver-demand-zone'),
+    driverVoiceSummary: document.getElementById('driver-voice-summary')
   };
 
   const state = {
     selectedRouteId: routes[0].id,
     passengers: 1,
     filteredRoutes: routes.slice(),
+    serviceMode: 'trotro',
+    language: 'en',
+    easyMode: true,
+    noStressMode: localStorage.getItem(noStressStorageKey) === '1',
+    followRouteMode: localStorage.getItem(followRouteStorageKey) !== '0',
+    lastAnnouncementAt: 0,
     spotlightEnabled: false,
     mapSelectionMode: 'origin',
     locationWatchId: null,
-    fallbackNoticeShown: false
+    fallbackNoticeShown: false,
+    userPosition: null
   };
 
   const mapBounds = {
@@ -134,6 +283,19 @@
     maxLon: -0.124,
     minLat: 5.529,
     maxLat: 5.686
+  };
+
+  const stopCoordinates = {
+    madina: { latitude: 5.678, longitude: -0.165 },
+    circle: { latitude: 5.56, longitude: -0.205 },
+    adenta: { latitude: 5.701, longitude: -0.166 },
+    kaneshie: { latitude: 5.57, longitude: -0.234 },
+    'tema station': { latitude: 5.614, longitude: -0.072 },
+    'accra central': { latitude: 5.55, longitude: -0.206 },
+    airport: { latitude: 5.605, longitude: -0.171 },
+    'east legon': { latitude: 5.64, longitude: -0.148 },
+    odorkor: { latitude: 5.592, longitude: -0.25 },
+    kasoa: { latitude: 5.534, longitude: -0.416 }
   };
 
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -151,6 +313,11 @@
     const normalizedPlace = String(place || '').trim().toLowerCase();
     if (!normalizedPlace) {
       return null;
+    }
+
+    const fromKnownStops = stopCoordinates[normalizedPlace];
+    if (fromKnownStops) {
+      return fromKnownStops;
     }
 
     const hotspot = elements.mapHotspots.find(
@@ -266,6 +433,226 @@
     localStorage.setItem(activeTripStorageKey, JSON.stringify(trip));
   };
 
+  const createInitialDispatchQueue = () => ([
+    { id: 'rq1', serviceType: 'trotro', rider: 'Ama', from: 'Madina', to: 'Circle', distance: 0.8, eta: 3, lat: 5.678, lon: -0.165 },
+    { id: 'rq2', serviceType: 'taxi', rider: 'Kojo', from: 'Adenta', to: 'Accra Central', distance: 1.3, eta: 5, lat: 5.701, lon: -0.166 },
+    { id: 'rq3', serviceType: 'trotro', rider: 'Efua', from: 'Kaneshie', to: 'Tema Station', distance: 2.2, eta: 8, lat: 5.57, lon: -0.234 },
+    { id: 'rq4', serviceType: 'taxi', rider: 'Yaw', from: 'Circle', to: 'Madina', distance: 1.1, eta: 4, lat: 5.56, lon: -0.205 }
+  ]);
+
+  const readDispatchQueue = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(dispatchQueueStorageKey) || 'null');
+      if (!Array.isArray(parsed)) {
+        const initial = createInitialDispatchQueue();
+        localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(initial));
+        return initial;
+      }
+      return parsed;
+    } catch {
+      const initial = createInitialDispatchQueue();
+      localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(initial));
+      return initial;
+    }
+  };
+
+  const saveDispatchQueue = (queue) => {
+    localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(queue));
+  };
+
+  const buildRouteTelemetry = (route) => ({
+    routeId: route.id,
+    capacity: route.capacity || Math.max(route.seats || 0, 1),
+    onboard: route.onboard || 0,
+    availableSeats: route.seats,
+    trackingCount: 0,
+    boardingByStop: {},
+    seatClaims: [],
+    trustScore: route.trustScore || 4.5
+  });
+
+  const createInitialFleetState = () => ({
+    routes: routes.reduce((acc, route) => {
+      acc[route.id] = buildRouteTelemetry(route);
+      return acc;
+    }, {})
+  });
+
+  const readFleetState = () => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(fleetStateStorageKey) || 'null');
+      if (!parsed || !parsed.routes) {
+        const initial = createInitialFleetState();
+        localStorage.setItem(fleetStateStorageKey, JSON.stringify(initial));
+        return initial;
+      }
+      let hasUpdates = false;
+      routes.forEach((route) => {
+        if (!parsed.routes[route.id]) {
+          parsed.routes[route.id] = buildRouteTelemetry(route);
+          hasUpdates = true;
+        }
+      });
+      if (hasUpdates) {
+        localStorage.setItem(fleetStateStorageKey, JSON.stringify(parsed));
+      }
+      return parsed;
+    } catch {
+      const initial = createInitialFleetState();
+      localStorage.setItem(fleetStateStorageKey, JSON.stringify(initial));
+      return initial;
+    }
+  };
+
+  const saveFleetState = (fleetState) => {
+    localStorage.setItem(fleetStateStorageKey, JSON.stringify(fleetState));
+  };
+
+  const getRouteFleetState = (routeId) => {
+    const fleetState = readFleetState();
+    const entry = fleetState.routes?.[routeId];
+    if (entry) {
+      return entry;
+    }
+    const route = routes.find((item) => item.id === routeId);
+    if (!route) {
+      return null;
+    }
+    const nextEntry = buildRouteTelemetry(route);
+    fleetState.routes[routeId] = nextEntry;
+    saveFleetState(fleetState);
+    return nextEntry;
+  };
+
+  const getActiveClaims = (telemetry, now = Date.now()) => {
+    const claims = Array.isArray(telemetry?.seatClaims) ? telemetry.seatClaims : [];
+    return claims.filter((claim) => Number(claim?.expiresAt || 0) > now);
+  };
+
+  const getDemandByStop = (mode = state.serviceMode) => {
+    const fleetState = readFleetState();
+    const demand = new Map();
+
+    routes.filter((route) => (route.serviceType || 'trotro') === mode).forEach((route) => {
+      const telemetry = fleetState.routes?.[route.id];
+      const trackingCount = Number(telemetry?.trackingCount || 0);
+      const claimedSeats = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+      const stopWeight = 1 + trackingCount + (route.seats <= 2 ? 1 : 0) + Math.min(2, claimedSeats);
+
+      if (route.from) {
+        demand.set(route.from, (demand.get(route.from) || 0) + stopWeight);
+      }
+
+      Object.entries(telemetry?.boardingByStop || {}).forEach(([stop, count]) => {
+        demand.set(stop, (demand.get(stop) || 0) + Number(count || 0));
+      });
+    });
+
+    return Array.from(demand.entries())
+      .map(([stop, count]) => ({ stop, count }))
+      .sort((a, b) => b.count - a.count);
+  };
+
+  const getBestStopPrediction = (route) => {
+    const demand = getDemandByStop(route?.serviceType || state.serviceMode);
+    if (!demand.length) {
+      return route?.from || 'Nearby stop';
+    }
+
+    const preferred = demand.find((item) => String(item.stop || '').toLowerCase() === String(route?.from || '').toLowerCase());
+    return preferred?.stop || demand[0].stop;
+  };
+
+  const getRouteTrustScore = (route, telemetry) => {
+    const base = Number(route?.trustScore || telemetry?.trustScore || 4.5);
+    const trackingBonus = Math.min(0.2, Number(telemetry?.trackingCount || 0) * 0.02);
+    const claimPenalty = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0) > 2 ? 0.1 : 0;
+    return Math.max(3.9, Math.min(5, base + trackingBonus - claimPenalty));
+  };
+
+  const getCrowdMood = (route, telemetry) => {
+    const claimed = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+    const seatsLeft = Number(route?.seats || 0);
+    const pressure = claimed + Math.max(0, 4 - seatsLeft);
+
+    if (pressure >= 5) {
+      return { label: 'Crowded', emoji: '😤', tone: 'crowded' };
+    }
+    if (pressure >= 2) {
+      return { label: 'Okay', emoji: '🙂', tone: 'okay' };
+    }
+    return { label: 'Comfortable', emoji: '😎', tone: 'comfortable' };
+  };
+
+  const getRouteHeatLevel = (route, telemetry) => {
+    const demand = Number(telemetry?.trackingCount || 0) + getActiveClaims(telemetry).length + Number(route?.seats <= 2 ? 2 : 0);
+    if (demand >= 5) {
+      return 'red';
+    }
+    if (demand >= 2) {
+      return 'yellow';
+    }
+    return 'green';
+  };
+
+  const syncRoutesFromFleetState = () => {
+    const fleetState = readFleetState();
+    const now = Date.now();
+    routes.forEach((route) => {
+      const telemetry = fleetState.routes?.[route.id];
+      if (!telemetry) {
+        return;
+      }
+      const capacity = Number(telemetry.capacity || route.capacity || 0);
+      const onboard = Number(telemetry.onboard || 0);
+      const activeClaims = getActiveClaims(telemetry, now);
+      const claimCount = activeClaims.reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+      const availableSeats = Number.isFinite(telemetry.availableSeats)
+        ? Number(telemetry.availableSeats)
+        : Math.max(0, capacity - onboard - claimCount);
+
+      route.capacity = capacity;
+      route.onboard = clamp(onboard, 0, capacity || onboard);
+      route.seats = clamp(Math.max(0, capacity - route.onboard - claimCount), 0, capacity || availableSeats);
+      route.claimedSeats = claimCount;
+      route.trustScore = getRouteTrustScore(route, telemetry);
+      telemetry.seatClaims = activeClaims;
+      telemetry.availableSeats = Math.max(0, capacity - route.onboard - claimCount);
+      telemetry.trustScore = route.trustScore;
+    });
+
+    saveFleetState(fleetState);
+  };
+
+  const getRouteDistanceKm = (route) => {
+    if (!route || !state.userPosition) {
+      return null;
+    }
+    if (!Number.isFinite(route.vehicleLat) || !Number.isFinite(route.vehicleLon)) {
+      return null;
+    }
+    return distanceKm(state.userPosition.latitude, state.userPosition.longitude, route.vehicleLat, route.vehicleLon);
+  };
+
+  const estimateEtaFromDistance = (distance) => {
+    if (!Number.isFinite(distance)) {
+      return null;
+    }
+    const avgSpeedKmPerHour = 24;
+    const minutes = (distance / avgSpeedKmPerHour) * 60;
+    return Math.max(2, Math.round(minutes));
+  };
+
+  const formatDistance = (distance) => {
+    if (!Number.isFinite(distance)) {
+      return '—';
+    }
+    if (distance < 1) {
+      return `${Math.round(distance * 1000)} m`;
+    }
+    return `${distance.toFixed(1)} km`;
+  };
+
   const updateLiveTripCard = (trip) => {
     if (!elements.liveTripTitle || !elements.liveTripCopy) {
       return;
@@ -282,6 +669,43 @@
     elements.liveTripCopy.textContent = `${trip.vehicle || 'Driver Assigned'} · ${trip.fare ? `GHS ${Number(trip.fare).toFixed(2)}` : 'Fare pending'} · ${etaText}`;
   };
 
+  const renderHeatZones = (overlayElement, mode) => {
+    if (!overlayElement) {
+      return;
+    }
+
+    const layer = overlayElement.querySelector('.entity-layer');
+    if (!layer) {
+      return;
+    }
+
+    layer.querySelectorAll('.map-heat').forEach((node) => node.remove());
+
+    getDemandByStop(mode).slice(0, 5).forEach((item) => {
+      const hotspot = elements.mapHotspots.find((node) => (node.dataset.place || '').trim().toLowerCase() === String(item.stop || '').trim().toLowerCase());
+      if (!hotspot) {
+        return;
+      }
+
+      const latitude = Number(hotspot.dataset.lat || '0');
+      const longitude = Number(hotspot.dataset.lon || '0');
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return;
+      }
+
+      const point = coordinatesFromLatLon(latitude, longitude);
+      const heat = document.createElement('div');
+      const level = item.count >= 5 ? 'red' : item.count >= 2 ? 'yellow' : 'green';
+      heat.className = `map-heat zone-${level}`;
+      heat.style.left = `${point.x}%`;
+      heat.style.top = `${point.y}%`;
+      heat.style.setProperty('--heat-scale', String(Math.min(1.8, 0.9 + item.count * 0.16)));
+      heat.title = `${item.stop}: ${item.count} waiting`;
+      heat.innerHTML = `<span>${item.count}</span>`;
+      layer.appendChild(heat);
+    });
+  };
+
   const updateContextAlerts = (route, trip) => {
     if (!elements.approachAlertTitle || !elements.approachAlertCopy || !elements.vehicleAlertTitle || !elements.vehicleAlertCopy || !elements.activityAlertTitle || !elements.activityAlertCopy) {
       return;
@@ -289,12 +713,12 @@
 
     const current = trip || route;
     if (!current) {
-      elements.approachAlertTitle.textContent = 'Vehicle Arrival';
-      elements.approachAlertCopy.textContent = 'Your vehicle is approximately 300 meters from Kaneshie Overhead.';
-      elements.vehicleAlertTitle.textContent = 'Vehicle Capacity';
-      elements.vehicleAlertCopy.textContent = 'Vehicle capacity is limited. Two seats are currently available.';
-      elements.activityAlertTitle.textContent = 'Route Activity';
-      elements.activityAlertCopy.textContent = 'Route updates are reflected in the map and live tracker.';
+      elements.approachAlertTitle.textContent = 'Car is near';
+      elements.approachAlertCopy.textContent = 'Your car is getting close to your stop.';
+      elements.vehicleAlertTitle.textContent = 'Seat update';
+      elements.vehicleAlertCopy.textContent = 'Seats can fill quickly, so check before boarding.';
+      elements.activityAlertTitle.textContent = 'Trip update';
+      elements.activityAlertCopy.textContent = 'New changes will show up here automatically.';
       return;
     }
 
@@ -303,6 +727,9 @@
     const destination = current.to || 'destination';
     const origin = current.from || 'pickup point';
     const vehicle = current.vehicle || 'Vehicle assigned';
+    const telemetry = route ? getRouteFleetState(route.id) : null;
+    const trustScore = getRouteTrustScore(route || current, telemetry);
+    const crowdMood = getCrowdMood(route || current, telemetry);
 
     const approachDistanceMeters = Number.isFinite(eta) ? Math.max(200, Math.round(eta * 85)) : null;
     const approachText = approachDistanceMeters
@@ -314,10 +741,10 @@
 
     if (Number.isFinite(seats)) {
       if (seats <= 2) {
-        elements.vehicleAlertTitle.textContent = 'Vehicle Alert';
+        elements.vehicleAlertTitle.textContent = 'Seat alert';
         elements.vehicleAlertCopy.textContent = `Vehicle almost full. Only ${seats} seat${seats === 1 ? '' : 's'} remaining.`;
       } else if (seats <= 5) {
-        elements.vehicleAlertTitle.textContent = 'Vehicle Capacity Update';
+        elements.vehicleAlertTitle.textContent = 'Seat update';
         elements.vehicleAlertCopy.textContent = `${seats} seats are available on ${vehicle}.`;
       } else {
         elements.vehicleAlertTitle.textContent = 'Seats available';
@@ -328,17 +755,189 @@
       elements.vehicleAlertCopy.textContent = `${vehicle} is assigned for ${origin} to ${destination}.`;
     }
 
-    elements.activityAlertTitle.textContent = trip ? 'Live Trip Activity' : 'Route Activity';
+    elements.activityAlertTitle.textContent = trip ? 'Trip update' : 'Route update';
     elements.activityAlertCopy.textContent = trip
       ? `${trip.status || 'The driver accepted your trip'}. ${origin} to ${destination} is now tracked in real time.`
       : `${origin} to ${destination} updates are reflected on the map and tracker.`;
+
+    if (elements.trustScorePill) {
+      const activeServiceType = (route?.serviceType || trip?.serviceType || state.serviceMode || 'trotro');
+      const showRating = activeServiceType === 'taxi';
+      elements.trustScorePill.hidden = !showRating;
+      if (showRating) {
+        elements.trustScorePill.textContent = `⭐ ${trustScore.toFixed(1)} Reliable driver`;
+      }
+    }
+    if (elements.crowdMoodPill) {
+      elements.crowdMoodPill.textContent = `${crowdMood.emoji} Crowd ${crowdMood.label}`;
+      elements.crowdMoodPill.dataset.mood = crowdMood.tone;
+    }
+  };
+
+  const updateMapDistanceSummary = (route) => {
+    if (!elements.mapDistanceLabel) {
+      return;
+    }
+
+    if (!route) {
+      elements.mapDistanceLabel.textContent = 'Distance — · ETA — · Seats —';
+      return;
+    }
+
+    const distance = getRouteDistanceKm(route);
+    const eta = estimateEtaFromDistance(distance) || route.eta;
+    const seatCount = Number.isFinite(route.seats) ? route.seats : '—';
+    elements.mapDistanceLabel.textContent = `Distance ${formatDistance(distance)} · ETA ${eta ? `${eta} min` : '—'} · Seats ${seatCount}`;
+  };
+
+  const renderEntityMarkers = (overlayElement, mode) => {
+    if (!overlayElement) {
+      return;
+    }
+
+    let layer = overlayElement.querySelector('.entity-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'entity-layer';
+      overlayElement.appendChild(layer);
+    }
+
+    layer.replaceChildren();
+
+    const visibleVehicles = routes.filter((route) => (route.serviceType || 'trotro') === mode);
+    visibleVehicles.forEach((route) => {
+      if (!Number.isFinite(route.vehicleLat) || !Number.isFinite(route.vehicleLon)) {
+        return;
+      }
+
+      const point = coordinatesFromLatLon(route.vehicleLat, route.vehicleLon);
+      const marker = document.createElement('div');
+      marker.className = 'map-entity map-entity-vehicle';
+      marker.style.left = `${point.x}%`;
+      marker.style.top = `${point.y}%`;
+      marker.title = `${route.vehicle} (${route.from} to ${route.to})`;
+      marker.innerHTML = '<span>C</span>';
+      layer.appendChild(marker);
+    });
+
+    const visiblePassengers = readDispatchQueue().filter((request) => (request.serviceType || 'trotro') === mode);
+    visiblePassengers.forEach((request) => {
+      if (!Number.isFinite(request.lat) || !Number.isFinite(request.lon)) {
+        return;
+      }
+
+      const point = coordinatesFromLatLon(request.lat, request.lon);
+      const marker = document.createElement('div');
+      marker.className = 'map-entity map-entity-passenger';
+      marker.style.left = `${point.x}%`;
+      marker.style.top = `${point.y}%`;
+      marker.title = `${request.rider} waiting at ${request.from}`;
+      marker.innerHTML = '<span>P</span>';
+      layer.appendChild(marker);
+    });
+
+    const fleetState = readFleetState();
+    const visibleBooked = routes.filter((route) => (route.serviceType || 'trotro') === mode);
+    visibleBooked.forEach((route) => {
+      const telemetry = fleetState.routes?.[route.id];
+      const bookedSeats = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+      if (bookedSeats <= 0) {
+        return;
+      }
+
+      const stopPoint = placeToCoordinates(route.from);
+      if (!stopPoint) {
+        return;
+      }
+
+      const point = coordinatesFromLatLon(stopPoint.latitude, stopPoint.longitude);
+      const marker = document.createElement('div');
+      marker.className = 'map-entity map-entity-booked';
+      marker.style.left = `${point.x}%`;
+      marker.style.top = `${point.y}%`;
+      marker.title = `${bookedSeats} booked seat${bookedSeats === 1 ? '' : 's'} at ${route.from}`;
+      marker.innerHTML = `<span>${bookedSeats}</span>`;
+      layer.appendChild(marker);
+    });
+  };
+
+  const renderPassengerMapEntities = () => {
+    renderEntityMarkers(elements.mapOverlay, state.serviceMode);
+    renderHeatZones(elements.mapOverlay, state.serviceMode);
+  };
+
+  const renderDriverMapEntities = (mode) => {
+    renderEntityMarkers(elements.driverMapOverlay, mode || 'trotro');
+    renderHeatZones(elements.driverMapOverlay, mode || 'trotro');
+  };
+
+  const registerTrackingInterest = (route) => {
+    if (!route || (route.serviceType || 'trotro') !== 'trotro') {
+      return;
+    }
+
+    const previousTrackedRoute = Number(localStorage.getItem(trackedRouteStorageKey) || '0');
+    if (previousTrackedRoute === route.id) {
+      return;
+    }
+
+    const fleetState = readFleetState();
+    if (previousTrackedRoute && fleetState.routes?.[previousTrackedRoute]) {
+      const previousEntry = fleetState.routes[previousTrackedRoute];
+      previousEntry.trackingCount = Math.max(0, (previousEntry.trackingCount || 0) - 1);
+      const previousStop = (elements.origin?.value || '').trim();
+      if (previousStop && previousEntry.boardingByStop?.[previousStop]) {
+        previousEntry.boardingByStop[previousStop] = Math.max(0, previousEntry.boardingByStop[previousStop] - 1);
+      }
+    }
+
+    const entry = fleetState.routes?.[route.id];
+    if (entry) {
+      entry.trackingCount = Number(entry.trackingCount || 0) + 1;
+      const stop = (elements.origin?.value || route.from || '').trim();
+      if (stop) {
+        entry.boardingByStop = entry.boardingByStop || {};
+        entry.boardingByStop[stop] = Number(entry.boardingByStop[stop] || 0) + 1;
+      }
+      saveFleetState(fleetState);
+      localStorage.setItem(trackedRouteStorageKey, String(route.id));
+      syncRoutesFromFleetState();
+    }
+  };
+
+  const clearTrackingInterest = () => {
+    if (isTaxiMode()) {
+      localStorage.removeItem(trackedRouteStorageKey);
+      return;
+    }
+
+    const trackedRouteId = Number(localStorage.getItem(trackedRouteStorageKey) || '0');
+    if (!trackedRouteId) {
+      return;
+    }
+
+    const fleetState = readFleetState();
+    const entry = fleetState.routes?.[trackedRouteId];
+    if (entry) {
+      entry.trackingCount = Math.max(0, Number(entry.trackingCount || 0) - 1);
+      const stop = (elements.origin?.value || '').trim();
+      if (stop && entry.boardingByStop?.[stop]) {
+        entry.boardingByStop[stop] = Math.max(0, Number(entry.boardingByStop[stop]) - 1);
+      }
+      saveFleetState(fleetState);
+      syncRoutesFromFleetState();
+    }
+
+    localStorage.removeItem(trackedRouteStorageKey);
   };
 
   const syncPassengerLiveTrip = () => {
     const activeTrip = readActiveTrip();
+    syncRoutesFromFleetState();
 
     updateLiveTripCard(activeTrip);
     updateContextAlerts(getSelectedRoute(), activeTrip);
+    renderPassengerMapEntities();
     if (!activeTrip) {
       return;
     }
@@ -361,6 +960,7 @@
     if (elements.mapVehicleLabel) {
       elements.mapVehicleLabel.textContent = activeTrip.driver || 'Assigned driver';
     }
+    updateMapDistanceSummary(getSelectedRoute());
     if (elements.selectedRouteNote) {
       elements.selectedRouteNote.textContent = activeTrip.status || 'The driver has accepted your trip';
     }
@@ -417,7 +1017,7 @@
     root.dataset.theme = theme;
     localStorage.setItem(themeStorageKey, theme);
     elements.themeToggles.forEach((button) => {
-      button.textContent = theme === 'dark' ? 'Dark Theme' : 'Light Theme';
+      button.textContent = theme === 'dark' ? 'Light Theme' : 'Dark Theme';
     });
   };
 
@@ -431,6 +1031,126 @@
       toastElement.classList.remove('visible');
       window.setTimeout(() => toastElement.remove(), 220);
     }, 2400);
+  };
+
+  const t = {
+    en: {
+      findCar: 'Find a car',
+      destination: 'Where are you going?',
+      origin: 'Your location',
+      availableSeats: 'Seats left',
+      carsNearYou: 'Cars near you',
+      easyModeOn: 'Easy Mode: On',
+      easyModeOff: 'Easy Mode: Off'
+    },
+    twi: {
+      findCar: 'Hwe kaar',
+      destination: 'Worek? ',
+      origin: 'Wo beae',
+      availableSeats: 'Akonwa a aka',
+      carsNearYou: 'Kaar a ɛbɛn wo',
+      easyModeOn: 'Easy Mode: On',
+      easyModeOff: 'Easy Mode: Off'
+    }
+  };
+
+  const announce = (message) => {
+    if (navigator.vibrate) {
+      navigator.vibrate(120);
+    }
+    if ('speechSynthesis' in window && state.easyMode) {
+      const utter = new SpeechSynthesisUtterance(message);
+      utter.rate = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    }
+  };
+
+  const applyEasyModeUI = () => {
+    document.body.classList.toggle('easy-mode', state.easyMode);
+    if (elements.easyModeToggle) {
+      elements.easyModeToggle.textContent = state.easyMode
+        ? t[state.language].easyModeOn
+        : t[state.language].easyModeOff;
+    }
+    if (elements.noStressToggle) {
+      elements.noStressToggle.textContent = state.noStressMode ? 'Avoid crowded cars: On' : 'Avoid crowded cars: Off';
+    }
+    if (elements.followRouteToggle) {
+      elements.followRouteToggle.textContent = state.followRouteMode ? 'Auto alerts: On' : 'Auto alerts: Off';
+    }
+  };
+
+  const applyLanguageUI = () => {
+    const words = t[state.language] || t.en;
+    const destinationLabel = document.getElementById('destination-label');
+    const originLabel = document.getElementById('origin-label');
+    const resultsTitle = document.getElementById('results-title');
+
+    if (destinationLabel) {
+      destinationLabel.textContent = words.destination;
+    }
+    if (originLabel) {
+      originLabel.textContent = words.origin;
+    }
+    if (elements.searchRoutes) {
+      elements.searchRoutes.textContent = words.findCar;
+    }
+    if (resultsTitle) {
+      resultsTitle.textContent = words.carsNearYou;
+    }
+  };
+
+  const isTaxiMode = () => state.serviceMode === 'taxi';
+
+  const isRouteInActiveMode = (route) => (route.serviceType || 'trotro') === state.serviceMode;
+
+  const getSeatRequestLabel = () =>
+    isTaxiMode()
+      ? `${state.passengers} passenger${state.passengers === 1 ? '' : 's'} for a private ride`
+      : `${state.passengers} seat${state.passengers === 1 ? '' : 's'} requested`;
+
+  const applyServiceModeUI = () => {
+    elements.serviceModeButtons.forEach((button) => {
+      const isActive = button.dataset.serviceMode === state.serviceMode;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+
+    if (elements.serviceModePill) {
+      elements.serviceModePill.textContent = isTaxiMode() ? 'Taxi mode' : 'Trotro mode';
+    }
+
+    if (elements.searchRoutes) {
+      const words = t[state.language] || t.en;
+      elements.searchRoutes.textContent = isTaxiMode() ? 'Find taxi' : words.findCar;
+    }
+
+    if (elements.scheduleStack) {
+      const showSchedule = isTaxiMode();
+      elements.scheduleStack.hidden = !showSchedule;
+      elements.scheduleStack.setAttribute('aria-hidden', showSchedule ? 'false' : 'true');
+      elements.scheduleStack.style.display = showSchedule ? 'grid' : 'none';
+    }
+
+    if (elements.choiceGrid) {
+      const showChoiceGrid = isTaxiMode();
+      elements.choiceGrid.hidden = !showChoiceGrid;
+      elements.choiceGrid.setAttribute('aria-hidden', showChoiceGrid ? 'false' : 'true');
+      elements.choiceGrid.style.display = showChoiceGrid ? 'grid' : 'none';
+    }
+
+    if (elements.noStressControls) {
+      const showRouteAssistControls = isTaxiMode();
+      elements.noStressControls.hidden = !showRouteAssistControls;
+      elements.noStressControls.setAttribute('aria-hidden', showRouteAssistControls ? 'false' : 'true');
+      elements.noStressControls.style.display = showRouteAssistControls ? 'flex' : 'none';
+    }
+
+    renderPassengerMapEntities();
+    applyLanguageUI();
+
+    setBookButtonState(getSelectedRoute());
   };
 
   const getSelectedRoute = () => state.filteredRoutes.find((route) => route.id === state.selectedRouteId) || state.filteredRoutes[0] || routes[0];
@@ -460,7 +1180,7 @@
         if (!button) {
           return;
         }
-        button.textContent = 'No route available';
+        button.textContent = isTaxiMode() ? 'No taxi available' : 'No route available';
         button.disabled = true;
         button.style.opacity = '0.6';
         button.style.cursor = 'not-allowed';
@@ -475,7 +1195,9 @@
       button.disabled = false;
       button.style.opacity = '';
       button.style.cursor = '';
-      button.textContent = state.passengers > route.seats ? 'Not enough seats' : 'Reserve seat';
+      button.textContent = state.passengers > route.seats
+        ? (isTaxiMode() ? 'Taxi capacity exceeded' : 'Not enough seats')
+        : (isTaxiMode() ? 'Book taxi' : "I'm boarding");
     });
   };
 
@@ -586,6 +1308,7 @@
     if (state.locationWatchId !== null) {
       navigator.geolocation.clearWatch(state.locationWatchId);
       state.locationWatchId = null;
+      state.userPosition = null;
       if (elements.locateMe) {
         elements.locateMe.textContent = 'Start Live Location';
       }
@@ -603,10 +1326,12 @@
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
       const accuracy = Math.round(position.coords.accuracy || 0);
+      state.userPosition = { latitude, longitude };
 
       updateUserDot(latitude, longitude);
       if (elements.userLocationChip) {
-        elements.userLocationChip.textContent = `Lat ${latitude.toFixed(4)}, Lon ${longitude.toFixed(4)} • ±${accuracy}m`;
+        const nearestPlace = nearestHotspot(latitude, longitude)?.dataset.place || 'your area';
+        elements.userLocationChip.textContent = `You are at ${nearestPlace}`;
       }
 
       const nearest = nearestHotspot(latitude, longitude);
@@ -617,6 +1342,7 @@
       filterRoutes();
       saveLastInputs();
       updateMapSelectionState();
+      updateMapDistanceSummary(getSelectedRoute());
     };
 
     const onError = () => {
@@ -679,6 +1405,27 @@
     }
   };
 
+  const updateCallDriverAction = (route) => {
+    if (!elements.callDriver) {
+      return;
+    }
+
+    if (route?.serviceType === 'trotro') {
+      elements.callDriver.textContent = 'No direct call for trotro';
+      elements.callDriver.disabled = true;
+      return;
+    }
+
+    if (!route?.driverPhone) {
+      elements.callDriver.textContent = 'Driver unavailable';
+      elements.callDriver.disabled = true;
+      return;
+    }
+
+    elements.callDriver.disabled = false;
+    elements.callDriver.textContent = `Call ${route.driverPhone}`;
+  };
+
   const renderNoRouteDetails = () => {
     if (elements.selectedRouteName) {
       elements.selectedRouteName.textContent = 'No matching route';
@@ -702,7 +1449,7 @@
       elements.selectedRouteNote.textContent = 'No route matches your current origin and destination.';
     }
     if (elements.selectedSeatNote) {
-      elements.selectedSeatNote.textContent = `${state.passengers} seat${state.passengers === 1 ? '' : 's'} requested`;
+      elements.selectedSeatNote.textContent = getSeatRequestLabel();
     }
     if (elements.routeProgress) {
       elements.routeProgress.style.width = '0%';
@@ -712,6 +1459,8 @@
     }
 
     updateContextAlerts(null, null);
+    updateMapDistanceSummary(null);
+    updateCallDriverAction(null);
 
     setBookButtonState(null);
   };
@@ -745,6 +1494,12 @@
       return;
     }
 
+    syncRoutesFromFleetState();
+    const distanceFromUser = getRouteDistanceKm(route);
+    const computedEta = estimateEtaFromDistance(distanceFromUser) || route.eta;
+    const fleetTelemetry = getRouteFleetState(route.id);
+    const trackingCount = Number(fleetTelemetry?.trackingCount || 0);
+
     if (elements.selectedRouteName) {
       elements.selectedRouteName.textContent = `${route.from} → ${route.to}`;
     }
@@ -752,11 +1507,25 @@
       elements.selectedFare.textContent = `GHS ${route.fare.toFixed(2)}`;
     }
     if (elements.selectedEta) {
-      elements.selectedEta.textContent = `${route.eta} min`;
+      elements.selectedEta.textContent = `${computedEta} min`;
     }
     if (elements.vehicle) {
       elements.vehicle.textContent = route.vehicle;
     }
+
+    const driverName = document.getElementById('driver-name');
+    const driverPlate = document.getElementById('driver-plate');
+    const driverPhoto = document.getElementById('driver-photo');
+    if (driverName) {
+      driverName.textContent = `Driver: ${route.driverName || 'Assigned driver'}`;
+    }
+    if (driverPlate) {
+      driverPlate.textContent = `Plate: ${route.plate || route.vehicle.split('·')[0].trim()}`;
+    }
+    if (driverPhoto && route.driverPhoto) {
+      driverPhoto.src = route.driverPhoto;
+    }
+    updateCallDriverAction(route);
     if (elements.mapRouteLabel) {
       elements.mapRouteLabel.textContent = `${route.from} → ${route.to}`;
     }
@@ -764,18 +1533,52 @@
       elements.mapVehicleLabel.textContent = route.vehicle;
     }
     if (elements.selectedRouteNote) {
-      elements.selectedRouteNote.textContent = `${route.note} · ${route.seats} seats remaining`;
+      elements.selectedRouteNote.textContent = isRouteInActiveMode(route) && route.serviceType === 'taxi'
+        ? `Private taxi service · ${route.seats} seats max`
+        : `${route.seats} seats available · ${trackingCount} tracking · ${route.claimedSeats || 0} claimed ahead`;
     }
     if (elements.selectedSeatNote) {
-      elements.selectedSeatNote.textContent = `${state.passengers} seat${state.passengers === 1 ? '' : 's'} requested`;
+      elements.selectedSeatNote.textContent = getSeatRequestLabel();
     }
     if (elements.routeProgress) {
       elements.routeProgress.style.width = `${route.progress}%`;
     }
 
+    if (elements.driverTrustScore) {
+      const showDriverRating = (route.serviceType || 'trotro') === 'taxi';
+      elements.driverTrustScore.hidden = !showDriverRating;
+      if (showDriverRating) {
+        elements.driverTrustScore.textContent = `⭐ ${getRouteTrustScore(route, fleetTelemetry).toFixed(1)} Reliable`;
+      }
+    }
+    if (elements.driverDemandZone) {
+      const heatLevel = getRouteHeatLevel(route, fleetTelemetry);
+      elements.driverDemandZone.textContent = heatLevel === 'red'
+        ? 'Demand: Red zone'
+        : heatLevel === 'yellow'
+          ? 'Demand: Busy zone'
+          : 'Demand: Green zone';
+    }
+
     renderTimeline(route);
+    updateMapDistanceSummary(route);
     updateContextAlerts(route, readActiveTrip());
     setBookButtonState(route);
+
+    const now = Date.now();
+    if (now - state.lastAnnouncementAt > 20000) {
+      if (computedEta <= 3) {
+        toast('Get ready, your car is arriving.');
+        announce('Your car is near. Get ready.');
+        state.lastAnnouncementAt = now;
+      } else if (computedEta <= 5) {
+        announce(`${computedEta} minutes away.`);
+        state.lastAnnouncementAt = now;
+      } else if (route.seats <= 2) {
+        announce('Seats almost full.');
+        state.lastAnnouncementAt = now;
+      }
+    }
   };
 
   const renderRoutes = () => {
@@ -812,24 +1615,32 @@
       const card = document.createElement('article');
       card.className = `route-card surface${route.id === state.selectedRouteId ? ' selected' : ''}`;
       card.style.setProperty('--route-delay', `${index * 60}ms`);
+      const distanceKmFromUser = getRouteDistanceKm(route);
+      const computedEta = estimateEtaFromDistance(distanceKmFromUser) || route.eta;
+      const isTaxiRoute = route.serviceType === 'taxi';
+      const telemetry = getRouteFleetState(route.id);
+      const trackingCount = Number(telemetry?.trackingCount || 0);
+      const seatSignal = route.seats <= 0 ? 'seat-full' : (route.seats <= 2 ? 'seat-low' : 'seat-open');
+      const trustScore = getRouteTrustScore(route, telemetry);
+      const crowdMood = getCrowdMood(route, telemetry);
+      const heatLevel = getRouteHeatLevel(route, telemetry);
+      const routeIntelRating = isTaxiRoute ? `<span>⭐ ${trustScore.toFixed(1)}</span>` : '';
       card.innerHTML = `
-        <div class="route-top">
-          <div class="route-title">
-            <div class="tiny">${route.status.toUpperCase()} • ETA ${route.eta} MIN</div>
-            <h3>${route.from} → ${route.to}</h3>
-          </div>
-          <div class="status ${route.status === 'On-Route' ? 'confirmed' : route.status === 'Confirmed' ? 'confirmed' : 'pending'}">${route.status}</div>
+        <div class="route-top simple-route-top">
+          <h3>${route.to}</h3>
+          <div class="status ${seatSignal}">${route.seats <= 0 ? 'Full' : route.seats <= 2 ? 'Few seats' : 'Seats open'}</div>
         </div>
-        <div class="meta-row">
-          <div class="tiny">${route.vehicle}</div>
-          <div class="tiny">${route.note}</div>
-        </div>
-        <div class="route-track"><span style="width:${route.progress}%"></span></div>
         <div class="route-meta">
-          <span>${route.eta} min</span>
-          <strong>GHS ${route.fare.toFixed(2)}</strong>
+          <span>${computedEta} mins away</span>
+          <strong>${route.seats} seats</strong>
         </div>
-        <button class="route-cta" type="button">Select Route</button>
+        <div class="route-intel">
+          ${routeIntelRating}
+          <span>${crowdMood.emoji} ${crowdMood.label}</span>
+          <span>${heatLevel === 'red' ? 'Red zone' : heatLevel === 'yellow' ? 'Busy zone' : 'Green zone'}</span>
+        </div>
+        <div class="tiny">${trackingCount} people tracking</div>
+        <button class="route-cta" type="button">${isTaxiRoute ? 'Select Taxi' : 'Select Trotro'}</button>
       `;
 
       card.querySelector('button').addEventListener('click', () => {
@@ -845,7 +1656,13 @@
         saveLastInputs();
         renderRoutes();
         updateRouteDetails(route);
-        toast(`Route selected: ${route.from} → ${route.to}.`);
+        if (!isTaxiRoute) {
+          registerTrackingInterest(route);
+        }
+        toast(`${isTaxiRoute ? 'Taxi' : 'Trotro'} selected: ${route.from} → ${route.to}.`);
+        if (state.followRouteMode && computedEta <= 5) {
+          announce(`A matching route is near ${route.to}.`);
+        }
       });
 
       if (!reducedMotionQuery.matches) {
@@ -861,38 +1678,55 @@
 
     renderStats();
     updateRouteDetails(getSelectedRoute());
+    renderPassengerMapEntities();
   };
 
   const filterRoutes = () => {
-    const originValue = (elements.origin?.value || '').trim().toLowerCase();
+    syncRoutesFromFleetState();
     const destinationValue = (elements.destination?.value || '').trim().toLowerCase();
-
-    const strictMatches = routes.filter((route) => {
-      const matchesOrigin = !originValue || route.from.toLowerCase().includes(originValue);
-      const matchesDestination = !destinationValue || route.to.toLowerCase().includes(destinationValue);
-      return matchesOrigin && matchesDestination;
+    const modeRoutes = routes.filter(isRouteInActiveMode).filter((route) => {
+      if (!state.noStressMode) {
+        return true;
+      }
+      return Number(route.seats || 0) >= Math.max(1, state.passengers);
     });
 
+    const strictMatches = modeRoutes.filter((route) => {
+      const matchesDestination = !destinationValue || route.to.toLowerCase().includes(destinationValue);
+      return matchesDestination;
+    });
+
+    const ranked = (strictMatches.length ? strictMatches : modeRoutes)
+      .slice()
+      .sort((a, b) => {
+        const distanceA = getRouteDistanceKm(a);
+        const distanceB = getRouteDistanceKm(b);
+        if (Number.isFinite(distanceA) && Number.isFinite(distanceB)) {
+          return distanceA - distanceB;
+        }
+        if (Number.isFinite(distanceA)) {
+          return -1;
+        }
+        if (Number.isFinite(distanceB)) {
+          return 1;
+        }
+        return scoreRoute(a, elements.origin?.value || '', elements.destination?.value || '') -
+          scoreRoute(b, elements.origin?.value || '', elements.destination?.value || '');
+      });
+
     if (strictMatches.length) {
-      state.filteredRoutes = strictMatches;
+      state.filteredRoutes = ranked;
       state.fallbackNoticeShown = false;
     } else {
-      state.filteredRoutes = routes
-        .slice()
-        .sort(
-          (a, b) =>
-            scoreRoute(a, elements.origin?.value || '', elements.destination?.value || '') -
-            scoreRoute(b, elements.origin?.value || '', elements.destination?.value || '')
-        )
-        .slice(0, 3);
+      state.filteredRoutes = ranked.slice(0, 3);
 
-      if ((originValue || destinationValue) && !state.fallbackNoticeShown) {
-        toast('No exact route was found. Showing the closest available options.');
+      if (destinationValue && !state.fallbackNoticeShown) {
+        toast('No direct destination match was found. Showing the closest available vehicles nearby.');
         state.fallbackNoticeShown = true;
       }
     }
 
-    state.selectedRouteId = state.filteredRoutes[0]?.id || routes[0].id;
+    state.selectedRouteId = state.filteredRoutes[0]?.id || modeRoutes[0]?.id || routes[0].id;
     updateMapSelectionState();
     renderRoutes();
   };
@@ -905,7 +1739,7 @@
 
     const selectedRoute = getSelectedRoute();
     if (elements.selectedSeatNote) {
-      elements.selectedSeatNote.textContent = `${state.passengers} seat${state.passengers === 1 ? '' : 's'} requested`;
+      elements.selectedSeatNote.textContent = getSeatRequestLabel();
     }
 
     if (selectedRoute && elements.bookRoute) {
@@ -921,14 +1755,23 @@
     }
 
     if (state.passengers > selectedRoute.seats) {
-      toast(`Only ${selectedRoute.seats} seats remaining.`);
+      toast(isTaxiMode() ? `Only ${selectedRoute.seats} passengers can be accommodated in this taxi.` : `Only ${selectedRoute.seats} seats remaining.`);
       return;
     }
 
-    selectedRoute.seats -= state.passengers;
+    const fleetState = readFleetState();
+    const telemetry = fleetState.routes?.[selectedRoute.id];
+    if (telemetry) {
+      telemetry.seatClaims = Array.isArray(telemetry.seatClaims) ? telemetry.seatClaims : [];
+      telemetry.seatClaims.push({ amount: state.passengers, expiresAt: Date.now() + (2 * 60 * 1000) });
+      saveFleetState(fleetState);
+      syncRoutesFromFleetState();
+    }
     rememberRecentPlace(selectedRoute.to);
     saveLastInputs();
-    toast(`Reservation confirmed for ${selectedRoute.from} → ${selectedRoute.to}.`);
+    toast(isTaxiMode()
+      ? `Taxi reserved for ${selectedRoute.from} → ${selectedRoute.to}.`
+      : `Seat held for 2 minutes on ${selectedRoute.from} → ${selectedRoute.to}.`);
     renderRoutes();
     updatePassengerCount(state.passengers);
   };
@@ -937,6 +1780,8 @@
     if (!elements.routeList) {
       return;
     }
+
+    syncRoutesFromFleetState();
 
     elements.plus?.addEventListener('click', () => updatePassengerCount(state.passengers + 1));
     elements.minus?.addEventListener('click', () => updatePassengerCount(state.passengers - 1));
@@ -1019,6 +1864,143 @@
     elements.bookRoute?.addEventListener('click', handleBooking);
     elements.bookRouteMobile?.addEventListener('click', handleBooking);
 
+    elements.noStressToggle?.addEventListener('click', () => {
+      state.noStressMode = !state.noStressMode;
+      localStorage.setItem(noStressStorageKey, state.noStressMode ? '1' : '0');
+      if (elements.noStressToggle) {
+        elements.noStressToggle.textContent = state.noStressMode ? 'Avoid crowded cars: On' : 'Avoid crowded cars: Off';
+      }
+      filterRoutes();
+      toast(state.noStressMode ? 'Only vehicles with enough seats are shown.' : 'All vehicles are shown again.');
+    });
+
+    elements.followRouteToggle?.addEventListener('click', () => {
+      state.followRouteMode = !state.followRouteMode;
+      localStorage.setItem(followRouteStorageKey, state.followRouteMode ? '1' : '0');
+      if (elements.followRouteToggle) {
+        elements.followRouteToggle.textContent = state.followRouteMode ? 'Auto alerts: On' : 'Auto alerts: Off';
+      }
+      toast(state.followRouteMode ? 'Auto alerts are on.' : 'Auto alerts are off.');
+    });
+
+    elements.panicButton?.addEventListener('click', async () => {
+      const route = getSelectedRoute();
+      const message = route ? `Green Route safety check: ${route.from} to ${route.to}` : 'Green Route safety check';
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Green Route Safety', text: message });
+          toast('Safety information shared.');
+          return;
+        } catch {
+          // Fall through to the toast below.
+        }
+      }
+      toast('Safety check ready to share with family.');
+    });
+
+    elements.callDriver?.addEventListener('click', async () => {
+      const route = getSelectedRoute();
+      if (route?.serviceType === 'trotro') {
+        toast('Direct calling is disabled for trotro routes.');
+        return;
+      }
+
+      if (!route?.driverPhone) {
+        toast('Driver phone is unavailable right now.');
+        return;
+      }
+
+      const phone = String(route.driverPhone).trim();
+      const normalizedPhone = phone.replace(/\s+/g, '');
+
+      try {
+        window.location.href = `tel:${normalizedPhone}`;
+        setTimeout(async () => {
+          const isMobileDevice = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent || '');
+          if (isMobileDevice) {
+            return;
+          }
+
+          if (navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(phone);
+              toast(`Dial ${phone}. Number copied to clipboard.`);
+              return;
+            } catch {
+              // Fall back to plain toast below.
+            }
+          }
+
+          toast(`Dial this driver: ${phone}`);
+        }, 250);
+      } catch {
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(phone);
+            toast(`Unable to open dialer. Number copied: ${phone}`);
+            return;
+          } catch {
+            // Fall through.
+          }
+        }
+        toast(`Unable to open dialer. Driver number: ${phone}`);
+      }
+    });
+
+    elements.quickRouteButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const from = button.dataset.quickRouteFrom || '';
+        const to = button.dataset.quickRouteTo || '';
+        if (elements.origin) {
+          elements.origin.value = from;
+        }
+        if (elements.destination) {
+          elements.destination.value = to;
+        }
+        filterRoutes();
+        saveLastInputs();
+      });
+    });
+
+    elements.voiceDestination?.addEventListener('click', () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        toast('Voice input is not supported on this phone.');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = state.language === 'twi' ? 'en-GH' : 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event) => {
+        const spoken = String(event.results?.[0]?.[0]?.transcript || '').trim();
+        if (spoken && elements.destination) {
+          elements.destination.value = spoken;
+          filterRoutes();
+          saveLastInputs();
+          toast(`Destination set to ${spoken}.`);
+        }
+      };
+      recognition.onerror = () => toast('Could not hear destination. Please try again.');
+      recognition.start();
+    });
+
+    elements.easyModeToggle?.addEventListener('click', () => {
+      state.easyMode = !state.easyMode;
+      localStorage.setItem(easyModeStorageKey, state.easyMode ? '1' : '0');
+      applyEasyModeUI();
+    });
+
+    elements.languageToggle?.addEventListener('change', () => {
+      const next = elements.languageToggle?.value === 'twi' ? 'twi' : 'en';
+      state.language = next;
+      localStorage.setItem(languageStorageKey, next);
+      applyLanguageUI();
+      applyEasyModeUI();
+      filterRoutes();
+    });
+
     elements.choiceButtons.forEach((button) => {
       button.addEventListener('click', () => {
         setActiveChoice(button.dataset.choice || 'greenx');
@@ -1026,6 +2008,24 @@
         updatePassengerCount(passengers);
         filterRoutes();
         toast(`${button.textContent} option selected.`);
+      });
+    });
+
+    elements.serviceModeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextMode = button.dataset.serviceMode;
+        if (!nextMode || nextMode === state.serviceMode) {
+          return;
+        }
+
+        clearTrackingInterest();
+        state.serviceMode = nextMode;
+        applyServiceModeUI();
+        filterRoutes();
+        if (!isTaxiMode()) {
+          registerTrackingInterest(getSelectedRoute());
+        }
+        toast(`${isTaxiMode() ? 'Taxi booking mode' : 'Trotro seat mode'} enabled.`);
       });
     });
 
@@ -1046,17 +2046,87 @@
     elements.shareTrip?.addEventListener('click', shareTripDetails);
     elements.shareTripMobile?.addEventListener('click', shareTripDetails);
 
+    elements.driverVoiceSummary?.addEventListener('click', () => {
+      const route = getSelectedRoute();
+      const telemetry = route ? getRouteFleetState(route.id) : null;
+      const message = route
+        ? `Route ${route.from} to ${route.to}. ${route.seats} seats left.`
+        : 'No active driver route selected.';
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.lang = state.language === 'twi' ? 'en-GH' : 'en-US';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+      if (telemetry) {
+        toast('Route summary announced.');
+      }
+    });
+
     if (elements.tripDate && !elements.tripDate.value) {
       elements.tripDate.value = new Date().toISOString().split('T')[0];
     }
 
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          state.userPosition = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          if (elements.userLocationChip) {
+            const near = nearestHotspot(position.coords.latitude, position.coords.longitude);
+            const nearPlace = near?.dataset.place || 'your current area';
+            elements.userLocationChip.textContent = `You are at ${nearPlace}`;
+            if (elements.origin) {
+              elements.origin.value = nearPlace;
+            }
+          }
+          filterRoutes();
+          updateMapDistanceSummary(getSelectedRoute());
+        },
+        () => {
+          if (elements.userLocationChip) {
+            elements.userLocationChip.textContent = 'Location unavailable; showing all routes';
+          }
+          renderRoutes();
+        },
+        { maximumAge: 15000, timeout: 5000 }
+      );
+    }
+
+    window.addEventListener('offline', () => {
+      toast('Offline mode: updates may be slower, but you can still use saved data.');
+      if (elements.userLocationChip) {
+        elements.userLocationChip.textContent = 'Offline mode active';
+      }
+    });
+
+    window.addEventListener('online', () => {
+      toast('Connection restored. Live updates resumed.');
+      if (elements.userLocationChip) {
+        elements.userLocationChip.textContent = 'Online and tracking';
+      }
+    });
+
     initializeRememberedInputs();
+    state.easyMode = localStorage.getItem(easyModeStorageKey) !== '0';
+    state.language = localStorage.getItem(languageStorageKey) === 'twi' ? 'twi' : 'en';
+    if (elements.languageToggle) {
+      elements.languageToggle.value = state.language;
+    }
+    applyEasyModeUI();
+    applyLanguageUI();
     setActiveChipFromOrigin();
     setActiveChoice('greenx');
+    applyServiceModeUI();
     updateMapSelectionState();
 
     updatePassengerCount(1);
-    renderRoutes();
+    filterRoutes();
+    if (!isTaxiMode()) {
+      registerTrackingInterest(getSelectedRoute());
+    }
     syncPassengerLiveTrip();
   };
 
@@ -1122,31 +2192,297 @@
   };
 
   const initDriverDashboard = () => {
+    if (document.querySelector('.simple-driver-shell')) {
+      syncRoutesFromFleetState();
+
+      const simpleState = {
+        online: true,
+        serviceMode: 'trotro',
+        managedRouteId: 1
+      };
+
+      const isSimpleTaxiMode = () => simpleState.serviceMode === 'taxi';
+
+      const getSimpleModeRoutes = () => routes.filter((route) => (route.serviceType || 'trotro') === simpleState.serviceMode);
+
+      const applySimpleDriverServiceModeUI = () => {
+        elements.driverServiceModeButtons.forEach((button) => {
+          const isActive = button.dataset.driverServiceMode === simpleState.serviceMode;
+          button.classList.toggle('active', isActive);
+          button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        if (elements.driverServiceModePill) {
+          elements.driverServiceModePill.textContent = isSimpleTaxiMode() ? 'Taxi mode' : 'Trotro mode';
+          elements.driverServiceModePill.hidden = false;
+        }
+        if (elements.driverTrustScore) {
+          const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || getSimpleModeRoutes()[0] || null;
+          const fleetTelemetry = activeRoute ? getRouteFleetState(activeRoute.id) : null;
+          const showRating = isSimpleTaxiMode() && Boolean(activeRoute);
+          elements.driverTrustScore.hidden = !showRating;
+          if (showRating && activeRoute) {
+            elements.driverTrustScore.textContent = `⭐ ${getRouteTrustScore(activeRoute, fleetTelemetry).toFixed(1)} Reliable`;
+          }
+        }
+      };
+
+      const populateSimpleRoutes = () => {
+        if (!elements.driverRouteSelect) {
+          return;
+        }
+        const modeRoutes = getSimpleModeRoutes();
+        elements.driverRouteSelect.replaceChildren();
+        modeRoutes.forEach((route) => {
+          const option = document.createElement('option');
+          option.value = String(route.id);
+          option.textContent = `${route.from} to ${route.to}`;
+          elements.driverRouteSelect.appendChild(option);
+        });
+        if (modeRoutes.length) {
+          if (!modeRoutes.some((route) => route.id === simpleState.managedRouteId)) {
+            simpleState.managedRouteId = modeRoutes[0].id;
+          }
+          elements.driverRouteSelect.value = String(simpleState.managedRouteId);
+        }
+      };
+
+      const refreshSimpleDriver = () => {
+        const telemetry = getRouteFleetState(simpleState.managedRouteId);
+        const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || null;
+        const onboard = Number(telemetry?.onboard || 0);
+        const available = Number(telemetry?.availableSeats || 0);
+        if (elements.onboardCountInput) {
+          elements.onboardCountInput.value = String(onboard);
+        }
+        if (elements.onboardDisplay) {
+          elements.onboardDisplay.textContent = String(onboard);
+        }
+        if (elements.driverAvailableSeats) {
+          elements.driverAvailableSeats.textContent = `Available seats: ${available}`;
+        }
+        if (elements.shiftToggle) {
+          elements.shiftToggle.textContent = simpleState.online ? 'STOP ROUTE' : 'START ROUTE';
+        }
+        if (elements.driverMapLabel && activeRoute) {
+          elements.driverMapLabel.textContent = `${activeRoute.from} → ${activeRoute.to}`;
+        }
+        if (elements.driverMapNote) {
+          const claimed = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
+          elements.driverMapNote.textContent = claimed > 0
+            ? `${claimed} seat${claimed === 1 ? '' : 's'} booked ahead`
+            : 'No seat bookings yet';
+        }
+        renderDriverMapEntities(simpleState.serviceMode);
+      };
+
+      const updateSimpleOnboard = (nextCount) => {
+        const fleetState = readFleetState();
+        let telemetry = fleetState.routes?.[simpleState.managedRouteId];
+        if (!telemetry) {
+          const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId);
+          if (!activeRoute) {
+            return;
+          }
+          telemetry = buildRouteTelemetry(activeRoute);
+          fleetState.routes[simpleState.managedRouteId] = telemetry;
+        }
+        if (!telemetry) {
+          return;
+        }
+        const capacity = Number(telemetry.capacity || 0);
+        telemetry.onboard = clamp(Number(nextCount || 0), 0, capacity || Number(nextCount || 0));
+        telemetry.availableSeats = Math.max(0, capacity - telemetry.onboard);
+        saveFleetState(fleetState);
+        syncRoutesFromFleetState();
+        refreshSimpleDriver();
+      };
+
+      elements.shiftToggle?.addEventListener('click', () => {
+        simpleState.online = !simpleState.online;
+        refreshSimpleDriver();
+        toast(simpleState.online ? 'Route started.' : 'Route stopped.');
+      });
+
+      elements.driverRouteSelect?.addEventListener('change', () => {
+        simpleState.managedRouteId = Number(elements.driverRouteSelect?.value || '1');
+        refreshSimpleDriver();
+      });
+
+      elements.driverServiceModeButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const nextMode = button.dataset.driverServiceMode;
+          if (!nextMode || nextMode === simpleState.serviceMode) {
+            return;
+          }
+          simpleState.serviceMode = nextMode;
+          populateSimpleRoutes();
+          applySimpleDriverServiceModeUI();
+          refreshSimpleDriver();
+          toast(`${isSimpleTaxiMode() ? 'Taxi' : 'Trotro'} mode selected.`);
+        });
+      });
+
+      elements.onboardPlus?.addEventListener('click', () => {
+        const current = Number(elements.onboardCountInput?.value || '0');
+        updateSimpleOnboard(current + 1);
+      });
+
+      elements.onboardMinus?.addEventListener('click', () => {
+        const current = Number(elements.onboardCountInput?.value || '0');
+        updateSimpleOnboard(Math.max(0, current - 1));
+      });
+
+      elements.syncOnboard?.addEventListener('click', () => {
+        updateSimpleOnboard(Number(elements.onboardCountInput?.value || '0'));
+      });
+
+      applySimpleDriverServiceModeUI();
+      populateSimpleRoutes();
+      refreshSimpleDriver();
+      return;
+    }
+
     if (!elements.driverRequestList) {
       return;
     }
 
+    syncRoutesFromFleetState();
+
     const currentRole = localStorage.getItem(roleStorageKey);
     if (currentRole && currentRole !== 'driver') {
-      toast('Passenger account detected. Sign in with a driver account to manage this dashboard.');
+      toast('This looks like a passenger account. Sign in as a driver to continue.');
     }
 
     const driverState = {
       online: true,
       autoAccept: false,
+      serviceMode: 'trotro',
+      managedRouteId: 1,
       trips: 12,
       earnings: 186,
       activeRides: 1,
-      queue: [
-        { id: 'rq1', rider: 'Ama', from: 'East Legon', to: 'Circle', distance: 0.8, fare: 6.4, eta: 3 },
-        { id: 'rq2', rider: 'Kojo', from: 'Madina', to: 'Accra Central', distance: 1.6, fare: 8.2, eta: 6 },
-        { id: 'rq3', rider: 'Efua', from: 'Adenta', to: 'Tema Station', distance: 2.2, fare: 9.9, eta: 8 }
-      ]
+      queue: readDispatchQueue()
+    };
+
+    const isDriverTaxiMode = () => driverState.serviceMode === 'taxi';
+
+    const getModeRoutes = () => routes.filter((route) => (route.serviceType || 'trotro') === driverState.serviceMode);
+
+    const getRouteForDriverMode = () => {
+      const modeRoutes = getModeRoutes();
+      return modeRoutes.find((route) => route.id === driverState.managedRouteId) || modeRoutes[0] || null;
+    };
+
+    const updateDriverRouteOptions = () => {
+      if (!elements.driverRouteSelect) {
+        return;
+      }
+
+      const modeRoutes = getModeRoutes();
+      elements.driverRouteSelect.replaceChildren();
+      modeRoutes.forEach((route) => {
+        const option = document.createElement('option');
+        option.value = String(route.id);
+        option.textContent = `${route.from} to ${route.to}`;
+        elements.driverRouteSelect.appendChild(option);
+      });
+
+      if (!modeRoutes.length) {
+        return;
+      }
+
+      if (!modeRoutes.some((route) => route.id === driverState.managedRouteId)) {
+        driverState.managedRouteId = modeRoutes[0].id;
+      }
+
+      elements.driverRouteSelect.value = String(driverState.managedRouteId);
+      const activeRoute = getRouteForDriverMode();
+      if (activeRoute && elements.driverStartPoint && !elements.driverStartPoint.value.trim()) {
+        elements.driverStartPoint.value = activeRoute.from;
+      }
+    };
+
+    const getDriverFareValue = () => {
+      const rawValue = Number(elements.driverFareInput?.value || '0');
+      if (!Number.isFinite(rawValue) || rawValue <= 0) {
+        return null;
+      }
+      return rawValue;
+    };
+
+    const getManagedFleetTelemetry = () => {
+      const fleetState = readFleetState();
+      const telemetry = fleetState.routes?.[driverState.managedRouteId];
+      if (!telemetry) {
+        return {
+          capacity: 0,
+          onboard: 0,
+          availableSeats: 0,
+          trackingCount: 0,
+          boardingByStop: {}
+        };
+      }
+      return telemetry;
     };
 
     const formatMoney = (value) => `GHS ${value.toFixed(2)}`;
 
+    const applyDriverServiceModeUI = () => {
+      elements.driverServiceModeButtons.forEach((button) => {
+        const isActive = button.dataset.driverServiceMode === driverState.serviceMode;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      if (elements.driverServiceModePill) {
+        elements.driverServiceModePill.textContent = isDriverTaxiMode() ? 'Taxi mode' : 'Trotro mode';
+      }
+
+      if (elements.driverFareLabel) {
+        elements.driverFareLabel.textContent = isDriverTaxiMode() ? 'Taxi fare per trip (GHS)' : 'Fare per seat (GHS)';
+      }
+
+      if (elements.driverFareInput && !elements.driverFareInput.value) {
+        elements.driverFareInput.value = isDriverTaxiMode() ? '24' : '3.5';
+      }
+
+      if (elements.driverTrustScore) {
+        const activeRoute = getRouteForDriverMode();
+        const fleetTelemetry = activeRoute ? getRouteFleetState(activeRoute.id) : null;
+        const showDriverRating = isDriverTaxiMode() && Boolean(activeRoute);
+        elements.driverTrustScore.hidden = !showDriverRating;
+        if (showDriverRating && activeRoute) {
+          elements.driverTrustScore.textContent = `⭐ ${getRouteTrustScore(activeRoute, fleetTelemetry).toFixed(1)} Reliable`;
+        }
+      }
+
+      if (elements.driverTelemetryCard) {
+        elements.driverTelemetryCard.style.display = isDriverTaxiMode() ? 'none' : '';
+      }
+
+      updateDriverRouteOptions();
+      renderDriverMapEntities(driverState.serviceMode);
+    };
+
     const syncDriverStats = () => {
+      const telemetry = getManagedFleetTelemetry();
+      const managedRoute = getRouteForDriverMode();
+      const startPoint = String(elements.driverStartPoint?.value || managedRoute?.from || '').trim().toLowerCase();
+      const modeQueue = driverState.queue.filter((request) => {
+        if ((request.serviceType || 'trotro') !== driverState.serviceMode) {
+          return false;
+        }
+        if (!managedRoute) {
+          return true;
+        }
+        const requestTo = String(request.to || '').trim().toLowerCase();
+        const requestFrom = String(request.from || '').trim().toLowerCase();
+        const routeTo = String(managedRoute.to || '').trim().toLowerCase();
+        const routeFrom = String(managedRoute.from || '').trim().toLowerCase();
+        const matchesRoute = requestTo === routeTo || requestFrom === routeFrom;
+        const matchesStart = !startPoint || requestFrom === startPoint;
+        return matchesRoute && matchesStart;
+      });
       if (elements.todayTrips) {
         elements.todayTrips.textContent = String(driverState.trips);
       }
@@ -1157,21 +2493,45 @@
         elements.activeRideCount.textContent = String(driverState.activeRides);
       }
       if (elements.queueSize) {
-        const pending = driverState.queue.length;
+        const pending = modeQueue.length;
         elements.queueSize.textContent = `${pending} pending`;
       }
       if (elements.nextStop) {
-        const next = driverState.queue[0];
-        elements.nextStop.textContent = next ? `${next.from} Pickup` : 'No Pending Pickups';
+        const next = modeQueue[0];
+        elements.nextStop.textContent = next
+          ? `${next.from} Pickup`
+          : (elements.driverStartPoint?.value ? `${elements.driverStartPoint.value} checkpoint` : 'No Pending Pickups');
       }
       if (elements.driverMapLabel) {
-        const next = driverState.queue[0];
+        const next = modeQueue[0];
         elements.driverMapLabel.textContent = next ? `Heat Zone: ${next.from} → ${next.to}` : 'Heat Zone: Queue Clear';
       }
       if (elements.driverMapNote) {
         elements.driverMapNote.textContent = driverState.online
           ? 'Live dispatch enabled for nearby riders'
           : 'Offline mode enabled. No dispatch actions sent';
+      }
+      if (elements.trackingCount) {
+        elements.trackingCount.textContent = `${telemetry.trackingCount || 0} tracking`;
+      }
+      if (elements.driverAvailableSeats) {
+        elements.driverAvailableSeats.textContent = `Available seats: ${telemetry.availableSeats || 0}`;
+      }
+      if (elements.onboardCountInput && document.activeElement !== elements.onboardCountInput) {
+        elements.onboardCountInput.value = String(telemetry.onboard || 0);
+      }
+      if (elements.onboardDisplay) {
+        elements.onboardDisplay.textContent = String(telemetry.onboard || 0);
+      }
+      if (elements.boardingDemand) {
+        const next = modeQueue[0];
+        const stopName = next?.from || routes.find((route) => route.id === driverState.managedRouteId)?.from || '';
+        const stopDemand = stopName ? Number(telemetry.boardingByStop?.[stopName] || 0) : 0;
+        elements.boardingDemand.textContent = isDriverTaxiMode()
+          ? 'Taxi mode does not use trotro boarding telemetry.'
+          : stopName
+          ? `${stopDemand} passenger${stopDemand === 1 ? '' : 's'} want to board at ${stopName}.`
+          : 'No active boarding demand at your next stop.';
       }
     };
 
@@ -1183,7 +2543,7 @@
         elements.driverStatusPill.classList.toggle('confirmed', online);
       }
       if (elements.shiftToggle) {
-        elements.shiftToggle.textContent = online ? 'Go Offline' : 'Go Online';
+        elements.shiftToggle.textContent = online ? 'STOP ROUTE' : 'START ROUTE';
       }
       toast(online ? 'Driver is online and receiving requests.' : 'Driver is offline. Dispatch is paused.');
       syncDriverStats();
@@ -1191,21 +2551,68 @@
 
     const removeRequestById = (requestId) => {
       driverState.queue = driverState.queue.filter((request) => request.id !== requestId);
+      saveDispatchQueue(driverState.queue);
+    };
+
+    const syncOnboardFromDevice = (onboardCountInput) => {
+      const fleetState = readFleetState();
+      const telemetry = fleetState.routes?.[driverState.managedRouteId];
+      if (!telemetry) {
+        toast('Unable to sync onboard count at the moment.');
+        return;
+      }
+
+      const capacity = Number(telemetry.capacity || 0);
+      const nextOnboard = clamp(Number(onboardCountInput || 0), 0, capacity || Number(onboardCountInput || 0));
+      telemetry.onboard = nextOnboard;
+      telemetry.availableSeats = Math.max(0, capacity - nextOnboard);
+      saveFleetState(fleetState);
+      syncRoutesFromFleetState();
+      syncDriverStats();
+      toast(`Onboard count synced. Available seats updated to ${telemetry.availableSeats}.`);
+    };
+
+    const adjustOnboardCountBy = (delta) => {
+      const currentValue = Number(elements.onboardCountInput?.value || '0');
+      const nextValue = Math.max(0, currentValue + delta);
+      if (elements.onboardCountInput) {
+        elements.onboardCountInput.value = String(nextValue);
+      }
+      syncOnboardFromDevice(String(nextValue));
     };
 
     const renderRequestQueue = () => {
       elements.driverRequestList.replaceChildren();
 
-      if (!driverState.queue.length) {
+      const managedRoute = getRouteForDriverMode();
+      const startPoint = String(elements.driverStartPoint?.value || managedRoute?.from || '').trim().toLowerCase();
+      const modeQueue = driverState.queue.filter((request) => {
+        if ((request.serviceType || 'trotro') !== driverState.serviceMode) {
+          return false;
+        }
+        if (!managedRoute) {
+          return true;
+        }
+        const requestTo = String(request.to || '').trim().toLowerCase();
+        const requestFrom = String(request.from || '').trim().toLowerCase();
+        const routeTo = String(managedRoute.to || '').trim().toLowerCase();
+        const routeFrom = String(managedRoute.from || '').trim().toLowerCase();
+        const matchesRoute = requestTo === routeTo || requestFrom === routeFrom;
+        const matchesStart = !startPoint || requestFrom === startPoint;
+        return matchesRoute && matchesStart;
+      });
+
+      if (!modeQueue.length) {
         const empty = document.createElement('article');
         empty.className = 'driver-request-empty';
-        empty.innerHTML = '<strong>Queue Is Clear</strong><p>No pending rider requests at this time.</p>';
+        empty.innerHTML = `<strong>Queue Is Clear</strong><p>No pending ${isDriverTaxiMode() ? 'taxi' : 'trotro'} requests at this time.</p>`;
         elements.driverRequestList.appendChild(empty);
         syncDriverStats();
+        renderDriverMapEntities(driverState.serviceMode);
         return;
       }
 
-      driverState.queue.forEach((request) => {
+      modeQueue.forEach((request) => {
         const card = document.createElement('article');
         card.className = 'driver-request-card';
         card.innerHTML = `
@@ -1216,7 +2623,7 @@
           <p>${request.from} → ${request.to}</p>
           <div class="driver-request-meta">
             <span>ETA ${request.eta} min</span>
-            <span>${formatMoney(request.fare)}</span>
+            <span>${isDriverTaxiMode() ? 'Taxi request' : 'Trotro request'}</span>
           </div>
           <div class="driver-request-actions">
             <button class="cta" type="button" data-driver-accept="${request.id}">Accept</button>
@@ -1230,24 +2637,46 @@
             return;
           }
 
+          const enteredFare = getDriverFareValue();
+          if (enteredFare === null) {
+            toast(`Enter a valid ${isDriverTaxiMode() ? 'taxi trip fare' : 'trotro seat fare'} first.`);
+            elements.driverFareInput?.focus();
+            return;
+          }
+
+          const fleetState = readFleetState();
+          const telemetry = fleetState.routes?.[driverState.managedRouteId];
+          if (telemetry && !isDriverTaxiMode()) {
+            telemetry.trackingCount = Math.max(0, Number(telemetry.trackingCount || 0) - 1);
+            telemetry.boardingByStop = telemetry.boardingByStop || {};
+            const stopDemand = Number(telemetry.boardingByStop[request.from] || 0);
+            telemetry.boardingByStop[request.from] = Math.max(0, stopDemand - 1);
+            const capacity = Number(telemetry.capacity || 0);
+            telemetry.onboard = clamp(Number(telemetry.onboard || 0) + 1, 0, capacity || Number(telemetry.onboard || 0) + 1);
+            telemetry.availableSeats = Math.max(0, capacity - telemetry.onboard);
+            saveFleetState(fleetState);
+            syncRoutesFromFleetState();
+          }
+
           saveActiveTrip({
             id: request.id,
             rider: request.rider,
             from: request.from,
             to: request.to,
-            fare: request.fare,
+            fare: enteredFare,
             eta: request.eta,
-            vehicle: 'GR-214 · Toyota Hiace',
+            serviceType: driverState.serviceMode,
+            vehicle: getRouteForDriverMode()?.vehicle || 'Driver Assigned',
             driver: 'Justice Opoku',
             status: 'Driver accepted your trip.',
             progress: 22,
-            seats: 1,
+            seats: getRouteForDriverMode()?.seats || 1,
             updatedAt: new Date().toISOString()
           });
 
           driverState.activeRides += 1;
           driverState.trips += 1;
-          driverState.earnings += request.fare;
+          driverState.earnings += enteredFare;
           removeRequestById(request.id);
           toast(`Request accepted: ${request.rider} from ${request.from}.`);
           renderRequestQueue();
@@ -1263,10 +2692,46 @@
       });
 
       syncDriverStats();
+      renderDriverMapEntities(driverState.serviceMode);
     };
 
     elements.shiftToggle?.addEventListener('click', () => {
       setDriverOnlineState(!driverState.online);
+    });
+
+    elements.syncOnboard?.addEventListener('click', () => {
+      syncOnboardFromDevice(elements.onboardCountInput?.value || '0');
+    });
+
+    elements.onboardPlus?.addEventListener('click', () => {
+      adjustOnboardCountBy(1);
+    });
+
+    elements.onboardMinus?.addEventListener('click', () => {
+      adjustOnboardCountBy(-1);
+    });
+
+    elements.onboardCountInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        syncOnboardFromDevice(elements.onboardCountInput?.value || '0');
+      }
+    });
+
+    elements.driverRouteSelect?.addEventListener('change', () => {
+      driverState.managedRouteId = Number(elements.driverRouteSelect?.value || '0') || driverState.managedRouteId;
+      const activeRoute = getRouteForDriverMode();
+      if (activeRoute && elements.driverStartPoint && !elements.driverStartPoint.value.trim()) {
+        elements.driverStartPoint.value = activeRoute.from;
+      }
+      renderRequestQueue();
+      syncDriverStats();
+      toast(`Route set to ${activeRoute ? `${activeRoute.from} to ${activeRoute.to}` : 'selected route'}.`);
+    });
+
+    elements.driverStartPoint?.addEventListener('input', () => {
+      renderRequestQueue();
+      syncDriverStats();
     });
 
     elements.completeRide?.addEventListener('click', () => {
@@ -1275,6 +2740,15 @@
         return;
       }
       driverState.activeRides -= 1;
+      const fleetState = readFleetState();
+      const telemetry = fleetState.routes?.[driverState.managedRouteId];
+      if (telemetry && !isDriverTaxiMode()) {
+        const capacity = Number(telemetry.capacity || 0);
+        telemetry.onboard = clamp(Number(telemetry.onboard || 0) - 1, 0, capacity);
+        telemetry.availableSeats = Math.max(0, capacity - telemetry.onboard);
+        saveFleetState(fleetState);
+        syncRoutesFromFleetState();
+      }
       saveActiveTrip(null);
       toast('Active ride marked complete.');
       syncDriverStats();
@@ -1287,9 +2761,36 @@
         return;
       }
 
-      const candidate = driverState.queue.find((request) => request.distance <= 1.8);
+      const enteredFare = getDriverFareValue();
+      if (enteredFare === null) {
+        toast(`Enter a valid ${isDriverTaxiMode() ? 'taxi trip fare' : 'trotro seat fare'} before enabling auto-accept.`);
+        elements.driverFareInput?.focus();
+        elements.autoAccept.checked = false;
+        driverState.autoAccept = false;
+        return;
+      }
+
+      const managedRoute = getRouteForDriverMode();
+      const startPoint = String(elements.driverStartPoint?.value || managedRoute?.from || '').trim().toLowerCase();
+      const candidate = driverState.queue.find((request) => {
+        if ((request.serviceType || 'trotro') !== driverState.serviceMode || request.distance > 1.8) {
+          return false;
+        }
+        if (!managedRoute) {
+          return true;
+        }
+        const requestTo = String(request.to || '').trim().toLowerCase();
+        const requestFrom = String(request.from || '').trim().toLowerCase();
+        const routeTo = String(managedRoute.to || '').trim().toLowerCase();
+        const routeFrom = String(managedRoute.from || '').trim().toLowerCase();
+        const matchesRoute = requestTo === routeTo || requestFrom === routeFrom;
+        const matchesStart = !startPoint || requestFrom === startPoint;
+        return matchesRoute && matchesStart;
+      });
       if (!candidate) {
         toast('No nearby request is available for auto-accept.');
+        elements.autoAccept.checked = false;
+        driverState.autoAccept = false;
         return;
       }
 
@@ -1300,19 +2801,52 @@
 
       driverState.activeRides += 1;
       driverState.trips += 1;
-      driverState.earnings += candidate.fare;
+      driverState.earnings += enteredFare;
+      const fleetState = readFleetState();
+      const telemetry = fleetState.routes?.[driverState.managedRouteId];
+      if (telemetry && !isDriverTaxiMode()) {
+        telemetry.trackingCount = Math.max(0, Number(telemetry.trackingCount || 0) - 1);
+        telemetry.boardingByStop = telemetry.boardingByStop || {};
+        telemetry.boardingByStop[candidate.from] = Math.max(0, Number(telemetry.boardingByStop[candidate.from] || 0) - 1);
+        const capacity = Number(telemetry.capacity || 0);
+        telemetry.onboard = clamp(Number(telemetry.onboard || 0) + 1, 0, capacity || Number(telemetry.onboard || 0) + 1);
+        telemetry.availableSeats = Math.max(0, capacity - telemetry.onboard);
+        saveFleetState(fleetState);
+        syncRoutesFromFleetState();
+      }
       removeRequestById(candidate.id);
       toast(`Auto-accepted request: ${candidate.rider} (${candidate.distance.toFixed(1)} km away).`);
       renderRequestQueue();
     });
 
+    elements.driverServiceModeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const nextMode = button.dataset.driverServiceMode;
+        if (!nextMode || nextMode === driverState.serviceMode) {
+          return;
+        }
+
+        driverState.serviceMode = nextMode;
+        const managedRoute = getRouteForDriverMode();
+        if (managedRoute) {
+          driverState.managedRouteId = managedRoute.id;
+        }
+
+        applyDriverServiceModeUI();
+        renderRequestQueue();
+        toast(`${isDriverTaxiMode() ? 'Taxi' : 'Trotro'} dispatch mode enabled.`);
+      });
+    });
+
     setDriverOnlineState(true);
+    applyDriverServiceModeUI();
     renderRequestQueue();
+    renderDriverMapEntities(driverState.serviceMode);
   };
 
   const initializeTheme = () => {
     const savedTheme = localStorage.getItem(themeStorageKey);
-    setTheme(savedTheme === 'light' ? 'light' : 'dark');
+    setTheme(savedTheme === 'dark' ? 'dark' : 'light');
 
     elements.themeToggles.forEach((button) => {
       button.addEventListener('click', () => {
@@ -1338,6 +2872,28 @@
   window.addEventListener('storage', (event) => {
     if (event.key === activeTripStorageKey) {
       syncPassengerLiveTrip();
+    }
+    if (event.key === fleetStateStorageKey) {
+      syncRoutesFromFleetState();
+      if (elements.routeList) {
+        filterRoutes();
+        updateRouteDetails(getSelectedRoute());
+      }
+    }
+    if (event.key === dispatchQueueStorageKey) {
+      if (elements.routeList) {
+        renderPassengerMapEntities();
+      }
+      if (elements.driverMapOverlay) {
+        const activeDriverMode = elements.driverServiceModeButtons.find((button) => button.classList.contains('active'))?.dataset.driverServiceMode || 'trotro';
+        renderDriverMapEntities(activeDriverMode);
+      }
+    }
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (elements.routeList) {
+      clearTrackingInterest();
     }
   });
 })();
