@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Flow | Sign In</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body class="auth-page">
+  <header class="topbar surface">
+    <a class="brand-link" href="./index.html" aria-label="Urban Flow home">
+      <span class="brand-mark">U</span>
+      <span>
+        <strong>Urban Flow</strong>
+        <small>Green-route mission</small>
+      </span>
+    </a>
+
+    <nav class="topnav" aria-label="Primary">
+      <a href="./code.html">Dashboard</a>
+      <a class="active" href="./signin.html">Sign in</a>
+      <a href="./signup.html">Sign up</a>
+      <button id="theme-toggle" type="button">Dark theme</button>
+    </nav>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-layout surface">
+      <aside class="auth-story">
+        <span class="eyebrow">Welcome back</span>
+        <h1>Sign in to manage routes, alerts, and seat reservations.</h1>
+        <p>
+          Use your account to continue tracking vehicles, checking real-time arrival data, and booking seats with a streamlined flow.
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">Live vehicle status and seat availability.</div>
+          <div class="feature-item">Dark and light themes stored across sessions.</div>
+          <div class="feature-item">Smooth transitions into the dashboard after sign in.</div>
+        </div>
+      </aside>
+
+      <form class="auth-card-panel" data-auth-form="signin">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">Account access</span>
+            <h2 id="auth-title">Sign in</h2>
+          </div>
+          <span class="mini-pill">Secure</span>
+        </div>
+
+        <label class="field">
+          <span>Email address</span>
+          <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        </label>
+
+        <label class="field password-field">
+          <span>Password</span>
+          <input name="password" type="password" autocomplete="current-password" placeholder="Enter your password" required />
+          <button class="password-toggle" type="button" data-password-toggle>Show</button>
+        </label>
+
+        <div class="auth-options">
+          <label class="checkbox">
+            <input type="checkbox" name="remember" />
+            <span>Keep me signed in</span>
+          </label>
+          <a href="./signup.html">Create an account</a>
+        </div>
+
+        <button class="cta full-width" type="submit">Sign in</button>
+        <p class="form-note" data-form-note>Use your registered email and password.</p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

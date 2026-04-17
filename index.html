@@ -1,17 +1,58 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GREENROUTE</title>
-  <script>
-    window.location.replace("./code.html");
-  </script>
+  <title>Urban Flow | Passenger Access</title>
+  <link rel="stylesheet" href="./app.css" />
 </head>
 <body>
-  <p>
-    Redirecting to GREENROUTE...
-    If you are not redirected automatically, <a href="./code.html">open the app</a>.
-  </p>
+  <main class="landing-shell">
+    <section class="surface landing-card">
+      <div class="landing-hero">
+        <div class="brand-link" aria-label="Urban Flow brand">
+          <span class="brand-mark">U</span>
+          <span>
+            <strong>Urban Flow</strong>
+            <small>Green-route mission</small>
+          </span>
+        </div>
+
+        <div>
+          <span class="eyebrow">Passenger access</span>
+          <h1 class="landing-title">Routing, booking, and account access in one polished product flow.</h1>
+          <p class="landing-copy">
+            Urban Flow now uses a standard multi-page structure with a dedicated dashboard, separate sign in and sign up pages,
+            a shared theme system, and a proper map-based route experience.
+          </p>
+        </div>
+
+        <div class="feature-list">
+          <div class="feature-item">Dedicated dashboard with live route tracking and an embedded city map.</div>
+          <div class="feature-item">Separate sign in and sign up pages with validation and password controls.</div>
+          <div class="feature-item">Dark and light themes preserved across all screens.</div>
+        </div>
+      </div>
+
+      <div class="landing-actions">
+        <div class="panel">
+          <h2>Open a page</h2>
+          <p>Choose the main dashboard or go directly to account access.</p>
+          <div class="landing-buttons">
+            <a class="button primary" href="./code.html">Open dashboard</a>
+            <a class="button secondary" href="./signin.html">Sign in</a>
+            <a class="button secondary" href="./signup.html">Sign up</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>What changed</h2>
+          <p>The entry page no longer redirects automatically. It now behaves as a normal landing page with explicit navigation.</p>
+        </div>
+
+        <div class="landing-note">Urban Flow · Passenger interface entry point</div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>

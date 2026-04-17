@@ -1,711 +1,1848 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GREENROUTE | Passenger Interface</title>
+  <title>Urban Flow | Dashboard</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body class="dashboard-page">
+  <header class="topbar surface">
+    <a class="brand-link" href="./index.html" aria-label="Urban Flow home">
+      <span class="brand-mark">U</span>
+      <span>
+        <strong>Urban Flow</strong>
+        <small>Green-route mission</small>
+      </span>
+    </a>
+
+    <nav class="topnav" aria-label="Primary">
+      <a class="active" href="./code.html">Dashboard</a>
+      <a href="./signin.html">Sign in</a>
+      <a href="./signup.html">Sign up</a>
+      <button id="theme-toggle" type="button">Dark theme</button>
+    </nav>
+  </header>
+
+  <main class="dashboard-shell">
+    <aside class="sidebar-card surface">
+      <div class="profile surface card surface-elevated">
+        <div class="avatar" aria-hidden="true"></div>
+        <div>
+          <strong>James Appiah</strong>
+          <span>Premium passenger</span>
+        </div>
+      </div>
+
+      <section class="stack-block">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Trip planner</span>
+            <h1>Find a route</h1>
+          </div>
+          <span class="mini-pill">Live</span>
+        </div>
+
+        <label class="field">
+          <span>Origin</span>
+          <input id="origin" type="text" value="East Legon" placeholder="Enter pickup area" />
+        </label>
+
+        <label class="field">
+          <span>Destination</span>
+          <input id="destination" type="text" value="Circle" placeholder="Enter destination" />
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Date</span>
+            <input id="trip-date" type="date" />
+          </label>
+          <label class="field">
+            <span>Time</span>
+            <input id="trip-time" type="time" value="08:00" />
+          </label>
+        </div>
+
+        <div class="counter-card">
+          <div>
+            <span class="counter-label">Passengers</span>
+            <strong id="passenger-count">1</strong>
+          </div>
+          <div class="counter-actions">
+            <button id="minus" type="button" aria-label="Decrease passengers">−</button>
+            <button id="plus" type="button" aria-label="Increase passengers">+</button>
+          </div>
+        </div>
+
+        <div class="chips">
+          <button class="chip active" type="button">Kaneshie</button>
+          <button class="chip" type="button">Accra Central</button>
+          <button class="chip" type="button">Tema Station</button>
+        </div>
+
+        <div class="action-row">
+          <button id="search-routes" class="cta" type="button">Search routes</button>
+          <button id="reset-search" class="ghost" type="button">Reset</button>
+        </div>
+      </section>
+
+      <section class="stack-block">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Nearby routes</span>
+            <h2>Available vehicles</h2>
+          </div>
+          <span class="mini-pill" id="results-count">0</span>
+        </div>
+        <div class="route-list" id="route-list"></div>
+      </section>
+    </aside>
+
+    <section class="map-column">
+      <div class="stats-bar surface">
+        <div class="stat-card">
+          <small>Active trotro</small>
+          <strong id="active-routes">0</strong>
+        </div>
+        <div class="stat-card">
+          <small>Nearby</small>
+          <strong>3</strong>
+        </div>
+        <div class="stat-card accent">
+          <small>ETA</small>
+          <strong id="selected-eta">—</strong>
+        </div>
+        <div class="stat-card">
+          <small>Seats available</small>
+          <strong id="available-seats">0</strong>
+        </div>
+      </div>
+
+      <section class="map-stage surface">
+        <iframe
+          class="map-frame"
+          title="Accra route map"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
+        ></iframe>
+        <div class="map-overlay">
+          <div class="map-label primary" id="map-route-label">Madina → Circle</div>
+          <div class="map-label secondary" id="map-vehicle-label">GR-214 · Toyota Hiace</div>
+          <div class="map-pin pin-a">MAD</div>
+          <div class="map-pin pin-b">CIR</div>
+        </div>
+      </section>
+
+      <div class="tracker-grid">
+        <article class="tracker-card surface">
+          <div class="section-head compact">
+            <div>
+              <span class="eyebrow">Live tracker</span>
+              <h2 id="selected-route-name">Madina → Circle</h2>
+            </div>
+            <span class="status confirmed" id="selected-fare">GHS 2.50</span>
+          </div>
+          <p id="vehicle">GR-214 · Toyota Hiace</p>
+          <div class="progress-track"><span id="route-progress" style="width:82%"></span></div>
+          <div class="tracker-meta">
+            <span id="selected-route-note">2 seats left</span>
+            <span id="selected-seat-note">1 seat requested</span>
+          </div>
+          <button id="book-route" class="cta full-width" type="button">Reserve seat</button>
+        </article>
+
+        <article class="tracker-card surface">
+          <div class="section-head compact">
+            <div>
+              <span class="eyebrow">Route timeline</span>
+              <h2>Stop sequence</h2>
+            </div>
+            <span class="mini-pill">Realtime</span>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </article>
+      </div>
+    </section>
+
+    <aside class="alerts-column">
+      <article class="alert-card surface primary-alert">
+        <div class="alert-icon">⚑</div>
+        <div>
+          <strong>Trotro approach</strong>
+          <p>Your trotro is 300m away at Kaneshie overhead.</p>
+        </div>
+      </article>
+
+      <article class="alert-card surface">
+        <div class="alert-icon muted">✦</div>
+        <div>
+          <strong>Vehicle Alert</strong>
+          <p>Vehicle almost full. Only 2 seats remaining.</p>
+        </div>
+      </article>
+
+      <article class="alert-card surface">
+        <div class="alert-icon muted">◎</div>
+        <div>
+          <strong>Route activity</strong>
+          <p>Selected route updates will pulse on the map and in the tracker.</p>
+        </div>
+      </article>
+    </aside>
+  </main>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Flow | Green Route Mission</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="toolbar" aria-label="Top controls">
+    <button type="button" class="active" data-view="dashboard">Dashboard</button>
+    <button type="button" data-view="auth">Sign in / Sign up</button>
+    <button type="button" id="theme-toggle">Dark theme</button>
+  </div>
+
+  <main class="app">
+    <section class="view active dashboard" id="dashboard-view">
+      <div class="shell">
+        <aside class="left-panel">
+          <div class="logo">
+            <div class="logo-mark">U</div>
+            <div class="logo-copy">
+              <h1>Urban Flow</h1>
+              <p>GREEN-ROUTE MISSION</p>
+            </div>
+          </div>
+
+          <div class="profile surface card">
+            <div class="avatar" aria-hidden="true"></div>
+            <div>
+              <strong>James Appiah</strong>
+              <span>Premium passenger</span>
+            </div>
+          </div>
+
+          <div class="location surface card">
+            <div class="icon-badge">⌖</div>
+            <div>
+              <small>YOUR LOCATION</small>
+              <strong>East Legon, Accra</strong>
+            </div>
+            <button class="swap-fab" type="button" aria-label="Swap location">↕</button>
+          </div>
+
+          <div class="searchbox surface card">
+            <div class="icon-badge">⌕</div>
+            <input id="destination" placeholder="Search destination..." value="Madina to Circle" />
+          </div>
+
+          <div class="passengers">
+            <span>Passengers</span>
+            <div class="count">
+              <button id="minus" type="button" aria-label="Decrease passengers">−</button>
+              <strong id="passenger-count">1</strong>
+              <button id="plus" type="button" aria-label="Increase passengers">+</button>
+            </div>
+          </div>
+
+          <div class="chips">
+            <span class="chip">Kaneshie</span>
+            <span class="chip">Accra Central</span>
+            <span class="chip">Tema Station</span>
+          </div>
+
+          <div class="section-label">
+            <span>Nearby green-routes</span>
+            <button class="icon-button" type="button" aria-label="Filter routes">≋</button>
+          </div>
+
+          <div class="route-list" id="route-list"></div>
+
+          <div class="stacked-actions">
+            <button class="ghost" type="button">⚙ Settings</button>
+            <button class="ghost" type="button">↺ Recent trips</button>
+            <button class="ghost" type="button">↪ Sign out</button>
+          </div>
+        </aside>
+
+        <section class="map-wrap">
+          <div class="stats-bar">
+            <div class="stats-cell">
+              <div class="stats-value"><span class="accent-dot">●</span> 24 Active Trotros</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value"><span class="accent-arrow">➜</span> 3 Nearby</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value highlight">ETA<br />4<br />MIN</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value">12 Seats<br />Available</div>
+            </div>
+          </div>
+
+          <div class="map-stage surface">
+            <div class="road" aria-hidden="true"></div>
+            <div class="road-2" aria-hidden="true"></div>
+            <div class="station">MAD-CIR <span class="badge-emoji">🚌</span></div>
+            <div class="station-2">ADE-ACC <span class="badge-emoji">🚌</span></div>
+            <div class="station-3" aria-hidden="true"></div>
+            <div class="route-chip">MAD-CIR <span class="badge-emoji" style="margin-left:4px;">🚌</span></div>
+
+            <div class="alerts">
+              <div class="alert surface">
+                <div class="badge-round">⚑</div>
+                <div>
+                  <strong>Trotro approach</strong>
+                  <p>Your trotro is 300m away at Kaneshie overhead.</p>
+                </div>
+              </div>
+              <div class="alert alt surface">
+                <div class="badge-round">✦</div>
+                <div>
+                  <strong>Vehicle Alert</strong>
+                  <p>Vehicle almost full. Only 2 seats remaining.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="map-caption">
+            <span>Live routing and vehicle tracking</span>
+            <span id="route-summary">Madina → Circle</span>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="view auth-shell" id="auth" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <aside class="auth-copy">
+          <div>
+            <div class="auth-brand">
+              <div class="logo-mark">U</div>
+              <div>
+                <h1>Urban Flow</h1>
+                <p>GREEN-ROUTE MISSION</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-copy">
+            <div class="hero-note">Real-time routing for passengers in motion</div>
+            <h1>Move through the city with clarity, not friction.</h1>
+            <p>
+              Switch between sign in and sign up, then move into the same route dashboard shown in the reference with a dark or light presentation.
+            </p>
+            <div class="feature-stack">
+              <div class="feature">Fast route discovery for Madina, Kaneshie, Tema Station, and more.</div>
+              <div class="feature">Light and dark themes that preserve the same premium geometry.</div>
+              <div class="feature">Passenger-focused auth flow with support for new accounts and returning users.</div>
+            </div>
+          </div>
+
+          <div class="footer-note">
+            <span>Protected sign-in for mobile-first transport booking.</span>
+            <span>Urban Flow 2026</span>
+          </div>
+        </aside>
+
+        <section class="auth-form">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+            <button class="auth-tab active" type="button" data-auth="signin">Sign in</button>
+            <button class="auth-tab" type="button" data-auth="signup">Sign up</button>
+          </div>
+
+          <div class="auth-panel active" id="signin-panel">
+            <div>
+              <h2 id="auth-title">Welcome back.</h2>
+              <p>Sign in to continue tracking vehicles, reserving seats, and checking live route status.</p>
+            </div>
+            <div class="fields">
+              <div class="field">
+                <input type="email" placeholder="Email address" />
+              </div>
+              <div class="field">
+                <input type="password" placeholder="Password" />
+                <small>Use your Urban Flow account password.</small>
+              </div>
+            </div>
+            <div class="auth-actions">
+              <label><input type="checkbox" /> Keep me signed in</label>
+              <button class="ghost" type="button">Forgot password?</button>
+            </div>
+            <button class="cta" type="button">Sign in</button>
+          </div>
+
+          <div class="auth-panel" id="signup-panel">
+            <div>
+              <h2>Create your account.</h2>
+              <p>Join Urban Flow to book seats, follow your trotro, and switch between views instantly.</p>
+            </div>
+            <div class="fields">
+              <div class="field-row">
+                <div class="field"><input type="text" placeholder="First name" /></div>
+                <div class="field"><input type="text" placeholder="Last name" /></div>
+              </div>
+              <div class="field"><input type="email" placeholder="Email address" /></div>
+              <div class="field"><input type="password" placeholder="Create password" /></div>
+              <div class="field">
+                <select>
+                  <option>Premium passenger</option>
+                  <option>Daily commuter</option>
+                  <option>Route operator</option>
+                </select>
+              </div>
+            </div>
+            <div class="auth-actions">
+              <label><input type="checkbox" /> I agree to the passenger terms</label>
+            </div>
+            <button class="cta" type="button">Create account</button>
+          </div>
+
+          <div class="auth-switch">
+            Need the dashboard? Use the tabs above, then switch back to the main view.
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html><!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Flow | Green Route Mission</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
   <style>
     :root {
-      --bg: #ededed;
-      --panel: #ffffffcc;
-      --panel-soft: #e6e6e6;
-      --text: #0f172a;
-      --muted: #475569;
-      --primary: #16a34a;
-      --primary-soft: #dcfce7;
-      --danger: #dc2626;
-      --info: #2563eb;
-      --radius: 18px;
-      --shadow: 0 25px 60px rgba(22, 163, 74, 0.08);
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --bg-2: #141414;
+      --panel: rgba(29, 29, 29, 0.94);
+      --panel-2: rgba(38, 38, 38, 0.94);
+      --panel-3: rgba(21, 21, 21, 0.95);
+      --line: rgba(255, 255, 255, 0.06);
+      --text: #e7ebe5;
+      --muted: #8c938b;
+      --muted-strong: #bfc6bb;
+      --primary: #5ce07a;
+      --primary-deep: #20b954;
+      --primary-soft: rgba(92, 224, 122, 0.18);
+      --accent: #1a7c45;
+      --shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+      --radius-xl: 30px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+      --blur: 22px;
+    }
+
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #eef2ec;
+      --bg-2: #f7f8f4;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-2: rgba(240, 244, 238, 0.9);
+      --panel-3: rgba(226, 232, 224, 0.92);
+      --line: rgba(14, 17, 12, 0.08);
+      --text: #141a13;
+      --muted: #5f665d;
+      --muted-strong: #2c332a;
+      --primary: #19b44d;
+      --primary-deep: #12943d;
+      --primary-soft: rgba(25, 180, 77, 0.12);
+      --accent: #1f8d49;
+      --shadow: 0 24px 55px rgba(28, 35, 24, 0.12);
     }
 
     * { box-sizing: border-box; }
-
+    html, body { height: 100%; }
     body {
       margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(circle at 10% 0%, #dcfce7 0%, #ededed 40%, #e6e6e6 100%);
-      color: var(--text);
       min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 9% 6%, rgba(92, 224, 122, 0.12), transparent 20%),
+        radial-gradient(circle at 84% 5%, rgba(92, 224, 122, 0.07), transparent 24%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg) 44%, var(--bg-2) 100%);
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: auto;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 999px;
+      filter: blur(2px);
+      opacity: 0.5;
+    }
+
+    body::before {
+      width: 42rem;
+      height: 42rem;
+      right: -10rem;
+      top: 7rem;
+      background: radial-gradient(circle, rgba(92, 224, 122, 0.09), transparent 62%);
+    }
+
+    body::after {
+      width: 36rem;
+      height: 36rem;
+      left: -12rem;
+      bottom: -11rem;
+      background: radial-gradient(circle, rgba(92, 224, 122, 0.08), transparent 62%);
     }
 
     .app {
-      width: min(1200px, 100% - 2rem);
-      margin: 1rem auto 2rem;
-      display: grid;
-      gap: 1rem;
+      position: relative;
+      z-index: 1;
+      width: min(1500px, calc(100% - 24px));
+      margin: 0 auto;
+      padding: 24px 0 28px;
     }
 
-    .panel {
-      background: var(--panel);
-      border-radius: var(--radius);
-      backdrop-filter: blur(14px);
-      box-shadow: var(--shadow);
-      padding: 1rem;
+    .view {
+      display: none;
+      animation: fadeUp 0.35s ease both;
     }
 
-    .header {
+    .view.active { display: block; }
+
+    .toolbar {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 20;
       display: flex;
-      justify-content: space-between;
+      gap: 10px;
       align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
+      padding: 10px;
+      border-radius: 999px;
+      background: rgba(26, 26, 26, 0.64);
+      backdrop-filter: blur(var(--blur));
+      box-shadow: var(--shadow);
     }
 
-    .brand h1 {
+    html[data-theme="light"] .toolbar {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .toolbar button {
+      border: 0;
+      background: transparent;
+      color: var(--muted-strong);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toolbar button.active {
+      background: linear-gradient(135deg, var(--primary), rgba(92, 224, 122, 0.95));
+      color: #062b12;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 370px minmax(0, 1fr);
+      gap: 18px;
+      min-height: calc(100vh - 52px);
+    }
+
+    .left-panel {
+      display: grid;
+      gap: 16px;
+      padding: 12px 0 0;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 8px 4px 12px;
+    }
+
+    .logo-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), rgba(92, 224, 122, 0.7));
+      color: #08210f;
+      font-weight: 900;
+      box-shadow: 0 0 0 10px rgba(92, 224, 122, 0.07);
+    }
+
+    .logo-copy h1,
+    .auth-brand h1 {
       margin: 0;
-      letter-spacing: 0.08rem;
-      font-size: 1.4rem;
-      font-weight: 800;
+      font-size: 1.85rem;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
       color: var(--primary);
     }
 
-    .brand p {
-      margin: 0.3rem 0 0;
+    .logo-copy p,
+    .auth-brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-size: 0.66rem;
+    }
+
+    .surface {
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(var(--blur));
+      border-radius: var(--radius-xl);
+    }
+
+    .card {
+      padding: 18px;
+    }
+
+    .profile,
+    .location,
+    .searchbox,
+    .route-card,
+    .pill-card,
+    .alert,
+    .auth-card,
+    .stats-bar {
+      background: var(--panel-2);
+      backdrop-filter: blur(var(--blur));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02), 0 18px 44px rgba(0, 0, 0, 0.12);
+      border-radius: var(--radius-lg);
+    }
+
+    .profile {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      overflow: hidden;
+      flex: 0 0 auto;
+      background:
+        radial-gradient(circle at 50% 26%, #f4d7b8 0 11%, transparent 12%),
+        linear-gradient(180deg, #e9edf0 0%, #d3d8dd 100%);
+      position: relative;
+    }
+
+    .avatar::before {
+      content: "";
+      position: absolute;
+      inset: 8px 13px 10px;
+      border-radius: 999px 999px 12px 12px;
+      background: linear-gradient(180deg, #1c2740 0%, #101726 100%);
+      box-shadow: 0 12px 0 #f2d0a2, 0 18px 0 2px #2b3242;
+    }
+
+    .avatar::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      left: 15px;
+      top: 9px;
+      border-radius: 50%;
+      background: #f6d6b1;
+      box-shadow: 0 14px 0 1px #f6d6b1;
+    }
+
+    .profile strong,
+    .profile span {
+      display: block;
+      line-height: 1.1;
+    }
+
+    .profile strong {
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .profile span,
+    .location small,
+    .section-label,
+    .auth-switch,
+    .mini-muted {
+      color: var(--muted);
+    }
+
+    .profile span,
+    .auth-switch {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.67rem;
+    }
+
+    .location,
+    .searchbox {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .icon-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: rgba(92, 224, 122, 0.16);
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
+
+    .location strong,
+    .searchbox input {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+    }
+
+    .location small,
+    .searchbox input::placeholder {
+      display: block;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    .swap-fab {
+      margin-left: auto;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 0;
+      background: var(--primary);
+      color: #071d0d;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      box-shadow: 0 0 0 6px rgba(92, 224, 122, 0.07);
+    }
+
+    .passengers {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 0 4px;
+      color: var(--muted-strong);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.83rem;
+    }
+
+    .count {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .count button,
+    .icon-button,
+    .auth-tab,
+    .ghost,
+    .cta,
+    .route-cta,
+    .field-toggle {
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+    }
+
+    .count button,
+    .icon-button,
+    .field-toggle {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--primary);
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 6px 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 0.8rem;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .route-card {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .route-card.selected {
+      background: linear-gradient(180deg, rgba(92, 224, 122, 0.18), rgba(92, 224, 122, 0.08));
+      box-shadow: inset 0 0 0 1px rgba(92, 224, 122, 0.38), 0 18px 35px rgba(12, 43, 18, 0.18);
+    }
+
+    .route-top,
+    .meta-row,
+    .auth-head,
+    .auth-rows,
+    .auth-grid,
+    .auth-actions,
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .route-title h3,
+    .auth-card h2,
+    .auth-card h3,
+    .hero-copy h2,
+    .hero-copy h1 {
+      margin: 0;
+      letter-spacing: -0.04em;
+    }
+
+    .route-title h3 {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .route-title p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .status {
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      background: rgba(92, 224, 122, 0.12);
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .status.pending { background: rgba(243, 193, 78, 0.12); color: #d4a62b; }
+    .status.confirmed { background: rgba(92, 224, 122, 0.12); color: var(--primary); }
+    .status.alert { background: rgba(241, 109, 109, 0.14); color: #ff8080; }
+
+    .route-track {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .route-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), rgba(92, 224, 122, 0.7));
+    }
+
+    .route-cta,
+    .cta,
+    .ghost {
+      border-radius: 999px;
+      padding: 14px 18px;
+      font-weight: 800;
+    }
+
+    .route-cta,
+    .cta {
+      background: linear-gradient(135deg, var(--primary), rgba(92, 224, 122, 0.92));
+      color: #06230f;
+      box-shadow: 0 18px 30px rgba(15, 95, 37, 0.22);
+    }
+
+    .ghost {
+      background: transparent;
+      color: var(--muted-strong);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .middle-panel {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+      padding-top: 12px;
+    }
+
+    .stats-bar {
+      align-self: start;
+      width: min(680px, 100%);
+      margin: 0 auto;
+      padding: 14px 18px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .stats-cell {
+      padding: 2px 8px;
+      position: relative;
+    }
+
+    .stats-cell:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      right: -6px;
+      top: 8px;
+      width: 1px;
+      height: 34px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    html[data-theme="light"] .stats-cell:not(:last-child)::after {
+      background: rgba(20, 26, 19, 0.08);
+    }
+
+    .stats-value {
+      font-weight: 800;
+      color: var(--text);
+      font-size: 0.98rem;
+      line-height: 1.15;
+    }
+
+    .stats-value.highlight {
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    .map-stage {
+      position: relative;
+      min-height: 740px;
+      border-radius: 36px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 64% 46%, rgba(92, 224, 122, 0.13), transparent 9%),
+        radial-gradient(circle at 62% 67%, rgba(92, 224, 122, 0.12), transparent 7%),
+        linear-gradient(180deg, rgba(20, 20, 20, 0.9), rgba(17, 17, 17, 0.95));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), var(--shadow);
+    }
+
+    html[data-theme="light"] .map-stage {
+      background:
+        radial-gradient(circle at 64% 46%, rgba(25, 180, 77, 0.16), transparent 9%),
+        radial-gradient(circle at 62% 67%, rgba(25, 180, 77, 0.12), transparent 7%),
+        linear-gradient(180deg, rgba(243, 245, 241, 0.96), rgba(230, 235, 226, 0.96));
+    }
+
+    .map-stage::before,
+    .map-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    .map-stage::before {
+      background-image:
+        linear-gradient(100deg, transparent 23%, rgba(255, 255, 255, 0.02) 24%, transparent 24.6%),
+        radial-gradient(ellipse at 45% 20%, rgba(255, 255, 255, 0.04), transparent 26%),
+        radial-gradient(ellipse at 88% 74%, rgba(92, 224, 122, 0.08), transparent 20%);
+      opacity: 0.55;
+    }
+
+    .road,
+    .road-2 {
+      position: absolute;
+      background: linear-gradient(180deg, rgba(92, 224, 122, 0.28), rgba(92, 224, 122, 0.28));
+      opacity: 0.45;
+      filter: drop-shadow(0 0 18px rgba(92, 224, 122, 0.2));
+    }
+
+    .road {
+      width: 7px;
+      height: 66%;
+      right: 14%;
+      top: 22%;
+      border-radius: 999px;
+      transform: rotate(22deg);
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(92, 224, 122, 0.36) 0 14px,
+        transparent 14px 24px
+      );
+    }
+
+    .road-2 {
+      width: 6px;
+      height: 48%;
+      right: 36%;
+      top: 55%;
+      border-radius: 999px;
+      transform: rotate(7deg);
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(92, 224, 122, 0.28) 0 12px,
+        transparent 12px 20px
+      );
+    }
+
+    .station,
+    .station-2,
+    .station-3 {
+      position: absolute;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 999px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 0.84rem;
+      color: #051b0b;
+      background: linear-gradient(135deg, #72f28c, #47d56d);
+      box-shadow: 0 0 0 4px rgba(92, 224, 122, 0.15), 0 8px 28px rgba(28, 128, 58, 0.18);
+    }
+
+    .station::after,
+    .station-2::after,
+    .station-3::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: -14px;
+      width: 4px;
+      height: 20px;
+      border-radius: 99px;
+      background: #72f28c;
+    }
+
+    .station { left: 63%; top: 29%; }
+    .station-2 {
+      left: 43%; top: 66%;
+      background: linear-gradient(135deg, #128d58, #0f7250);
+      color: #c8ffee;
+      box-shadow: 0 0 0 4px rgba(16, 141, 88, 0.15), 0 8px 28px rgba(7, 70, 54, 0.2);
+    }
+    .station-3 {
+      left: 33%; top: 53%;
+      width: 72px;
+      height: 72px;
+      padding: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, #7ef49a 0 12px, rgba(126, 244, 154, 0.18) 13px, rgba(126, 244, 154, 0.04) 34px, transparent 35px);
+      box-shadow: none;
+      transform: translate(-50%, -50%);
+    }
+    .station-3::after { display: none; }
+
+    .route-chip {
+      position: absolute;
+      left: 73%;
+      top: 49%;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(28, 133, 64, 0.7);
+      color: #d6ffe1;
+      box-shadow: 0 0 0 4px rgba(92, 224, 122, 0.06), 0 12px 28px rgba(0, 0, 0, 0.32);
+      font-size: 0.76rem;
+      font-weight: 800;
+    }
+
+    .route-chip::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 100%;
+      width: 4px;
+      height: 18px;
+      transform: translateX(-50%);
+      background: rgba(92, 224, 122, 0.9);
+    }
+
+    .alerts {
+      position: absolute;
+      right: 22px;
+      bottom: 22px;
+      width: min(360px, calc(100% - 44px));
+      display: grid;
+      gap: 12px;
+    }
+
+    .alert {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .alert .badge-round {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(92, 224, 122, 0.16);
+      color: var(--primary);
+      flex: 0 0 auto;
+      font-size: 1.1rem;
+    }
+
+    .alert.alt .badge-round {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted-strong);
+    }
+
+    .alert strong { display: block; margin-bottom: 2px; }
+    .alert p { margin: 0; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
+
+    .auth-shell {
+      min-height: calc(100vh - 52px);
+      display: grid;
+      place-items: center;
+      padding: 52px 0 20px;
+    }
+
+    .auth-card {
+      width: min(1080px, 100%);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      min-height: 700px;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 18% 20%, rgba(92, 224, 122, 0.2), transparent 30%),
+        linear-gradient(180deg, rgba(18, 18, 18, 0.96), rgba(14, 14, 14, 0.96));
+    }
+
+    html[data-theme="light"] .auth-card {
+      background:
+        radial-gradient(circle at 18% 20%, rgba(25, 180, 77, 0.18), transparent 30%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 247, 242, 0.96));
+      border: 1px solid var(--line);
+    }
+
+    .auth-copy {
+      padding: 34px;
+      background: linear-gradient(180deg, rgba(18, 18, 18, 0.35), rgba(16, 16, 16, 0.08));
+      position: relative;
+      display: grid;
+      align-content: space-between;
+      gap: 20px;
+    }
+
+    html[data-theme="light"] .auth-copy {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.44), rgba(255, 255, 255, 0.02));
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .auth-brand .logo-mark { width: 56px; height: 56px; }
+
+    .hero-copy {
+      max-width: 430px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(2.4rem, 5vw, 4.6rem);
+      line-height: 0.95;
+    }
+
+    .hero-copy p {
+      margin: 0;
+      color: var(--muted-strong);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .feature-stack {
+      display: grid;
+      gap: 10px;
+      max-width: 390px;
+    }
+
+    .feature {
+      padding: 14px 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    html[data-theme="light"] .feature { background: rgba(18, 18, 18, 0.04); }
+
+    .auth-form {
+      padding: 24px;
+      background: rgba(25, 25, 25, 0.92);
+      display: grid;
+      align-content: center;
+      gap: 18px;
+    }
+
+    html[data-theme="light"] .auth-form {
+      background: rgba(255, 255, 255, 0.94);
+      border-left: 1px solid var(--line);
+    }
+
+    .auth-tabs {
+      display: inline-flex;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      width: fit-content;
+    }
+
+    html[data-theme="light"] .auth-tabs { background: rgba(18, 18, 18, 0.04); }
+
+    .auth-tab {
+      min-width: 116px;
+      padding: 12px 14px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted-strong);
+      font-weight: 800;
+    }
+
+    .auth-tab.active {
+      background: linear-gradient(135deg, var(--primary), rgba(92, 224, 122, 0.9));
+      color: #05200d;
+    }
+
+    .auth-panel {
+      display: none;
+      gap: 14px;
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .auth-panel.active { display: grid; }
+
+    .auth-panel h2 {
+      margin: 0;
+      font-size: 2rem;
+      letter-spacing: -0.05em;
+    }
+
+    .auth-panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .fields {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field,
+    .field-row {
+      position: relative;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      padding: 16px 16px;
+      font: inherit;
+      outline: none;
+    }
+
+    html[data-theme="light"] .field input,
+    html[data-theme="light"] .field select,
+    html[data-theme="light"] .field textarea {
+      background: rgba(17, 17, 17, 0.05);
+    }
+
+    .field small {
+      display: block;
+      margin: 6px 2px 0;
+      color: var(--muted);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .auth-actions {
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .auth-actions label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .auth-actions input[type="checkbox"] { accent-color: var(--primary); }
+
+    .auth-actions .ghost {
+      padding-inline: 14px;
+      background: transparent;
+    }
+
+    .hero-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(92, 224, 122, 0.12);
+      color: var(--primary);
+      font-size: 0.8rem;
+      font-weight: 800;
+      width: fit-content;
+    }
+
+    .footer-note {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      bottom: 28px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .dashboard .left-column {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dashboard .route-list {
+      display: grid;
+      gap: 12px;
+      max-height: 384px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .dashboard .left-column .surface {
+      padding: 18px;
+    }
+
+    .dashboard .map-wrap {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .map-wrap .surface {
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 14px;
+    }
+
+    .section-head h2,
+    .section-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .map-caption {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
       color: var(--muted);
       font-size: 0.85rem;
     }
 
-    .nav {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-    }
-
-    .nav button {
-      border: 0;
-      border-radius: 999px;
-      padding: 0.55rem 0.9rem;
-      background: var(--panel-soft);
-      color: var(--muted);
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .nav button.active,
-    .nav button:hover {
-      background: linear-gradient(135deg, var(--primary), var(--primary-soft));
-      color: #052e16;
-    }
-
-    .hero {
+    .stacked-actions {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1rem;
-      align-items: stretch;
+      gap: 12px;
     }
 
-    .hero h2 {
-      margin: 0;
-      font-size: clamp(1.4rem, 2.3vw, 2.2rem);
-      line-height: 1.2;
-    }
-
-    .hero p {
-      color: var(--muted);
-      max-width: 60ch;
-      margin-bottom: 0;
-    }
-
-    .kpis {
-      display: grid;
-      gap: 0.6rem;
-    }
-
-    .kpi {
-      background: var(--panel-soft);
-      border-radius: 12px;
-      padding: 0.8rem;
-    }
-
-    .kpi .value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #052e16;
-    }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: 320px 1fr 320px;
-      gap: 1rem;
-    }
-
-    label {
-      display: block;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 0.35rem;
-      font-weight: 600;
-    }
-
-    input,
-    select,
-    textarea {
-      width: 100%;
-      border: 0;
-      border-radius: 12px;
-      padding: 0.72rem 0.8rem;
-      background: #fff;
-      color: var(--text);
-      font-size: 0.92rem;
-    }
-
-    .planner-grid {
-      display: grid;
-      gap: 0.8rem;
-    }
-
-    .row {
-      display: grid;
-      gap: 0.8rem;
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .passenger {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.6rem;
-      background: #fff;
-      padding: 0.45rem;
-      border-radius: 12px;
-    }
-
-    .passenger-controls {
-      display: flex;
-      gap: 0.45rem;
-      align-items: center;
-    }
-
-    .passenger-controls button,
-    .primary,
-    .secondary,
-    .route-card button {
-      border: 0;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
-      transition: transform .2s ease;
-    }
-
-    .passenger-controls button {
-      width: 30px;
-      height: 30px;
-      font-size: 1rem;
-      background: var(--panel-soft);
-    }
-
-    .primary {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background: linear-gradient(135deg, var(--primary), var(--primary-soft));
-      color: #052e16;
-    }
-
-    .secondary {
-      width: 100%;
-      padding: 0.7rem 1rem;
-      background: var(--panel-soft);
-      color: var(--text);
-      margin-top: 0.5rem;
-    }
-
-    .primary:hover,
-    .secondary:hover,
-    .route-card button:hover,
-    .passenger-controls button:hover { transform: translateY(-1px); }
-
-    .results-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 0.7rem;
-    }
-
-    .badge {
-      font-size: 0.72rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 999px;
-      font-weight: 700;
-    }
-
-    .badge.confirmed { color: #166534; background: #dcfce7; }
-    .badge.onroute { color: #1d4ed8; background: #dbeafe; }
-    .badge.pending { color: #854d0e; background: #fef9c3; }
-
-    .route-list {
-      display: grid;
-      gap: 0.7rem;
-      max-height: 560px;
-      overflow: auto;
-      padding-right: 0.2rem;
-    }
-
-    .route-card {
-      background: #fff;
-      border-radius: 14px;
-      padding: 0.8rem;
-      display: grid;
-      gap: 0.55rem;
-    }
-
-    .route-card.selected {
-      outline: 2px solid #86efac;
-      background: #f0fdf4;
-    }
-
-    .route-card-top,
-    .route-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 0.6rem;
-      align-items: center;
-    }
-
-    .route-card h4 { margin: 0; font-size: 0.96rem; }
-    .route-card p { margin: 0; font-size: 0.82rem; color: var(--muted); }
-    .route-card button { padding: 0.6rem; background: #ecfdf5; color: #166534; }
-
-    .tracker {
-      display: grid;
-      gap: 0.85rem;
-    }
-
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-    }
-
-    .pill {
-      font-size: 0.74rem;
-      color: #065f46;
-      background: #d1fae5;
-      border-radius: 999px;
-      padding: 0.26rem 0.55rem;
-      font-weight: 700;
-    }
-
-    .timeline { display: grid; gap: 0.55rem; }
-    .timeline-item {
-      background: #fff;
-      border-radius: 12px;
-      padding: 0.65rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .timeline-item small { color: var(--muted); }
-
-    .booking {
-      display: grid;
-      gap: 0.85rem;
-      overflow-x: auto;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 560px;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    th,
-    td {
+    .stacked-actions .ghost {
       text-align: left;
-      padding: 0.7rem;
-      font-size: 0.84rem;
+      justify-content: flex-start;
     }
 
-    thead { background: #dcfce7; color: #14532d; }
+    .icon-button { width: 30px; height: 30px; }
 
-    tbody tr:nth-child(even) { background: #f8fafc; }
+    .hide { display: none !important; }
 
-    .support {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .faq-item {
-      background: #fff;
-      border-radius: 12px;
-      padding: 0.7rem;
-      margin-bottom: 0.55rem;
+    @media (max-width: 1180px) {
+      .shell { grid-template-columns: 1fr; }
+      .map-stage { min-height: 620px; }
+      .auth-card { grid-template-columns: 1fr; }
+      .auth-copy { min-height: 360px; }
     }
 
-    .faq-item h4 {
-      margin: 0 0 0.25rem;
-      font-size: 0.9rem;
-    }
-
-    .faq-item p { margin: 0; font-size: 0.82rem; color: var(--muted); }
-
-    .footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.8rem;
-      margin: 0.3rem 0;
-    }
-
-    @media (max-width: 1080px) {
-      .workspace { grid-template-columns: 1fr; }
-      .hero,
-      .support { grid-template-columns: 1fr; }
+    @media (max-width: 760px) {
+      .app { width: min(100% - 14px, 100%); padding-top: 70px; }
+      .toolbar { left: 12px; right: 12px; justify-content: space-between; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .stats-cell:nth-child(2)::after,
+      .stats-cell:nth-child(4)::after { display: none; }
+      .field-row { grid-template-columns: 1fr; }
+      .auth-form,
+      .auth-copy { padding: 22px; }
+      .footer-note { position: static; margin-top: 10px; flex-direction: column; align-items: flex-start; }
+      .map-stage { min-height: 520px; }
+      .route-chip { left: 64%; top: 28%; }
+      .station { left: 66%; top: 24%; }
+      .station-2 { left: 38%; top: 62%; }
+      .station-3 { left: 28%; top: 46%; }
+      .alerts { width: calc(100% - 24px); right: 12px; bottom: 12px; }
+      .toolbar button { padding-inline: 10px; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <header class="panel header">
-      <div class="brand">
-        <h1>GREENROUTE</h1>
-        <p>Smart passenger interface for booking, tracking and support.</p>
-      </div>
-      <nav class="nav" id="tabs">
-        <button class="active" data-target="planner">Planner</button>
-        <button data-target="routes">Routes</button>
-        <button data-target="tracker">Track</button>
-        <button data-target="bookings">Tickets</button>
-        <button data-target="support">Support</button>
-      </nav>
-    </header>
+  <div class="toolbar" aria-label="Top controls">
+    <button type="button" class="active" data-view="dashboard">Dashboard</button>
+    <button type="button" data-view="auth">Sign in / Sign up</button>
+    <button type="button" id="theme-toggle">Dark theme</button>
+  </div>
 
-    <section class="panel hero">
-      <div>
-        <h2>Move around the city with confidence using real-time GREENROUTE transport updates.</h2>
-        <p>Find routes quickly, track incoming vehicles, reserve your seat, and manage passenger trips from one responsive dashboard while backend APIs are being integrated.</p>
-      </div>
-      <div class="kpis">
-        <div class="kpi"><div class="value" id="active-routes">0</div><div>Active routes</div></div>
-        <div class="kpi"><div class="value" id="available-seats">0</div><div>Available seats</div></div>
-        <div class="kpi"><div class="value" id="avg-wait">0 min</div><div>Average wait time</div></div>
-      </div>
-    </section>
-
-    <section class="workspace">
-      <aside class="panel" id="planner">
-        <h3>Trip planner</h3>
-        <div class="planner-grid">
-          <div>
-            <label for="from">From</label>
-            <input id="from" value="East Legon" />
-          </div>
-          <div>
-            <label for="to">To</label>
-            <input id="to" value="Circle" />
-          </div>
-          <div class="row">
-            <div>
-              <label for="date">Date</label>
-              <input id="date" type="date" />
-            </div>
-            <div>
-              <label for="time">Time</label>
-              <input id="time" type="time" value="08:00" />
+  <main class="app">
+    <section class="view active dashboard" id="dashboard-view">
+      <div class="shell">
+        <aside class="left-panel">
+          <div class="logo">
+            <div class="logo-mark">U</div>
+            <div class="logo-copy">
+              <h1>Urban Flow</h1>
+              <p>GREEN-ROUTE MISSION</p>
             </div>
           </div>
-          <div>
-            <label>Passengers</label>
-            <div class="passenger">
-              <span>Seats</span>
-              <div class="passenger-controls">
-                <button id="minus" type="button">−</button>
-                <strong id="passenger-count">1</strong>
-                <button id="plus" type="button">+</button>
+
+          <div class="profile surface card">
+            <div class="avatar" aria-hidden="true"></div>
+            <div>
+              <strong>James Appiah</strong>
+              <span>Premium passenger</span>
+            </div>
+          </div>
+
+          <div class="location surface card">
+            <div class="icon-badge">⌖</div>
+            <div>
+              <small>YOUR LOCATION</small>
+              <strong>East Legon, Accra</strong>
+            </div>
+            <button class="swap-fab" type="button" aria-label="Swap location">↕</button>
+          </div>
+
+          <div class="searchbox surface card">
+            <div class="icon-badge">⌕</div>
+            <input id="destination" placeholder="Search destination..." value="Madina to Circle" />
+          </div>
+
+          <div class="passengers">
+            <span>Passengers</span>
+            <div class="count">
+              <button id="minus" type="button" aria-label="Decrease passengers">−</button>
+              <strong id="passenger-count">1</strong>
+              <button id="plus" type="button" aria-label="Increase passengers">+</button>
+            </div>
+          </div>
+
+          <div class="chips">
+            <span class="chip">Kaneshie</span>
+            <span class="chip">Accra Central</span>
+            <span class="chip">Tema Station</span>
+          </div>
+
+          <div class="section-label">
+            <span>Nearby green-routes</span>
+            <button class="icon-button" type="button" aria-label="Filter routes">≋</button>
+          </div>
+
+          <div class="route-list" id="route-list"></div>
+
+          <div class="stacked-actions">
+            <button class="ghost" type="button">⚙ Settings</button>
+            <button class="ghost" type="button">↺ Recent trips</button>
+            <button class="ghost" type="button">↪ Sign out</button>
+          </div>
+        </aside>
+
+        <section class="map-wrap">
+          <div class="stats-bar">
+            <div class="stats-cell">
+              <div class="stats-value"><span style="color:var(--primary);">●</span> 24 Active Trotros</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value"><span style="color:var(--primary);">➜</span> 3 Nearby</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value highlight">ETA<br />4<br />MIN</div>
+            </div>
+            <div class="stats-cell">
+              <div class="stats-value">12 Seats<br />Available</div>
+            </div>
+          </div>
+
+          <div class="map-stage surface">
+            <div class="road" aria-hidden="true"></div>
+            <div class="road-2" aria-hidden="true"></div>
+            <div class="station">MAD-CIR <span style="font-size:0.9em;">🚌</span></div>
+            <div class="station-2">ADE-ACC <span style="font-size:0.9em;">🚌</span></div>
+            <div class="station-3" aria-hidden="true"></div>
+            <div class="route-chip">MAD-CIR <span style="margin-left:4px;">🚌</span></div>
+
+            <div class="alerts">
+              <div class="alert surface">
+                <div class="badge-round">⚑</div>
+                <div>
+                  <strong>Trotro approach</strong>
+                  <p>Your trotro is 300m away at Kaneshie overhead.</p>
+                </div>
+              </div>
+              <div class="alert alt surface">
+                <div class="badge-round">✦</div>
+                <div>
+                  <strong>Vehicle Alert</strong>
+                  <p>Vehicle almost full. Only 2 seats remaining.</p>
+                </div>
               </div>
             </div>
           </div>
-          <button class="secondary" id="swap" type="button">Swap locations</button>
-          <button class="primary" id="search" type="button">Find route</button>
-        </div>
-      </aside>
 
-      <article class="panel" id="routes">
-        <div class="results-head">
-          <h3 style="margin:0;">Available routes</h3>
-          <span class="badge confirmed" id="results-count">0 results</span>
-        </div>
-        <div class="route-list" id="route-list"></div>
-      </article>
-
-      <aside class="panel tracker" id="tracker">
-        <h3 style="margin:0;">Live tracker</h3>
-        <div class="pill-row">
-          <span class="pill" id="selected-route">No route selected</span>
-          <span class="pill" id="selected-fare">Fare: —</span>
-        </div>
-        <div>
-          <strong id="eta">ETA: —</strong>
-          <p id="vehicle" style="margin:0.3rem 0 0;color:var(--muted);">Vehicle details will appear here.</p>
-        </div>
-        <h4 style="margin:0.3rem 0 0;">Stop timeline</h4>
-        <div class="timeline" id="timeline"></div>
-        <button class="primary" id="book" type="button">Book selected route</button>
-      </aside>
-    </section>
-
-    <section class="panel booking" id="bookings">
-      <div class="results-head">
-        <h3 style="margin:0;">My tickets</h3>
-        <span class="badge pending" id="ticket-count">0 bookings</span>
-      </div>
-      <table>
-        <thead>
-          <tr><th>Route</th><th>Date</th><th>Passengers</th><th>Fare</th><th>Status</th></tr>
-        </thead>
-        <tbody id="booking-body"></tbody>
-      </table>
-    </section>
-
-    <section class="panel support" id="support">
-      <div>
-        <h3 style="margin-top:0;">Support</h3>
-        <form id="support-form">
-          <label for="name">Name</label>
-          <input id="name" placeholder="Your full name" required />
-          <label for="email" style="margin-top:0.6rem;">Email</label>
-          <input id="email" type="email" placeholder="you@example.com" required />
-          <label for="message" style="margin-top:0.6rem;">Message</label>
-          <textarea id="message" rows="4" placeholder="How can we help?" required></textarea>
-          <button class="primary" style="margin-top:0.6rem;" type="submit">Send message</button>
-        </form>
-      </div>
-      <div>
-        <h3 style="margin-top:0;">Frequently asked questions</h3>
-        <div class="faq-item"><h4>How do I track my bus?</h4><p>Select a route from the route list and live tracker updates instantly.</p></div>
-        <div class="faq-item"><h4>Can I reserve for groups?</h4><p>Yes. Increase passenger seats from the planner and book the selected route.</p></div>
-        <div class="faq-item"><h4>How are fares calculated?</h4><p>Fares shown are per seat. Total fare updates when booking based on passengers.</p></div>
-        <div class="faq-item"><h4>Is backend integration ready?</h4><p>This UI is fully prepared for API hookup by backend and database teams.</p></div>
+          <div class="map-caption">
+            <span>Live routing and vehicle tracking</span>
+            <span id="route-summary">Madina → Circle</span>
+          </div>
+        </section>
       </div>
     </section>
 
-    <p class="footer">© GREENROUTE · Frontend UI implemented with HTML, CSS and JavaScript.</p>
-  </div>
+    <section class="view auth-shell" id="auth-view" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <aside class="auth-copy">
+          <div>
+            <div class="auth-brand">
+              <div class="logo-mark">U</div>
+              <div>
+                <h1>Urban Flow</h1>
+                <p>GREEN-ROUTE MISSION</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-copy">
+            <div class="hero-note">Real-time routing for passengers in motion</div>
+            <h1>Move through the city with clarity, not friction.</h1>
+            <p>
+              Switch between sign in and sign up, then move into the same route dashboard shown in the reference with a dark or light presentation.
+            </p>
+            <div class="feature-stack">
+              <div class="feature">Fast route discovery for Madina, Kaneshie, Tema Station, and more.</div>
+              <div class="feature">Light and dark themes that preserve the same premium geometry.</div>
+              <div class="feature">Passenger-focused auth flow with support for new accounts and returning users.</div>
+            </div>
+          </div>
+
+          <div class="footer-note">
+            <span>Protected sign-in for mobile-first transport booking.</span>
+            <span>Urban Flow 2026</span>
+          </div>
+        </aside>
+
+        <section class="auth-form">
+          <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+            <button class="auth-tab active" type="button" data-auth="signin">Sign in</button>
+            <button class="auth-tab" type="button" data-auth="signup">Sign up</button>
+          </div>
+
+          <div class="auth-panel active" id="signin-panel">
+            <div>
+              <h2 id="auth-title">Welcome back.</h2>
+              <p>Sign in to continue tracking vehicles, reserving seats, and checking live route status.</p>
+            </div>
+            <div class="fields">
+              <div class="field">
+                <input type="email" placeholder="Email address" />
+              </div>
+              <div class="field">
+                <input type="password" placeholder="Password" />
+                <small>Use your Urban Flow account password.</small>
+              </div>
+            </div>
+            <div class="auth-actions">
+              <label><input type="checkbox" /> Keep me signed in</label>
+              <button class="ghost" type="button">Forgot password?</button>
+            </div>
+            <button class="cta" type="button">Sign in</button>
+          </div>
+
+          <div class="auth-panel" id="signup-panel">
+            <div>
+              <h2>Create your account.</h2>
+              <p>Join Urban Flow to book seats, follow your trotro, and switch between views instantly.</p>
+            </div>
+            <div class="fields">
+              <div class="field-row">
+                <div class="field"><input type="text" placeholder="First name" /></div>
+                <div class="field"><input type="text" placeholder="Last name" /></div>
+              </div>
+              <div class="field"><input type="email" placeholder="Email address" /></div>
+              <div class="field"><input type="password" placeholder="Create password" /></div>
+              <div class="field">
+                <select>
+                  <option>Premium passenger</option>
+                  <option>Daily commuter</option>
+                  <option>Route operator</option>
+                </select>
+              </div>
+            </div>
+            <div class="auth-actions">
+              <label><input type="checkbox" /> I agree to the passenger terms</label>
+            </div>
+            <button class="cta" type="button">Create account</button>
+          </div>
+
+          <div class="auth-switch">
+            Need the dashboard? Use the tabs above, then switch back to the main view.
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
 
   <script>
     const routes = [
-      { id: 1, from: "East Legon", to: "Circle", fare: 2.5, eta: 6, seats: 2, vehicle: "GR-214 · Toyota Hiace", status: "On-Route", timeline: [["East Legon", "Departed"], ["37 Junction", "In transit"], ["Airport", "2 mins"], ["Circle", "ETA 6 mins"]] },
-      { id: 2, from: "Adenta", to: "Accra Central", fare: 3.2, eta: 12, seats: 8, vehicle: "GR-301 · Hyundai County", status: "Pending", timeline: [["Adenta", "Boarding"], ["Madina", "Upcoming"], ["Nkrumah Circle", "Upcoming"], ["Accra Central", "ETA 12 mins"]] },
-      { id: 3, from: "Kaneshie", to: "Tema Station", fare: 3.8, eta: 10, seats: 5, vehicle: "GR-119 · Ford Transit", status: "Confirmed", timeline: [["Kaneshie", "Departed"], ["Odorkor", "In transit"], ["Abossey Okai", "In transit"], ["Tema Station", "ETA 10 mins"]] },
-      { id: 4, from: "Spintex", to: "Lapaz", fare: 4.1, eta: 14, seats: 12, vehicle: "GR-410 · Benz Sprinter", status: "Confirmed", timeline: [["Spintex", "Boarding"], ["Nungua", "Upcoming"], ["37", "Upcoming"], ["Lapaz", "ETA 14 mins"]] }
+      {
+        id: 1,
+        from: "Madina",
+        to: "Circle",
+        fare: 2.5,
+        eta: 6,
+        seats: 2,
+        status: "On-Route",
+        note: "2 seats left",
+        progress: 82
+      },
+      {
+        id: 2,
+        from: "Adenta",
+        to: "Accra Central",
+        fare: 3.2,
+        eta: 12,
+        seats: 8,
+        status: "Departing",
+        note: "Plenty space",
+        progress: 44
+      },
+      {
+        id: 3,
+        from: "Kaneshie",
+        to: "Tema Station",
+        fare: 3.8,
+        eta: 9,
+        seats: 4,
+        status: "Confirmed",
+        note: "Boarding soon",
+        progress: 67
+      }
     ];
 
-    const MAX_PASSENGERS = 8;
-    let selectedRoute = null;
-    let passengers = 1;
-    const bookings = [];
+    const body = document.documentElement;
+    const themeToggle = document.getElementById("theme-toggle");
+    const viewButtons = document.querySelectorAll("[data-view]");
+    const views = {
+      dashboard: document.getElementById("dashboard-view"),
+      auth: document.getElementById("auth-view")
+    };
 
+    const authTabs = document.querySelectorAll("[data-auth]");
+    const authPanels = {
+      signin: document.getElementById("signin-panel"),
+      signup: document.getElementById("signup-panel")
+    };
     const routeList = document.getElementById("route-list");
-    const resultsCount = document.getElementById("results-count");
-    const selectedRouteLabel = document.getElementById("selected-route");
-    const selectedFareLabel = document.getElementById("selected-fare");
-    const etaLabel = document.getElementById("eta");
-    const vehicleLabel = document.getElementById("vehicle");
-    const timeline = document.getElementById("timeline");
-    const bookingBody = document.getElementById("booking-body");
-    const ticketCount = document.getElementById("ticket-count");
+    const routeSummary = document.getElementById("route-summary");
+    const passengerCount = document.getElementById("passenger-count");
+    const destination = document.getElementById("destination");
 
-    const getTodayISO = () => new Date().toISOString().slice(0, 10);
+    let activeView = "dashboard";
+    let activeAuth = "signin";
+    let selectedRouteId = 1;
+    let passengers = 1;
 
-    const showToast = (message) => {
-      const toast = document.createElement("div");
-      toast.textContent = message;
-      toast.setAttribute("role", "alert");
-      toast.style.position = "fixed";
-      toast.style.bottom = "1rem";
-      toast.style.right = "1rem";
-      toast.style.zIndex = "9999";
-      toast.style.background = "#052e16";
-      toast.style.color = "#dcfce7";
-      toast.style.padding = "0.65rem 0.8rem";
-      toast.style.borderRadius = "10px";
-      toast.style.fontSize = "0.85rem";
-      toast.style.boxShadow = "0 10px 25px rgba(5,46,22,0.25)";
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4500);
-    };
+    const savedTheme = localStorage.getItem("urbanflow-theme");
+    if (savedTheme) {
+      body.dataset.theme = savedTheme;
+      themeToggle.textContent = savedTheme === "dark" ? "Dark theme" : "Light theme";
+    }
 
-    const renderKPIs = (dataset = routes) => {
-      document.getElementById("active-routes").textContent = dataset.length;
-      document.getElementById("available-seats").textContent = dataset.reduce((acc, r) => acc + r.seats, 0);
-      const avgWaitTime = dataset.length ? Math.round(dataset.reduce((acc, r) => acc + r.eta, 0) / dataset.length) : 0;
-      document.getElementById("avg-wait").textContent = `${avgWaitTime} min`;
-    };
-
-    const getStatusBadgeClassName = status => status.toLowerCase().replace("-", "") === "onroute" ? "onroute" : status.toLowerCase();
-
-    const renderRoutes = (dataset = routes) => {
+    const renderRoutes = () => {
       routeList.innerHTML = "";
-      resultsCount.textContent = `${dataset.length} results`;
-
-      if (!dataset.length) {
-        routeList.innerHTML = `<div class="route-card"><strong>No routes found.</strong><p>Try a different origin or destination.</p></div>`;
-        selectedRoute = null;
-        updateTracker();
-        renderKPIs(dataset);
-        return;
-      }
-
-      dataset.forEach(route => {
-        const card = document.createElement("div");
-        card.className = `route-card ${selectedRoute?.id === route.id ? "selected" : ""}`;
+      routes.forEach((route) => {
+        const card = document.createElement("article");
+        card.className = `route-card surface ${route.id === selectedRouteId ? "selected" : ""}`;
         card.innerHTML = `
-          <div class="route-card-top">
-            <div>
-              <h4>${route.from} → ${route.to}</h4>
-              <p>${route.vehicle}</p>
+          <div class="route-top">
+            <div class="route-title">
+              <div class="tiny ${route.status === "On-Route" ? "" : ""}">${route.status === "On-Route" ? "ON-ROUTE • 6 MINS AWAY" : route.status === "Confirmed" ? "DEPARTING • 12 MINS AWAY" : "BOARDING • 10 MINS AWAY"}</div>
+              <h3>${route.from} → ${route.to}</h3>
             </div>
-            <span class="badge ${getStatusBadgeClassName(route.status)}">${route.status}</span>
+            <div class="status ${route.status === "On-Route" ? "confirmed" : route.status === "Confirmed" ? "confirmed" : "pending"}">GHS ${route.fare.toFixed(2)}</div>
           </div>
-          <div class="route-meta">
-            <small>ETA ${route.eta} mins · ${route.seats} seats left</small>
-            <strong>GHS ${route.fare.toFixed(2)}</strong>
+          <div class="meta-row">
+            <div class="tiny">🚍 ${route.eta} km</div>
+            <div class="tiny">${route.note}</div>
           </div>
-          <button type="button">Select route</button>
+          <div class="route-track"><span style="width:${route.progress}%"></span></div>
+          <button class="route-cta" type="button">TRACK VEHICLE</button>
         `;
 
         card.querySelector("button").addEventListener("click", () => {
-          selectedRoute = route;
-          renderRoutes(dataset);
-          updateTracker();
+          selectedRouteId = route.id;
+          routeSummary.textContent = `${route.from} → ${route.to}`;
+          renderRoutes();
         });
 
         routeList.appendChild(card);
       });
-
-      renderKPIs(dataset);
     };
 
-    const updateTracker = () => {
-      if (!selectedRoute) {
-        selectedRouteLabel.textContent = "No route selected";
-        selectedFareLabel.textContent = "Fare: —";
-        etaLabel.textContent = "ETA: —";
-        vehicleLabel.textContent = "Vehicle details will appear here.";
-        timeline.innerHTML = "";
-        return;
-      }
-
-      selectedRouteLabel.textContent = `${selectedRoute.from} → ${selectedRoute.to}`;
-      selectedFareLabel.textContent = `Fare: GHS ${selectedRoute.fare.toFixed(2)} / seat`;
-      etaLabel.textContent = `ETA: ${selectedRoute.eta} mins`;
-      vehicleLabel.textContent = `${selectedRoute.vehicle} · ${selectedRoute.seats} seats remaining`;
-      timeline.innerHTML = "";
-
-      selectedRoute.timeline.forEach(([stop, state]) => {
-        const item = document.createElement("div");
-        item.className = "timeline-item";
-        item.innerHTML = `<span>${stop}</span><small>${state}</small>`;
-        timeline.appendChild(item);
+    const setView = (view) => {
+      activeView = view;
+      Object.entries(views).forEach(([name, element]) => {
+        element.classList.toggle("active", name === view);
       });
+      viewButtons.forEach((button) => button.classList.toggle("active", button.dataset.view === view));
     };
 
-    const renderBookings = () => {
-      bookingBody.innerHTML = bookings.map(booking => `
-        <tr>
-          <td>${booking.route}</td>
-          <td>${booking.date}</td>
-          <td>${booking.passengers}</td>
-          <td>GHS ${booking.total.toFixed(2)}</td>
-          <td><span class="badge confirmed">Booked</span></td>
-        </tr>
-      `).join("");
+    const setAuth = (mode) => {
+      activeAuth = mode;
+      authTabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.auth === mode));
+      Object.entries(authPanels).forEach(([name, panel]) => panel.classList.toggle("active", name === mode));
+    };
 
-      if (!bookings.length) {
-        bookingBody.innerHTML = `<tr><td colspan="5" style="color:#64748b;">No bookings yet. Select and book a route.</td></tr>`;
-      }
-
-      ticketCount.textContent = `${bookings.length} booking${bookings.length === 1 ? "" : "s"}`;
+    const toggleTheme = () => {
+      const nextTheme = body.dataset.theme === "dark" ? "light" : "dark";
+      body.dataset.theme = nextTheme;
+      localStorage.setItem("urbanflow-theme", nextTheme);
+      themeToggle.textContent = nextTheme === "dark" ? "Dark theme" : "Light theme";
     };
 
     document.getElementById("plus").addEventListener("click", () => {
-      passengers = Math.min(passengers + 1, MAX_PASSENGERS);
-      document.getElementById("passenger-count").textContent = passengers;
+      passengers = Math.min(passengers + 1, 8);
+      passengerCount.textContent = passengers;
     });
 
     document.getElementById("minus").addEventListener("click", () => {
       passengers = Math.max(passengers - 1, 1);
-      document.getElementById("passenger-count").textContent = passengers;
+      passengerCount.textContent = passengers;
     });
 
-    document.getElementById("swap").addEventListener("click", () => {
-      const from = document.getElementById("from");
-      const to = document.getElementById("to");
-      [from.value, to.value] = [to.value, from.value];
-    });
-
-    document.getElementById("search").addEventListener("click", () => {
-      const from = document.getElementById("from").value.trim().toLowerCase();
-      const to = document.getElementById("to").value.trim().toLowerCase();
-      const filtered = routes.filter(route =>
-        route.seats >= passengers &&
-        (!from || route.from.toLowerCase().includes(from)) &&
-        (!to || route.to.toLowerCase().includes(to))
-      );
-      selectedRoute = filtered.find(route => route.id === selectedRoute?.id) || filtered[0] || null;
-      renderRoutes(filtered);
-      updateTracker();
-    });
-
-    document.getElementById("book").addEventListener("click", () => {
-      if (!selectedRoute) {
-        showToast("Please select a route before booking.");
-        return;
-      }
-      if (passengers > selectedRoute.seats) {
-        showToast(`Only ${selectedRoute.seats} seat(s) left on this route.`);
-        return;
-      }
-
-      const dateInput = document.getElementById("date");
-      const date = dateInput.value || getTodayISO();
-      bookings.unshift({
-        route: `${selectedRoute.from} → ${selectedRoute.to}`,
-        date,
-        passengers,
-        total: selectedRoute.fare * passengers
+    document.querySelectorAll(".swap-fab").forEach((button) => {
+      button.addEventListener("click", () => {
+        const current = destination.value.trim();
+        destination.value = current.includes("Madina") ? "East Legon to Circle" : "Madina to Circle";
+        routeSummary.textContent = destination.value || "Madina → Circle";
       });
-      selectedRoute.seats -= passengers;
-
-      renderBookings();
-      renderRoutes(routes);
-      updateTracker();
-      ticketCount.className = "badge confirmed";
-      showToast("Booking confirmed.");
     });
 
-    document.getElementById("support-form").addEventListener("submit", (event) => {
-      event.preventDefault();
-      showToast("Support request sent. Our team will contact you shortly.");
-      event.target.reset();
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => setView(button.dataset.view));
     });
 
-    document.getElementById("tabs").addEventListener("click", (event) => {
-      if (event.target.tagName !== "BUTTON") return;
-      document.querySelectorAll(".nav button").forEach(btn => btn.classList.remove("active"));
-      event.target.classList.add("active");
-      const targetId = event.target.dataset.target;
-      document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    authTabs.forEach((tab) => {
+      tab.addEventListener("click", () => setAuth(tab.dataset.auth));
     });
 
-    const initialize = () => {
-      document.getElementById("date").value = getTodayISO();
-      selectedRoute = routes[0];
-      renderRoutes(routes);
-      updateTracker();
-      renderBookings();
-      renderKPIs(routes);
-    };
+    themeToggle.addEventListener("click", toggleTheme);
 
-    initialize();
+    destination.addEventListener("input", () => {
+      routeSummary.textContent = destination.value || "Madina → Circle";
+    });
+
+    renderRoutes();
+    routeSummary.textContent = "Madina → Circle";
   </script>
 </body>
 </html>

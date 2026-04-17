@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Flow | Sign Up</title>
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body class="auth-page">
+  <header class="topbar surface">
+    <a class="brand-link" href="./index.html" aria-label="Urban Flow home">
+      <span class="brand-mark">U</span>
+      <span>
+        <strong>Urban Flow</strong>
+        <small>Green-route mission</small>
+      </span>
+    </a>
+
+    <nav class="topnav" aria-label="Primary">
+      <a href="./code.html">Dashboard</a>
+      <a href="./signin.html">Sign in</a>
+      <a class="active" href="./signup.html">Sign up</a>
+      <button id="theme-toggle" type="button">Dark theme</button>
+    </nav>
+  </header>
+
+  <main class="auth-shell">
+    <section class="auth-layout surface reverse">
+      <aside class="auth-story">
+        <span class="eyebrow">Create account</span>
+        <h1>Join Urban Flow and book rides with less friction.</h1>
+        <p>
+          Create your account to save routes, receive vehicle alerts, and move between dashboard and authentication screens cleanly.
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">Passenger profiles for personal route preferences.</div>
+          <div class="feature-item">Theme preference remembered automatically.</div>
+          <div class="feature-item">Ready for future checkout and booking pages.</div>
+        </div>
+      </aside>
+
+      <form class="auth-card-panel" data-auth-form="signup">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">New account</span>
+            <h2 id="auth-title">Sign up</h2>
+          </div>
+          <span class="mini-pill">Fast</span>
+        </div>
+
+        <div class="field-row">
+          <label class="field">
+            <span>First name</span>
+            <input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required />
+          </label>
+          <label class="field">
+            <span>Last name</span>
+            <input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Email address</span>
+          <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+        </label>
+
+        <label class="field">
+          <span>Phone number</span>
+          <input name="phone" type="tel" autocomplete="tel" placeholder="024 000 0000" required />
+        </label>
+
+        <label class="field password-field">
+          <span>Password</span>
+          <input name="password" type="password" autocomplete="new-password" placeholder="Create a password" required />
+          <button class="password-toggle" type="button" data-password-toggle>Show</button>
+        </label>
+
+        <label class="field password-field">
+          <span>Confirm password</span>
+          <input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm password" required />
+          <button class="password-toggle" type="button" data-password-toggle>Show</button>
+        </label>
+
+        <label class="checkbox terms">
+          <input type="checkbox" name="terms" required />
+          <span>I agree to the passenger terms and privacy policy.</span>
+        </label>
+
+        <div class="auth-options">
+          <a href="./signin.html">Already have an account?</a>
+        </div>
+
+        <button class="cta full-width" type="submit">Create account</button>
+        <p class="form-note" data-form-note>Use a valid email and a strong password.</p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>
