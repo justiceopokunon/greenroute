@@ -1,7 +1,10 @@
 (() => {
   'use strict';
 
-  const themeStorageKey = 'urbanflow-theme';
+  const themeStorageKey = 'greenroute-theme';
+  const lastOriginStorageKey = 'greenroute-last-origin';
+  const lastDestinationStorageKey = 'greenroute-last-destination';
+  const lastRecentPlacesStorageKey = 'greenroute-recent-places';
   const root = document.documentElement;
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -52,6 +55,7 @@
     routeList: document.getElementById('route-list'),
     resultsCount: document.getElementById('results-count'),
     activeRoutes: document.getElementById('active-routes'),
+    nearbyRoutes: document.getElementById('nearby-routes'),
     availableSeats: document.getElementById('available-seats'),
     selectedEta: document.getElementById('selected-eta'),
     selectedRouteName: document.getElementById('selected-route-name'),
@@ -71,6 +75,14 @@
     plus: document.getElementById('plus'),
     minus: document.getElementById('minus'),
     bookRoute: document.getElementById('book-route'),
+    tripDate: document.getElementById('trip-date'),
+    mapStage: document.querySelector('.map-stage'),
+    spotlightToggle: document.getElementById('spotlight-toggle'),
+    shareTrip: document.getElementById('share-trip'),
+    shareTripMobile: document.getElementById('share-trip-mobile'),
+    bookRouteMobile: document.getElementById('book-route-mobile'),
+    choiceButtons: Array.from(document.querySelectorAll('[data-choice]')),
+    recentPlaceButtons: Array.from(document.querySelectorAll('[data-recent-place]')),
     authForms: Array.from(document.querySelectorAll('[data-auth-form]')),
     passwordToggles: Array.from(document.querySelectorAll('[data-password-toggle]')),
     formNotes: Array.from(document.querySelectorAll('[data-form-note]'))
@@ -79,7 +91,58 @@
   const state = {
     selectedRouteId: routes[0].id,
     passengers: 1,
-    filteredRoutes: routes.slice()
+    filteredRoutes: routes.slice(),
+    spotlightEnabled: false
+  };
+
+  const saveLastInputs = () => {
+    if (elements.origin?.value) {
+      localStorage.setItem(lastOriginStorageKey, elements.origin.value.trim());
+    }
+    if (elements.destination?.value) {
+      localStorage.setItem(lastDestinationStorageKey, elements.destination.value.trim());
+    }
+  };
+
+  const rememberRecentPlace = (place) => {
+    if (!place) {
+      return;
+    }
+
+    const normalized = place.trim();
+    if (!normalized) {
+      return;
+    }
+
+    const current = JSON.parse(localStorage.getItem(lastRecentPlacesStorageKey) || '[]');
+    const next = [normalized, ...current.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, 3);
+    localStorage.setItem(lastRecentPlacesStorageKey, JSON.stringify(next));
+
+    elements.recentPlaceButtons.forEach((button, index) => {
+      button.textContent = next[index] || button.textContent;
+      button.dataset.recentPlace = button.textContent || '';
+    });
+  };
+
+  const initializeRememberedInputs = () => {
+    const lastOrigin = localStorage.getItem(lastOriginStorageKey);
+    const lastDestination = localStorage.getItem(lastDestinationStorageKey);
+    if (lastOrigin && elements.origin) {
+      elements.origin.value = lastOrigin;
+    }
+    if (lastDestination && elements.destination) {
+      elements.destination.value = lastDestination;
+    }
+
+    const recentPlaces = JSON.parse(localStorage.getItem(lastRecentPlacesStorageKey) || '[]');
+    if (recentPlaces.length) {
+      elements.recentPlaceButtons.forEach((button, index) => {
+        if (recentPlaces[index]) {
+          button.textContent = recentPlaces[index];
+          button.dataset.recentPlace = recentPlaces[index];
+        }
+      });
+    }
   };
 
   const setTheme = (theme) => {
@@ -111,9 +174,128 @@
     if (elements.activeRoutes) {
       elements.activeRoutes.textContent = String(routeCount);
     }
+    if (elements.nearbyRoutes) {
+      elements.nearbyRoutes.textContent = String(routeCount);
+    }
     if (elements.availableSeats) {
       elements.availableSeats.textContent = String(seatCount);
     }
+  };
+
+  const setBookButtonState = (route) => {
+    if (!elements.bookRoute && !elements.bookRouteMobile) {
+      return;
+    }
+
+    if (!route) {
+      [elements.bookRoute, elements.bookRouteMobile].forEach((button) => {
+        if (!button) {
+          return;
+        }
+        button.textContent = 'No route available';
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+      });
+      return;
+    }
+
+    [elements.bookRoute, elements.bookRouteMobile].forEach((button) => {
+      if (!button) {
+        return;
+      }
+      button.disabled = false;
+      button.style.opacity = '';
+      button.style.cursor = '';
+      button.textContent = state.passengers > route.seats ? 'Not enough seats' : 'Reserve seat';
+    });
+  };
+
+  const setActiveChoice = (choice) => {
+    elements.choiceButtons.forEach((button) => {
+      button.classList.toggle('active', button.dataset.choice === choice);
+    });
+  };
+
+  const toggleSpotlight = () => {
+    state.spotlightEnabled = !state.spotlightEnabled;
+    elements.mapStage?.classList.toggle('spotlight-on', state.spotlightEnabled);
+    if (elements.spotlightToggle) {
+      elements.spotlightToggle.textContent = state.spotlightEnabled ? 'Disable spotlight' : 'Enable spotlight';
+    }
+    toast(state.spotlightEnabled ? 'Spotlight enabled for easier pickup.' : 'Spotlight disabled.');
+  };
+
+  const shareTripDetails = async () => {
+    const route = getSelectedRoute();
+    const routeText = route ? `${route.from} to ${route.to}` : 'your selected route';
+    const etaText = route ? `${route.eta} minutes` : 'a few minutes';
+    const message = `I am on Green Route: ${routeText}. ETA ${etaText}.`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Green Route trip update',
+          text: message,
+          url: window.location.href
+        });
+        toast('Trip details shared.');
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${message} ${window.location.href}`);
+        toast('Trip details copied to clipboard.');
+        return;
+      }
+
+      toast('Sharing not available on this device.');
+    } catch {
+      toast('Unable to share trip details right now.');
+    }
+  };
+
+  const renderNoRouteDetails = () => {
+    if (elements.selectedRouteName) {
+      elements.selectedRouteName.textContent = 'No matching route';
+    }
+    if (elements.selectedFare) {
+      elements.selectedFare.textContent = '—';
+    }
+    if (elements.selectedEta) {
+      elements.selectedEta.textContent = '—';
+    }
+    if (elements.vehicle) {
+      elements.vehicle.textContent = 'Adjust your filters to find a route.';
+    }
+    if (elements.mapRouteLabel) {
+      elements.mapRouteLabel.textContent = 'No route selected';
+    }
+    if (elements.mapVehicleLabel) {
+      elements.mapVehicleLabel.textContent = 'Waiting for a match';
+    }
+    if (elements.selectedRouteNote) {
+      elements.selectedRouteNote.textContent = 'No route matches your current origin and destination.';
+    }
+    if (elements.selectedSeatNote) {
+      elements.selectedSeatNote.textContent = `${state.passengers} seat${state.passengers === 1 ? '' : 's'} requested`;
+    }
+    if (elements.routeProgress) {
+      elements.routeProgress.style.width = '0%';
+    }
+    if (elements.timeline) {
+      elements.timeline.innerHTML = '<div class="timeline-item"><strong>No stops</strong><span>Try different search values</span></div>';
+    }
+
+    setBookButtonState(null);
+  };
+
+  const setActiveChipFromOrigin = () => {
+    const currentOrigin = (elements.origin?.value || '').trim().toLowerCase();
+    document.querySelectorAll('.chip').forEach((chip) => {
+      const isActive = (chip.textContent || '').trim().toLowerCase() === currentOrigin;
+      chip.classList.toggle('active', isActive);
+    });
   };
 
   const renderTimeline = (route) => {
@@ -133,6 +315,7 @@
 
   const updateRouteDetails = (route) => {
     if (!route) {
+      renderNoRouteDetails();
       return;
     }
 
@@ -165,6 +348,7 @@
     }
 
     renderTimeline(route);
+    setBookButtonState(route);
   };
 
   const renderRoutes = () => {
@@ -173,6 +357,29 @@
     }
 
     elements.routeList.replaceChildren();
+
+    if (!state.filteredRoutes.length) {
+      elements.routeList.innerHTML = `
+        <article class="route-card route-empty surface">
+          <h3>No routes found</h3>
+          <p>Try a different origin/destination or reset your filters.</p>
+          <button class="ghost" type="button" id="empty-reset-routes">Reset filters</button>
+        </article>
+      `;
+
+      const emptyResetButton = document.getElementById('empty-reset-routes');
+      emptyResetButton?.addEventListener('click', () => {
+        elements.resetSearch?.click();
+      });
+
+      if (elements.resultsCount) {
+        elements.resultsCount.textContent = '0';
+      }
+
+      renderStats();
+      renderNoRouteDetails();
+      return;
+    }
 
     state.filteredRoutes.forEach((route, index) => {
       const card = document.createElement('article');
@@ -246,8 +453,28 @@
     }
 
     if (selectedRoute && elements.bookRoute) {
-      elements.bookRoute.textContent = state.passengers > selectedRoute.seats ? 'Not enough seats' : 'Reserve seat';
+      setBookButtonState(selectedRoute);
     }
+  };
+
+  const handleBooking = () => {
+    const selectedRoute = getSelectedRoute();
+    if (!selectedRoute) {
+      toast('Select a route first.');
+      return;
+    }
+
+    if (state.passengers > selectedRoute.seats) {
+      toast(`Only ${selectedRoute.seats} seats remaining.`);
+      return;
+    }
+
+    selectedRoute.seats -= state.passengers;
+    rememberRecentPlace(selectedRoute.to);
+    saveLastInputs();
+    toast(`Reservation created for ${selectedRoute.from} → ${selectedRoute.to}`);
+    renderRoutes();
+    updatePassengerCount(state.passengers);
   };
 
   const initDashboard = () => {
@@ -267,39 +494,77 @@
       }
       state.filteredRoutes = routes.slice();
       state.selectedRouteId = routes[0].id;
+      setActiveChipFromOrigin();
+      setActiveChoice('greenx');
       renderRoutes();
+      saveLastInputs();
       toast('Route filters reset');
     });
 
     [elements.origin, elements.destination].forEach((input) => {
-      input?.addEventListener('input', filterRoutes);
+      input?.addEventListener('input', () => {
+        filterRoutes();
+        setActiveChipFromOrigin();
+        saveLastInputs();
+      });
+      input?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          filterRoutes();
+          saveLastInputs();
+          toast('Routes updated');
+        }
+      });
     });
 
     document.querySelectorAll('.chip').forEach((chip) => {
       chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach((item) => item.classList.remove('active'));
+        chip.classList.add('active');
         if (elements.origin) {
           elements.origin.value = chip.textContent || '';
         }
         filterRoutes();
+        saveLastInputs();
       });
     });
 
-    elements.bookRoute?.addEventListener('click', () => {
-      const selectedRoute = getSelectedRoute();
-      if (!selectedRoute) {
-        return;
-      }
+    elements.bookRoute?.addEventListener('click', handleBooking);
+    elements.bookRouteMobile?.addEventListener('click', handleBooking);
 
-      if (state.passengers > selectedRoute.seats) {
-        toast(`Only ${selectedRoute.seats} seats remaining.`);
-        return;
-      }
-
-      selectedRoute.seats -= state.passengers;
-      toast(`Reservation created for ${selectedRoute.from} → ${selectedRoute.to}`);
-      renderRoutes();
-      updatePassengerCount(state.passengers);
+    elements.choiceButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setActiveChoice(button.dataset.choice || 'greenx');
+        const passengers = Number(button.dataset.passengers || '1');
+        updatePassengerCount(passengers);
+        filterRoutes();
+        toast(`${button.textContent} selected`);
+      });
     });
+
+    elements.recentPlaceButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!elements.destination) {
+          return;
+        }
+        elements.destination.value = button.dataset.recentPlace || button.textContent || '';
+        saveLastInputs();
+        filterRoutes();
+        toast(`Destination set to ${elements.destination.value}`);
+      });
+    });
+
+    elements.spotlightToggle?.addEventListener('click', toggleSpotlight);
+    elements.shareTrip?.addEventListener('click', shareTripDetails);
+    elements.shareTripMobile?.addEventListener('click', shareTripDetails);
+
+    if (elements.tripDate && !elements.tripDate.value) {
+      elements.tripDate.value = new Date().toISOString().split('T')[0];
+    }
+
+    initializeRememberedInputs();
+    setActiveChipFromOrigin();
+    setActiveChoice('greenx');
 
     updatePassengerCount(1);
     renderRoutes();
