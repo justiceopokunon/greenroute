@@ -10,12 +10,47 @@
   const fleetStateStorageKey = 'greenroute-fleet-state';
   const trackedRouteStorageKey = 'greenroute-tracked-route-id';
   const dispatchQueueStorageKey = 'greenroute-dispatch-queue';
-  const easyModeStorageKey = 'greenroute-easy-mode';
+  const driverPhotoStorageKey = 'greenroute-driver-photo';
   const languageStorageKey = 'greenroute-language';
   const noStressStorageKey = 'greenroute-no-stress-mode';
   const followRouteStorageKey = 'greenroute-follow-route-mode';
   const root = document.documentElement;
   const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  const storageGet = (key, fallback = null) => {
+    try {
+      const value = window.localStorage.getItem(key);
+      return value === null ? fallback : value;
+    } catch {
+      return fallback;
+    }
+  };
+
+  const storageSet = (key, value) => {
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const storageRemove = (key) => {
+    try {
+      window.localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const parseStoredJson = (value, fallback) => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
 
   const routes = [
     {
@@ -34,7 +69,7 @@
       driverName: 'Kwame Mensah',
       driverPhone: '+233201234567',
       plate: 'GR-214',
-      driverPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.8,
       status: 'On-Route',
       note: '2 seats left',
@@ -57,7 +92,7 @@
       driverName: 'Yaw Boateng',
       driverPhone: '+233244567890',
       plate: 'GR-301',
-      driverPhoto: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.6,
       status: 'Departing',
       note: 'Plenty space',
@@ -80,7 +115,7 @@
       driverName: 'Kojo Asare',
       driverPhone: '+233277654321',
       plate: 'GR-119',
-      driverPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.7,
       status: 'Confirmed',
       note: 'Boarding soon',
@@ -103,7 +138,7 @@
       driverName: 'Esi Arthur',
       driverPhone: '+233208889900',
       plate: 'TX-501',
-      driverPhoto: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.9,
       status: 'Available',
       note: 'Private ride',
@@ -126,7 +161,7 @@
       driverName: 'Ama Ofori',
       driverPhone: '+233206667788',
       plate: 'TX-213',
-      driverPhoto: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.8,
       status: 'Available',
       note: 'Private ride',
@@ -149,7 +184,7 @@
       driverName: 'Nana Adu',
       driverPhone: '+233209991122',
       plate: 'TX-118',
-      driverPhoto: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=120&q=80&fit=crop',
+      driverPhoto: '',
       trustScore: 4.6,
       status: 'Available',
       note: 'Private ride',
@@ -157,6 +192,25 @@
       timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
     }
   ];
+
+  const applyDriverPhotoToRoutes = (photoDataUrl) => {
+    const normalizedPhoto = String(photoDataUrl || '').trim();
+    routes.forEach((route) => {
+      route.driverPhoto = normalizedPhoto;
+    });
+  };
+
+  const storedDriverPhoto = storageGet(driverPhotoStorageKey, '');
+  if (storedDriverPhoto) {
+    applyDriverPhotoToRoutes(storedDriverPhoto);
+  }
+
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read selected image.'));
+    reader.readAsDataURL(file);
+  });
 
   const elements = {
     themeToggles: Array.from(document.querySelectorAll('#theme-toggle')),
@@ -168,6 +222,7 @@
     selectedEta: document.getElementById('selected-eta'),
     selectedRouteName: document.getElementById('selected-route-name'),
     selectedFare: document.getElementById('selected-fare'),
+    closeTrackerCard: document.getElementById('close-tracker-card'),
     selectedRouteNote: document.getElementById('selected-route-note'),
     selectedSeatNote: document.getElementById('selected-seat-note'),
     mapRouteLabel: document.getElementById('map-route-label'),
@@ -176,8 +231,6 @@
     mapFrame: document.querySelector('.map-frame'),
     mapOverlay: document.querySelector('.map-overlay'),
     mapHotspots: Array.from(document.querySelectorAll('.map-hotspot')),
-    mapModeOrigin: document.getElementById('map-mode-origin'),
-    mapModeDestination: document.getElementById('map-mode-destination'),
     locateMe: document.getElementById('locate-me'),
     userLocationChip: document.getElementById('user-location-chip'),
     userDot: document.getElementById('user-dot'),
@@ -191,7 +244,6 @@
     destination: document.getElementById('destination'),
     voiceDestination: document.getElementById('voice-destination'),
     languageToggle: document.getElementById('language-toggle'),
-    easyModeToggle: document.getElementById('easy-mode-toggle'),
     noStressControls: document.querySelector('.no-stress-controls'),
     noStressToggle: document.getElementById('no-stress-toggle'),
     followRouteToggle: document.getElementById('follow-route-toggle'),
@@ -206,8 +258,6 @@
     minus: document.getElementById('minus'),
     bookRoute: document.getElementById('book-route'),
     tripDate: document.getElementById('trip-date'),
-    mapStage: document.querySelector('.map-stage'),
-    spotlightToggle: document.getElementById('spotlight-toggle'),
     shareTrip: document.getElementById('share-trip'),
     shareTripMobile: document.getElementById('share-trip-mobile'),
     bookRouteMobile: document.getElementById('book-route-mobile'),
@@ -217,7 +267,6 @@
     recentPlaceButtons: Array.from(document.querySelectorAll('[data-recent-place]')),
     authForms: Array.from(document.querySelectorAll('[data-auth-form]')),
     passwordToggles: Array.from(document.querySelectorAll('[data-password-toggle]')),
-    formNotes: Array.from(document.querySelectorAll('[data-form-note]')),
     driverRequestList: document.getElementById('driver-request-list'),
     shiftToggle: document.getElementById('shift-toggle'),
     completeRide: document.getElementById('complete-ride'),
@@ -267,14 +316,12 @@
     filteredRoutes: routes.slice(),
     serviceMode: 'trotro',
     language: 'en',
-    easyMode: true,
-    noStressMode: localStorage.getItem(noStressStorageKey) === '1',
-    followRouteMode: localStorage.getItem(followRouteStorageKey) !== '0',
+    noStressMode: storageGet(noStressStorageKey, '0') === '1',
+    followRouteMode: storageGet(followRouteStorageKey, '1') !== '0',
     lastAnnouncementAt: 0,
-    spotlightEnabled: false,
+    hasUserInteracted: false,
     mapSelectionMode: 'origin',
     locationWatchId: null,
-    fallbackNoticeShown: false,
     userPosition: null
   };
 
@@ -409,28 +456,24 @@
 
   const saveLastInputs = () => {
     if (elements.origin?.value) {
-      localStorage.setItem(lastOriginStorageKey, elements.origin.value.trim());
+      storageSet(lastOriginStorageKey, elements.origin.value.trim());
     }
     if (elements.destination?.value) {
-      localStorage.setItem(lastDestinationStorageKey, elements.destination.value.trim());
+      storageSet(lastDestinationStorageKey, elements.destination.value.trim());
     }
   };
 
   const readActiveTrip = () => {
-    try {
-      return JSON.parse(localStorage.getItem(activeTripStorageKey) || 'null');
-    } catch {
-      return null;
-    }
+    return parseStoredJson(storageGet(activeTripStorageKey, 'null'), null);
   };
 
   const saveActiveTrip = (trip) => {
     if (!trip) {
-      localStorage.removeItem(activeTripStorageKey);
+      storageRemove(activeTripStorageKey);
       return;
     }
 
-    localStorage.setItem(activeTripStorageKey, JSON.stringify(trip));
+    storageSet(activeTripStorageKey, JSON.stringify(trip));
   };
 
   const createInitialDispatchQueue = () => ([
@@ -442,22 +485,22 @@
 
   const readDispatchQueue = () => {
     try {
-      const parsed = JSON.parse(localStorage.getItem(dispatchQueueStorageKey) || 'null');
+      const parsed = JSON.parse(storageGet(dispatchQueueStorageKey, 'null'));
       if (!Array.isArray(parsed)) {
         const initial = createInitialDispatchQueue();
-        localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(initial));
+        storageSet(dispatchQueueStorageKey, JSON.stringify(initial));
         return initial;
       }
       return parsed;
     } catch {
       const initial = createInitialDispatchQueue();
-      localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(initial));
+      storageSet(dispatchQueueStorageKey, JSON.stringify(initial));
       return initial;
     }
   };
 
   const saveDispatchQueue = (queue) => {
-    localStorage.setItem(dispatchQueueStorageKey, JSON.stringify(queue));
+    storageSet(dispatchQueueStorageKey, JSON.stringify(queue));
   };
 
   const buildRouteTelemetry = (route) => ({
@@ -480,10 +523,10 @@
 
   const readFleetState = () => {
     try {
-      const parsed = JSON.parse(localStorage.getItem(fleetStateStorageKey) || 'null');
+      const parsed = JSON.parse(storageGet(fleetStateStorageKey, 'null'));
       if (!parsed || !parsed.routes) {
         const initial = createInitialFleetState();
-        localStorage.setItem(fleetStateStorageKey, JSON.stringify(initial));
+        storageSet(fleetStateStorageKey, JSON.stringify(initial));
         return initial;
       }
       let hasUpdates = false;
@@ -494,18 +537,18 @@
         }
       });
       if (hasUpdates) {
-        localStorage.setItem(fleetStateStorageKey, JSON.stringify(parsed));
+        storageSet(fleetStateStorageKey, JSON.stringify(parsed));
       }
       return parsed;
     } catch {
       const initial = createInitialFleetState();
-      localStorage.setItem(fleetStateStorageKey, JSON.stringify(initial));
+      storageSet(fleetStateStorageKey, JSON.stringify(initial));
       return initial;
     }
   };
 
   const saveFleetState = (fleetState) => {
-    localStorage.setItem(fleetStateStorageKey, JSON.stringify(fleetState));
+    storageSet(fleetStateStorageKey, JSON.stringify(fleetState));
   };
 
   const getRouteFleetState = (routeId) => {
@@ -551,16 +594,6 @@
     return Array.from(demand.entries())
       .map(([stop, count]) => ({ stop, count }))
       .sort((a, b) => b.count - a.count);
-  };
-
-  const getBestStopPrediction = (route) => {
-    const demand = getDemandByStop(route?.serviceType || state.serviceMode);
-    if (!demand.length) {
-      return route?.from || 'Nearby stop';
-    }
-
-    const preferred = demand.find((item) => String(item.stop || '').toLowerCase() === String(route?.from || '').toLowerCase());
-    return preferred?.stop || demand[0].stop;
   };
 
   const getRouteTrustScore = (route, telemetry) => {
@@ -659,14 +692,14 @@
     }
 
     if (!trip) {
-      elements.liveTripTitle.textContent = 'No Active Trip';
-      elements.liveTripCopy.textContent = 'Accepted driver assignments will appear here in real time.';
+      elements.liveTripTitle.textContent = 'No active trip yet';
+      elements.liveTripCopy.textContent = 'When a driver accepts your request, trip details will show here.';
       return;
     }
 
-    const etaText = trip.eta ? `ETA ${trip.eta} min` : 'Live Update';
+    const etaText = trip.eta ? `ETA ${trip.eta} min` : 'Live update';
     elements.liveTripTitle.textContent = `${trip.rider || 'Rider'} · ${trip.from} → ${trip.to}`;
-    elements.liveTripCopy.textContent = `${trip.vehicle || 'Driver Assigned'} · ${trip.fare ? `GHS ${Number(trip.fare).toFixed(2)}` : 'Fare pending'} · ${etaText}`;
+    elements.liveTripCopy.textContent = `${trip.vehicle || 'Driver assigned'} · ${trip.fare ? `GHS ${Number(trip.fare).toFixed(2)}` : 'Fare pending'} · ${etaText}`;
   };
 
   const renderHeatZones = (overlayElement, mode) => {
@@ -713,12 +746,12 @@
 
     const current = trip || route;
     if (!current) {
-      elements.approachAlertTitle.textContent = 'Car is near';
-      elements.approachAlertCopy.textContent = 'Your car is getting close to your stop.';
+      elements.approachAlertTitle.textContent = 'Ride update';
+      elements.approachAlertCopy.textContent = 'We will let you know when your ride is close.';
       elements.vehicleAlertTitle.textContent = 'Seat update';
-      elements.vehicleAlertCopy.textContent = 'Seats can fill quickly, so check before boarding.';
+      elements.vehicleAlertCopy.textContent = 'Seats can fill quickly, so check before you board.';
       elements.activityAlertTitle.textContent = 'Trip update';
-      elements.activityAlertCopy.textContent = 'New changes will show up here automatically.';
+      elements.activityAlertCopy.textContent = 'Any changes to your trip will show here.';
       return;
     }
 
@@ -751,7 +784,7 @@
         elements.vehicleAlertCopy.textContent = `${seats} seats open from ${origin} to ${destination}.`;
       }
     } else {
-      elements.vehicleAlertTitle.textContent = 'Vehicle Assignment';
+      elements.vehicleAlertTitle.textContent = 'Vehicle assigned';
       elements.vehicleAlertCopy.textContent = `${vehicle} is assigned for ${origin} to ${destination}.`;
     }
 
@@ -862,11 +895,13 @@
   };
 
   const renderPassengerMapEntities = () => {
+    showTransientOverlays('.focus-alert-stack');
     renderEntityMarkers(elements.mapOverlay, state.serviceMode);
     renderHeatZones(elements.mapOverlay, state.serviceMode);
   };
 
   const renderDriverMapEntities = (mode) => {
+    showTransientOverlays('.driver-floating-card, .focus-alert-stack');
     renderEntityMarkers(elements.driverMapOverlay, mode || 'trotro');
     renderHeatZones(elements.driverMapOverlay, mode || 'trotro');
   };
@@ -876,7 +911,7 @@
       return;
     }
 
-    const previousTrackedRoute = Number(localStorage.getItem(trackedRouteStorageKey) || '0');
+    const previousTrackedRoute = Number(storageGet(trackedRouteStorageKey, '0'));
     if (previousTrackedRoute === route.id) {
       return;
     }
@@ -900,18 +935,18 @@
         entry.boardingByStop[stop] = Number(entry.boardingByStop[stop] || 0) + 1;
       }
       saveFleetState(fleetState);
-      localStorage.setItem(trackedRouteStorageKey, String(route.id));
+      storageSet(trackedRouteStorageKey, String(route.id));
       syncRoutesFromFleetState();
     }
   };
 
   const clearTrackingInterest = () => {
     if (isTaxiMode()) {
-      localStorage.removeItem(trackedRouteStorageKey);
+      storageRemove(trackedRouteStorageKey);
       return;
     }
 
-    const trackedRouteId = Number(localStorage.getItem(trackedRouteStorageKey) || '0');
+    const trackedRouteId = Number(storageGet(trackedRouteStorageKey, '0'));
     if (!trackedRouteId) {
       return;
     }
@@ -928,7 +963,7 @@
       syncRoutesFromFleetState();
     }
 
-    localStorage.removeItem(trackedRouteStorageKey);
+    storageRemove(trackedRouteStorageKey);
   };
 
   const syncPassengerLiveTrip = () => {
@@ -952,7 +987,7 @@
       elements.selectedEta.textContent = activeTrip.eta ? `${activeTrip.eta} min` : 'Live';
     }
     if (elements.vehicle) {
-      elements.vehicle.textContent = activeTrip.vehicle || 'Driver Assigned';
+      elements.vehicle.textContent = activeTrip.vehicle || 'Driver assigned';
     }
     if (elements.mapRouteLabel) {
       elements.mapRouteLabel.textContent = `Live Trip: ${activeTrip.from} → ${activeTrip.to}`;
@@ -982,9 +1017,9 @@
       return;
     }
 
-    const current = JSON.parse(localStorage.getItem(lastRecentPlacesStorageKey) || '[]');
+    const current = parseStoredJson(storageGet(lastRecentPlacesStorageKey, '[]'), []);
     const next = [normalized, ...current.filter((item) => item.toLowerCase() !== normalized.toLowerCase())].slice(0, 3);
-    localStorage.setItem(lastRecentPlacesStorageKey, JSON.stringify(next));
+    storageSet(lastRecentPlacesStorageKey, JSON.stringify(next));
 
     elements.recentPlaceButtons.forEach((button, index) => {
       button.textContent = next[index] || button.textContent;
@@ -993,8 +1028,8 @@
   };
 
   const initializeRememberedInputs = () => {
-    const lastOrigin = localStorage.getItem(lastOriginStorageKey);
-    const lastDestination = localStorage.getItem(lastDestinationStorageKey);
+    const lastOrigin = storageGet(lastOriginStorageKey, null);
+    const lastDestination = storageGet(lastDestinationStorageKey, null);
     if (lastOrigin && elements.origin) {
       elements.origin.value = lastOrigin;
     }
@@ -1002,7 +1037,7 @@
       elements.destination.value = lastDestination;
     }
 
-    const recentPlaces = JSON.parse(localStorage.getItem(lastRecentPlacesStorageKey) || '[]');
+    const recentPlaces = parseStoredJson(storageGet(lastRecentPlacesStorageKey, '[]'), []);
     if (recentPlaces.length) {
       elements.recentPlaceButtons.forEach((button, index) => {
         if (recentPlaces[index]) {
@@ -1015,7 +1050,7 @@
 
   const setTheme = (theme) => {
     root.dataset.theme = theme;
-    localStorage.setItem(themeStorageKey, theme);
+    storageSet(themeStorageKey, theme);
     elements.themeToggles.forEach((button) => {
       button.textContent = theme === 'dark' ? 'Light Theme' : 'Dark Theme';
     });
@@ -1033,51 +1068,176 @@
     }, 2400);
   };
 
+  const overlayHideTimers = new Map();
+
+  const showTransientOverlays = (selector) => {
+    const overlayCards = Array.from(document.querySelectorAll(selector));
+    if (!overlayCards.length) {
+      return;
+    }
+
+    const previousTimer = overlayHideTimers.get(selector);
+    if (previousTimer) {
+      window.clearTimeout(previousTimer);
+    }
+
+    overlayCards.forEach((element) => {
+      element.hidden = false;
+      element.style.display = '';
+      element.classList.remove('is-hidden');
+    });
+
+    const nextTimer = window.setTimeout(() => {
+      overlayCards.forEach((element) => element.classList.add('is-hidden'));
+      window.setTimeout(() => {
+        overlayCards.forEach((element) => {
+          element.hidden = true;
+          element.style.display = 'none';
+        });
+      }, 350);
+    }, 6500);
+    overlayHideTimers.set(selector, nextTimer);
+  };
+
+  const hideTransientOverlays = (selector) => {
+    const overlayCards = Array.from(document.querySelectorAll(selector));
+    if (!overlayCards.length) {
+      return;
+    }
+
+    const previousTimer = overlayHideTimers.get(selector);
+    if (previousTimer) {
+      window.clearTimeout(previousTimer);
+      overlayHideTimers.delete(selector);
+    }
+
+    overlayCards.forEach((element) => {
+      element.classList.add('is-hidden');
+      element.hidden = true;
+      element.style.display = 'none';
+    });
+  };
+
+  const revealOverlays = (selector) => {
+    const overlayCards = Array.from(document.querySelectorAll(selector));
+    if (!overlayCards.length) {
+      return;
+    }
+
+    overlayCards.forEach((element) => {
+      element.hidden = false;
+      element.style.display = '';
+      element.classList.remove('is-hidden');
+    });
+  };
+
   const t = {
     en: {
-      findCar: 'Find a car',
+      findCar: 'Find ride',
       destination: 'Where are you going?',
       origin: 'Your location',
-      availableSeats: 'Seats left',
-      carsNearYou: 'Cars near you',
-      easyModeOn: 'Easy Mode: On',
-      easyModeOff: 'Easy Mode: Off'
+      carsNearYou: 'Rides near you',
+      noStressOn: 'Avoid crowded cars: On',
+      noStressOff: 'Avoid crowded cars: Off',
+      followOn: 'Ride updates: On',
+      followOff: 'Ride updates: Off',
+      useMyLocation: 'Use My Location',
+      listening: 'Listening...',
+      voiceNotSupported: 'Voice input is not supported on this device.',
+      voiceTryAgain: 'Could not hear clearly. Please try again.',
+      destinationSet: 'Destination set to'
     },
     twi: {
-      findCar: 'Hwe kaar',
-      destination: 'Worek? ',
+      findCar: 'Hwe akwantuo',
+      destination: 'Worekɔ he?',
       origin: 'Wo beae',
-      availableSeats: 'Akonwa a aka',
-      carsNearYou: 'Kaar a ɛbɛn wo',
-      easyModeOn: 'Easy Mode: On',
-      easyModeOff: 'Easy Mode: Off'
+      carsNearYou: 'Akwantuo a ɛbɛn wo',
+      noStressOn: 'Kyerɛ me nea nnipa nni mu pii: On',
+      noStressOff: 'Kyerɛ me nea nnipa nni mu pii: Off',
+      followOn: 'Nkyerɛkyerɛmu: On',
+      followOff: 'Nkyerɛkyerɛmu: Off',
+      useMyLocation: 'Fa me beae no',
+      listening: 'Retie...',
+      voiceNotSupported: 'Voice input nni hɔ wɔ saa device yi so.',
+      voiceTryAgain: 'Mante no yie. Mesrɛ wo, san ka bio.',
+      destinationSet: 'Wode rekɔ'
     }
+  };
+
+  const getSpeechLocale = () => (state.language === 'twi' ? 'en-GH' : 'en-US');
+
+  const speakText = (message) => {
+    if (!message || !('speechSynthesis' in window)) {
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(message);
+    utter.rate = 0.95;
+    utter.lang = getSpeechLocale();
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  };
+
+  const normalizeVoiceDestination = (spoken) => {
+    const raw = String(spoken || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    const cleaned = raw
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const aliases = new Map([
+      ['madina', 'Madina'],
+      ['madena', 'Madina'],
+      ['circle', 'Circle'],
+      ['sakele', 'Circle'],
+      ['adenta', 'Adenta'],
+      ['kaneshie', 'Kaneshie'],
+      ['kasoa', 'Kasoa'],
+      ['airport', 'Airport'],
+      ['kotoka', 'Airport'],
+      ['tema station', 'Tema Station'],
+      ['tema', 'Tema Station'],
+      ['accra central', 'Accra Central'],
+      ['east legon', 'East Legon']
+    ]);
+
+    for (const [key, value] of aliases.entries()) {
+      if (cleaned.includes(key)) {
+        return value;
+      }
+    }
+
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
   };
 
   const announce = (message) => {
-    if (navigator.vibrate) {
-      navigator.vibrate(120);
+    if (state.hasUserInteracted && navigator.vibrate) {
+      try {
+        navigator.vibrate(120);
+      } catch {
+
+      }
     }
-    if ('speechSynthesis' in window && state.easyMode) {
-      const utter = new SpeechSynthesisUtterance(message);
-      utter.rate = 0.95;
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utter);
+    if (state.followRouteMode) {
+      speakText(message);
     }
   };
 
-  const applyEasyModeUI = () => {
-    document.body.classList.toggle('easy-mode', state.easyMode);
-    if (elements.easyModeToggle) {
-      elements.easyModeToggle.textContent = state.easyMode
-        ? t[state.language].easyModeOn
-        : t[state.language].easyModeOff;
-    }
+  const applyPreferenceUI = () => {
+    const words = t[state.language] || t.en;
     if (elements.noStressToggle) {
-      elements.noStressToggle.textContent = state.noStressMode ? 'Avoid crowded cars: On' : 'Avoid crowded cars: Off';
+      elements.noStressToggle.textContent = state.noStressMode ? words.noStressOn : words.noStressOff;
     }
     if (elements.followRouteToggle) {
-      elements.followRouteToggle.textContent = state.followRouteMode ? 'Auto alerts: On' : 'Auto alerts: Off';
+      elements.followRouteToggle.textContent = state.followRouteMode ? words.followOn : words.followOff;
+    }
+    if (elements.locateMe) {
+      const trackingOn = Boolean(state.locationWatchId !== null);
+      elements.locateMe.textContent = trackingOn ? 'Stop Location' : words.useMyLocation;
     }
   };
 
@@ -1099,6 +1259,7 @@
     if (resultsTitle) {
       resultsTitle.textContent = words.carsNearYou;
     }
+    applyPreferenceUI();
   };
 
   const isTaxiMode = () => state.serviceMode === 'taxi';
@@ -1192,10 +1353,12 @@
       if (!button) {
         return;
       }
-      button.disabled = false;
-      button.style.opacity = '';
-      button.style.cursor = '';
-      button.textContent = state.passengers > route.seats
+      const capacityExceeded = state.passengers > route.seats;
+      button.disabled = capacityExceeded;
+      button.style.opacity = capacityExceeded ? '0.6' : '';
+      button.style.cursor = capacityExceeded ? 'not-allowed' : '';
+      button.setAttribute('aria-disabled', capacityExceeded ? 'true' : 'false');
+      button.textContent = capacityExceeded
         ? (isTaxiMode() ? 'Taxi capacity exceeded' : 'Not enough seats')
         : (isTaxiMode() ? 'Book taxi' : "I'm boarding");
     });
@@ -1209,8 +1372,6 @@
 
   const setMapSelectionMode = (mode) => {
     state.mapSelectionMode = mode;
-    elements.mapModeOrigin?.classList.toggle('active', mode === 'origin');
-    elements.mapModeDestination?.classList.toggle('active', mode === 'destination');
     toast(mode === 'origin' ? 'Select a map point to set the origin.' : 'Select a map point to set the destination.');
   };
 
@@ -1367,15 +1528,6 @@
     toast('Live location tracking has started.');
   };
 
-  const toggleSpotlight = () => {
-    state.spotlightEnabled = !state.spotlightEnabled;
-    elements.mapStage?.classList.toggle('spotlight-on', state.spotlightEnabled);
-    if (elements.spotlightToggle) {
-      elements.spotlightToggle.textContent = state.spotlightEnabled ? 'Disable Spotlight' : 'Enable Spotlight';
-    }
-    toast(state.spotlightEnabled ? 'Spotlight enabled for easier pickup visibility.' : 'Spotlight disabled.');
-  };
-
   const shareTripDetails = async () => {
     const route = getSelectedRoute();
     const routeText = route ? `${route.from} to ${route.to}` : 'your selected route';
@@ -1411,7 +1563,7 @@
     }
 
     if (route?.serviceType === 'trotro') {
-      elements.callDriver.textContent = 'No direct call for trotro';
+      elements.callDriver.textContent = 'Direct calls are off for trotro';
       elements.callDriver.disabled = true;
       return;
     }
@@ -1428,7 +1580,7 @@
 
   const renderNoRouteDetails = () => {
     if (elements.selectedRouteName) {
-      elements.selectedRouteName.textContent = 'No matching route';
+      elements.selectedRouteName.textContent = 'No ride found';
     }
     if (elements.selectedFare) {
       elements.selectedFare.textContent = '—';
@@ -1437,16 +1589,16 @@
       elements.selectedEta.textContent = '—';
     }
     if (elements.vehicle) {
-      elements.vehicle.textContent = 'Adjust your filters to find a suitable route.';
+      elements.vehicle.textContent = 'Try changing your location or destination.';
     }
     if (elements.mapRouteLabel) {
-      elements.mapRouteLabel.textContent = 'No Route Selected';
+      elements.mapRouteLabel.textContent = 'No ride selected';
     }
     if (elements.mapVehicleLabel) {
-      elements.mapVehicleLabel.textContent = 'Awaiting a route match';
+      elements.mapVehicleLabel.textContent = 'Waiting for a ride match';
     }
     if (elements.selectedRouteNote) {
-      elements.selectedRouteNote.textContent = 'No route matches your current origin and destination.';
+      elements.selectedRouteNote.textContent = 'No ride matches your current location and destination.';
     }
     if (elements.selectedSeatNote) {
       elements.selectedSeatNote.textContent = getSeatRequestLabel();
@@ -1455,7 +1607,7 @@
       elements.routeProgress.style.width = '0%';
     }
     if (elements.timeline) {
-      elements.timeline.innerHTML = '<div class="timeline-item"><strong>No Stops</strong><span>Try different search criteria</span></div>';
+      elements.timeline.innerHTML = '<div class="timeline-item"><strong>No stops</strong><span>Try a different location or destination</span></div>';
     }
 
     updateContextAlerts(null, null);
@@ -1522,8 +1674,14 @@
     if (driverPlate) {
       driverPlate.textContent = `Plate: ${route.plate || route.vehicle.split('·')[0].trim()}`;
     }
-    if (driverPhoto && route.driverPhoto) {
-      driverPhoto.src = route.driverPhoto;
+    if (driverPhoto) {
+      if (route.driverPhoto) {
+        driverPhoto.src = route.driverPhoto;
+        driverPhoto.hidden = false;
+      } else {
+        driverPhoto.src = '';
+        driverPhoto.hidden = true;
+      }
     }
     updateCallDriverAction(route);
     if (elements.mapRouteLabel) {
@@ -1590,7 +1748,7 @@
 
     if (!state.filteredRoutes.length) {
       elements.routeList.innerHTML = `
-        <article class="route-card route-empty surface">
+        <article class="route-card route-empty no-routes surface">
           <h3>No Routes Found</h3>
           <p>Try a different origin or destination, or reset your filters.</p>
           <button class="ghost" type="button" id="empty-reset-routes">Reset Filters</button>
@@ -1627,7 +1785,7 @@
       const routeIntelRating = isTaxiRoute ? `<span>⭐ ${trustScore.toFixed(1)}</span>` : '';
       card.innerHTML = `
         <div class="route-top simple-route-top">
-          <h3>${route.to}</h3>
+          <h3>${route.from} → ${route.to}</h3>
           <div class="status ${seatSignal}">${route.seats <= 0 ? 'Full' : route.seats <= 2 ? 'Few seats' : 'Seats open'}</div>
         </div>
         <div class="route-meta">
@@ -1643,7 +1801,7 @@
         <button class="route-cta" type="button">${isTaxiRoute ? 'Select Taxi' : 'Select Trotro'}</button>
       `;
 
-      card.querySelector('button').addEventListener('click', () => {
+      const selectRoute = () => {
         state.selectedRouteId = route.id;
         if (elements.origin) {
           elements.origin.value = route.from;
@@ -1656,6 +1814,7 @@
         saveLastInputs();
         renderRoutes();
         updateRouteDetails(route);
+        revealOverlays('.focus-tracker-card');
         if (!isTaxiRoute) {
           registerTrackingInterest(route);
         }
@@ -1663,6 +1822,12 @@
         if (state.followRouteMode && computedEta <= 5) {
           announce(`A matching route is near ${route.to}.`);
         }
+      };
+
+      card.addEventListener('click', selectRoute);
+      card.querySelector('button')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        selectRoute();
       });
 
       if (!reducedMotionQuery.matches) {
@@ -1683,6 +1848,7 @@
 
   const filterRoutes = () => {
     syncRoutesFromFleetState();
+    const originValue = (elements.origin?.value || '').trim().toLowerCase();
     const destinationValue = (elements.destination?.value || '').trim().toLowerCase();
     const modeRoutes = routes.filter(isRouteInActiveMode).filter((route) => {
       if (!state.noStressMode) {
@@ -1692,11 +1858,14 @@
     });
 
     const strictMatches = modeRoutes.filter((route) => {
-      const matchesDestination = !destinationValue || route.to.toLowerCase().includes(destinationValue);
-      return matchesDestination;
+      const routeFrom = route.from.toLowerCase();
+      const routeTo = route.to.toLowerCase();
+      const matchesOrigin = !originValue || routeFrom.includes(originValue);
+      const matchesDestination = !destinationValue || routeTo.includes(destinationValue);
+      return matchesOrigin && matchesDestination;
     });
 
-    const ranked = (strictMatches.length ? strictMatches : modeRoutes)
+    const ranked = strictMatches
       .slice()
       .sort((a, b) => {
         const distanceA = getRouteDistanceKm(a);
@@ -1714,17 +1883,7 @@
           scoreRoute(b, elements.origin?.value || '', elements.destination?.value || '');
       });
 
-    if (strictMatches.length) {
-      state.filteredRoutes = ranked;
-      state.fallbackNoticeShown = false;
-    } else {
-      state.filteredRoutes = ranked.slice(0, 3);
-
-      if (destinationValue && !state.fallbackNoticeShown) {
-        toast('No direct destination match was found. Showing the closest available vehicles nearby.');
-        state.fallbackNoticeShown = true;
-      }
-    }
+    state.filteredRoutes = ranked;
 
     state.selectedRouteId = state.filteredRoutes[0]?.id || modeRoutes[0]?.id || routes[0].id;
     updateMapSelectionState();
@@ -1750,7 +1909,7 @@
   const handleBooking = () => {
     const selectedRoute = getSelectedRoute();
     if (!selectedRoute) {
-      toast('Please select a route first.');
+      toast('Select a ride first.');
       return;
     }
 
@@ -1787,8 +1946,6 @@
     elements.minus?.addEventListener('click', () => updatePassengerCount(state.passengers - 1));
     elements.searchRoutes?.addEventListener('click', filterRoutes);
     elements.locateMe?.addEventListener('click', startLiveLocation);
-    elements.mapModeOrigin?.addEventListener('click', () => setMapSelectionMode('origin'));
-    elements.mapModeDestination?.addEventListener('click', () => setMapSelectionMode('destination'));
 
     elements.mapHotspots.forEach((hotspot) => {
       hotspot.addEventListener('click', () => {
@@ -1815,7 +1972,7 @@
     });
     elements.resetSearch?.addEventListener('click', () => {
       if (elements.origin) {
-        elements.origin.value = 'East Legon';
+        elements.origin.value = 'Madina';
       }
       if (elements.destination) {
         elements.destination.value = 'Circle';
@@ -1827,7 +1984,7 @@
       renderRoutes();
       saveLastInputs();
       updateMapSelectionState();
-      toast('Route filters have been reset.');
+      toast('Filters cleared.');
     });
 
     [elements.origin, elements.destination].forEach((input) => {
@@ -1866,7 +2023,7 @@
 
     elements.noStressToggle?.addEventListener('click', () => {
       state.noStressMode = !state.noStressMode;
-      localStorage.setItem(noStressStorageKey, state.noStressMode ? '1' : '0');
+      storageSet(noStressStorageKey, state.noStressMode ? '1' : '0');
       if (elements.noStressToggle) {
         elements.noStressToggle.textContent = state.noStressMode ? 'Avoid crowded cars: On' : 'Avoid crowded cars: Off';
       }
@@ -1876,11 +2033,11 @@
 
     elements.followRouteToggle?.addEventListener('click', () => {
       state.followRouteMode = !state.followRouteMode;
-      localStorage.setItem(followRouteStorageKey, state.followRouteMode ? '1' : '0');
+      storageSet(followRouteStorageKey, state.followRouteMode ? '1' : '0');
       if (elements.followRouteToggle) {
         elements.followRouteToggle.textContent = state.followRouteMode ? 'Auto alerts: On' : 'Auto alerts: Off';
       }
-      toast(state.followRouteMode ? 'Auto alerts are on.' : 'Auto alerts are off.');
+      toast(state.followRouteMode ? 'Ride alerts are on.' : 'Ride alerts are off.');
     });
 
     elements.panicButton?.addEventListener('click', async () => {
@@ -1889,10 +2046,10 @@
       if (navigator.share) {
         try {
           await navigator.share({ title: 'Green Route Safety', text: message });
-          toast('Safety information shared.');
+          toast('Safety update shared.');
           return;
         } catch {
-          // Fall through to the toast below.
+
         }
       }
       toast('Safety check ready to share with family.');
@@ -1927,7 +2084,7 @@
               toast(`Dial ${phone}. Number copied to clipboard.`);
               return;
             } catch {
-              // Fall back to plain toast below.
+
             }
           }
 
@@ -1940,7 +2097,7 @@
             toast(`Unable to open dialer. Number copied: ${phone}`);
             return;
           } catch {
-            // Fall through.
+
           }
         }
         toast(`Unable to open dialer. Driver number: ${phone}`);
@@ -1963,41 +2120,40 @@
     });
 
     elements.voiceDestination?.addEventListener('click', () => {
+      const words = t[state.language] || t.en;
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        toast('Voice input is not supported on this phone.');
+        toast(words.voiceNotSupported);
         return;
       }
 
       const recognition = new SpeechRecognition();
-      recognition.lang = state.language === 'twi' ? 'en-GH' : 'en-US';
+      recognition.lang = getSpeechLocale();
       recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 3;
+      toast(words.listening);
       recognition.onresult = (event) => {
         const spoken = String(event.results?.[0]?.[0]?.transcript || '').trim();
-        if (spoken && elements.destination) {
-          elements.destination.value = spoken;
+        const normalized = normalizeVoiceDestination(spoken);
+        if (normalized && elements.destination) {
+          elements.destination.value = normalized;
           filterRoutes();
           saveLastInputs();
-          toast(`Destination set to ${spoken}.`);
+          toast(`${words.destinationSet} ${normalized}.`);
+          if (state.followRouteMode) {
+            speakText(`${words.destinationSet} ${normalized}`);
+          }
         }
       };
-      recognition.onerror = () => toast('Could not hear destination. Please try again.');
+      recognition.onerror = () => toast(words.voiceTryAgain);
       recognition.start();
-    });
-
-    elements.easyModeToggle?.addEventListener('click', () => {
-      state.easyMode = !state.easyMode;
-      localStorage.setItem(easyModeStorageKey, state.easyMode ? '1' : '0');
-      applyEasyModeUI();
     });
 
     elements.languageToggle?.addEventListener('change', () => {
       const next = elements.languageToggle?.value === 'twi' ? 'twi' : 'en';
       state.language = next;
-      localStorage.setItem(languageStorageKey, next);
+      storageSet(languageStorageKey, next);
       applyLanguageUI();
-      applyEasyModeUI();
       filterRoutes();
     });
 
@@ -2042,9 +2198,21 @@
       });
     });
 
-    elements.spotlightToggle?.addEventListener('click', toggleSpotlight);
     elements.shareTrip?.addEventListener('click', shareTripDetails);
     elements.shareTripMobile?.addEventListener('click', shareTripDetails);
+    elements.closeTrackerCard?.addEventListener('click', () => {
+      hideTransientOverlays('.focus-tracker-card');
+    });
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (target.closest('#close-tracker-card')) {
+        hideTransientOverlays('.focus-tracker-card');
+      }
+    });
 
     elements.driverVoiceSummary?.addEventListener('click', () => {
       const route = getSelectedRoute();
@@ -2052,12 +2220,7 @@
       const message = route
         ? `Route ${route.from} to ${route.to}. ${route.seats} seats left.`
         : 'No active driver route selected.';
-      if ('speechSynthesis' in window) {
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.lang = state.language === 'twi' ? 'en-GH' : 'en-US';
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
-      }
+      speakText(message);
       if (telemetry) {
         toast('Route summary announced.');
       }
@@ -2110,13 +2273,12 @@
     });
 
     initializeRememberedInputs();
-    state.easyMode = localStorage.getItem(easyModeStorageKey) !== '0';
-    state.language = localStorage.getItem(languageStorageKey) === 'twi' ? 'twi' : 'en';
+    state.language = storageGet(languageStorageKey, 'en') === 'twi' ? 'twi' : 'en';
     if (elements.languageToggle) {
       elements.languageToggle.value = state.language;
     }
-    applyEasyModeUI();
     applyLanguageUI();
+    applyPreferenceUI();
     setActiveChipFromOrigin();
     setActiveChoice('greenx');
     applyServiceModeUI();
@@ -2135,6 +2297,27 @@
       return;
     }
 
+    const passwordStrengthLabel = (password) => {
+      const value = String(password || '');
+      let score = 0;
+      if (value.length >= 8) score += 1;
+      if (/[A-Z]/.test(value)) score += 1;
+      if (/[0-9]/.test(value)) score += 1;
+      if (/[^A-Za-z0-9]/.test(value)) score += 1;
+      if (score <= 1) return 'Weak password';
+      if (score <= 3) return 'Good password';
+      return 'Strong password';
+    };
+
+    const updateFieldState = (input, isValid, isInvalid) => {
+      const field = input.closest('.field');
+      if (!field) {
+        return;
+      }
+      field.classList.toggle('is-valid', Boolean(isValid));
+      field.classList.toggle('is-invalid', Boolean(isInvalid));
+    };
+
     elements.passwordToggles.forEach((toggleButton) => {
       toggleButton.addEventListener('click', () => {
         const field = toggleButton.closest('.password-field')?.querySelector('input');
@@ -2149,44 +2332,278 @@
     });
 
     elements.authForms.forEach((form) => {
-      form.addEventListener('submit', (event) => {
-        event.preventDefault();
+      const note = form.querySelector('[data-form-note]');
+      const emailInput = form.querySelector('input[type="email"]');
+      const passwordInput = form.querySelector('input[name="password"]');
+      const confirmInput = form.querySelector('input[name="confirmPassword"]');
+      const requiredFields = Array.from(form.querySelectorAll('[required]'));
 
-        const formData = new FormData(form);
-        const values = Object.fromEntries(formData.entries());
-        const note = form.querySelector('[data-form-note]');
+      const toFieldName = (name) => String(name || 'field')
+        .replace(/([A-Z])/g, ' $1')
+        .trim()
+        .toLowerCase();
 
-        const requiredFields = Array.from(form.querySelectorAll('[required]'));
+      const clearCustomValidity = () => {
+        requiredFields.forEach((field) => {
+          if (typeof field.setCustomValidity === 'function') {
+            field.setCustomValidity('');
+          }
+        });
+      };
+
+      const getValidationIssue = () => {
         const missingField = requiredFields.find((field) => {
           if (field.type === 'checkbox') {
             return !field.checked;
           }
-
           return !String(field.value || '').trim();
         });
 
         if (missingField) {
-          note.textContent = 'Complete all required fields before continuing.';
-          missingField.focus();
-          toast('Please complete all required fields.');
+          if (missingField.type === 'checkbox') {
+            return {
+              field: missingField,
+              message: 'Please accept the terms and privacy policy to continue.'
+            };
+          }
+
+          return {
+            field: missingField,
+            message: `Please enter your ${toFieldName(missingField.name)}.`
+          };
+        }
+
+        if (emailInput && emailInput.value && !emailInput.checkValidity()) {
+          return {
+            field: emailInput,
+            message: 'Enter a valid email address.'
+          };
+        }
+
+        if (passwordInput && passwordInput.value.length < 8) {
+          return {
+            field: passwordInput,
+            message: 'Password must be at least 8 characters long.'
+          };
+        }
+
+        if (confirmInput && confirmInput.value !== (passwordInput?.value || '')) {
+          return {
+            field: confirmInput,
+            message: 'Passwords do not match.'
+          };
+        }
+
+        const invalidField = requiredFields.find((field) => typeof field.checkValidity === 'function' && !field.checkValidity());
+        if (invalidField) {
+          return {
+            field: invalidField,
+            message: `Please correct ${toFieldName(invalidField.name)}.`
+          };
+        }
+
+        return null;
+      };
+
+      const runLiveValidation = () => {
+        clearCustomValidity();
+
+        if (emailInput?.value) {
+          updateFieldState(emailInput, emailInput.checkValidity(), !emailInput.checkValidity());
+        }
+
+        if (passwordInput?.value) {
+          updateFieldState(passwordInput, passwordInput.value.length >= 8, passwordInput.value.length > 0 && passwordInput.value.length < 8);
+        }
+
+        if (confirmInput) {
+          const hasMismatch = Boolean(confirmInput.value) && confirmInput.value !== (passwordInput?.value || '');
+          updateFieldState(confirmInput, !hasMismatch && Boolean(confirmInput.value), hasMismatch);
+          if (hasMismatch) {
+            confirmInput.setCustomValidity('Passwords do not match.');
+            if (note) {
+              note.textContent = 'Passwords do not match.';
+              note.classList.add('warn');
+            }
+            return;
+          }
+          confirmInput.setCustomValidity('');
+        }
+
+        if (passwordInput && passwordInput.value && passwordInput.value.length < 8) {
+          passwordInput.setCustomValidity('Password must be at least 8 characters long.');
+          if (note) {
+            note.textContent = 'Password must be at least 8 characters long.';
+            note.classList.add('warn');
+          }
           return;
         }
 
-        if (form.dataset.authForm === 'signup' && values.password !== values.confirmPassword) {
-          note.textContent = 'Passwords do not match.';
-          toast('Passwords must match.');
+        if (passwordInput) {
+          passwordInput.setCustomValidity('');
+        }
+
+        if (passwordInput?.value && form.dataset.authForm === 'signup') {
+          if (note) {
+            note.textContent = passwordStrengthLabel(passwordInput.value);
+            note.classList.remove('warn');
+          }
           return;
         }
+
+        if (!note) {
+          return;
+        }
+
+        const issue = getValidationIssue();
+        if (issue) {
+          note.textContent = issue.message;
+          note.classList.add('warn');
+          return;
+        }
+
+        note.classList.remove('warn');
+      };
+
+      Array.from(form.querySelectorAll('input, select')).forEach((input) => {
+        input.addEventListener('input', runLiveValidation);
+        input.addEventListener('blur', runLiveValidation);
+      });
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        clearCustomValidity();
+
+        const formData = new FormData(form);
+
+        if (form.dataset.authForm === 'driver-signin') {
+          const uploadedPhoto = formData.get('driverPhoto');
+          if (uploadedPhoto instanceof File && uploadedPhoto.size > 0) {
+            if (!uploadedPhoto.type.startsWith('image/')) {
+              toast('Please upload an image file for the driver photo.');
+              return;
+            }
+            if (uploadedPhoto.size > 3 * 1024 * 1024) {
+              toast('Driver photo is too large. Use an image under 3MB.');
+              return;
+            }
+
+            try {
+              const photoDataUrl = await fileToDataUrl(uploadedPhoto);
+              storageSet(driverPhotoStorageKey, photoDataUrl);
+              applyDriverPhotoToRoutes(photoDataUrl);
+            } catch {
+              toast('Unable to process driver photo. Please try another image.');
+              return;
+            }
+          }
+        }
+
+        const issue = getValidationIssue();
+        if (issue) {
+          if (issue.field && typeof issue.field.setCustomValidity === 'function') {
+            issue.field.setCustomValidity(issue.message);
+          }
+          if (note) {
+            note.textContent = issue.message;
+            note.classList.add('warn');
+          }
+          if (issue.field && typeof issue.field.focus === 'function') {
+            issue.field.focus();
+          }
+          if (issue.field && typeof issue.field.reportValidity === 'function') {
+            issue.field.reportValidity();
+          }
+          toast(issue.message);
+          return;
+        }
+
+        const values = Object.fromEntries(formData.entries());
 
         const authRole = form.dataset.authForm === 'driver-signin' ? 'driver' : 'passenger';
-        localStorage.setItem(roleStorageKey, authRole);
+        storageSet(roleStorageKey, authRole);
 
-        note.textContent = form.dataset.authForm.includes('signin') ? 'Signing you in...' : 'Creating your account...';
+        if (note) {
+          note.classList.remove('warn');
+          note.textContent = form.dataset.authForm.includes('signin') ? 'Signing in...' : 'Creating account...';
+        }
         toast(authRole === 'driver' ? 'Driver access granted.' : 'Sign-in successful. Welcome back.');
 
         window.setTimeout(() => {
           window.location.href = authRole === 'driver' ? './driver.html' : './code.html';
         }, 700);
+      });
+    });
+  };
+
+  const initializeResponsiveSidebar = () => {
+    const sidebar = document.querySelector('.focus-sidebar');
+    if (!sidebar) {
+      return;
+    }
+
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.className = 'sidebar-toggle-btn';
+    toggleButton.setAttribute('aria-label', 'Toggle menu panel');
+    toggleButton.textContent = 'Menu';
+    document.body.appendChild(toggleButton);
+
+    const syncState = () => {
+      const mobile = window.matchMedia('(max-width: 900px)').matches;
+      toggleButton.hidden = !mobile;
+      if (!mobile) {
+        document.body.classList.remove('sidebar-open');
+      }
+      toggleButton.setAttribute('aria-expanded', document.body.classList.contains('sidebar-open') ? 'true' : 'false');
+    };
+
+    toggleButton.addEventListener('click', () => {
+      document.body.classList.toggle('sidebar-open');
+      syncState();
+    });
+
+    sidebar.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (window.matchMedia('(max-width: 900px)').matches && target.closest('a[href]')) {
+        document.body.classList.remove('sidebar-open');
+        syncState();
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        document.body.classList.remove('sidebar-open');
+        syncState();
+      }
+    });
+
+    window.addEventListener('resize', syncState);
+    syncState();
+  };
+
+  const initializeInteractiveCards = () => {
+    if (reducedMotionQuery.matches || !window.matchMedia('(pointer: fine)').matches) {
+      return;
+    }
+
+    const interactiveCards = Array.from(document.querySelectorAll('.stack-block, .focus-tracker-card, .auth-focus-form, .route-card, .alert-card'));
+    interactiveCards.forEach((card) => {
+      card.classList.add('interactive-card');
+      card.addEventListener('pointermove', (event) => {
+        const rect = card.getBoundingClientRect();
+        const offsetX = (event.clientX - rect.left) / rect.width;
+        const offsetY = (event.clientY - rect.top) / rect.height;
+        const rotateY = (offsetX - 0.5) * 6;
+        const rotateX = (0.5 - offsetY) * 5;
+        card.style.transform = `perspective(700px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
+      });
+
+      card.addEventListener('pointerleave', () => {
+        card.style.transform = '';
       });
     });
   };
@@ -2243,6 +2660,10 @@
             simpleState.managedRouteId = modeRoutes[0].id;
           }
           elements.driverRouteSelect.value = String(simpleState.managedRouteId);
+          const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || modeRoutes[0];
+          if (activeRoute && elements.driverStartPoint) {
+            elements.driverStartPoint.value = activeRoute.from;
+          }
         }
       };
 
@@ -2251,6 +2672,8 @@
         const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || null;
         const onboard = Number(telemetry?.onboard || 0);
         const available = Number(telemetry?.availableSeats || 0);
+        const seatMirrors = Array.from(document.querySelectorAll('[data-driver-seat-copy]'));
+        const shiftMirrors = Array.from(document.querySelectorAll('[data-shift-toggle-mirror]'));
         if (elements.onboardCountInput) {
           elements.onboardCountInput.value = String(onboard);
         }
@@ -2260,11 +2683,25 @@
         if (elements.driverAvailableSeats) {
           elements.driverAvailableSeats.textContent = `Available seats: ${available}`;
         }
+        seatMirrors.forEach((node) => {
+          node.textContent = `Available seats: ${available}`;
+        });
         if (elements.shiftToggle) {
           elements.shiftToggle.textContent = simpleState.online ? 'STOP ROUTE' : 'START ROUTE';
         }
+        shiftMirrors.forEach((node) => {
+          node.textContent = simpleState.online ? 'STOP ROUTE' : 'START ROUTE';
+        });
         if (elements.driverMapLabel && activeRoute) {
           elements.driverMapLabel.textContent = `${activeRoute.from} → ${activeRoute.to}`;
+        }
+        if (elements.liveTripTitle && activeRoute) {
+          elements.liveTripTitle.textContent = `${activeRoute.from} → ${activeRoute.to}`;
+        }
+        if (elements.liveTripCopy) {
+          elements.liveTripCopy.textContent = simpleState.online
+            ? 'Seat updates and stop activity will appear here.'
+            : 'Route is paused. Start route to resume live activity.';
         }
         if (elements.driverMapNote) {
           const claimed = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
@@ -2300,11 +2737,21 @@
       elements.shiftToggle?.addEventListener('click', () => {
         simpleState.online = !simpleState.online;
         refreshSimpleDriver();
-        toast(simpleState.online ? 'Route started.' : 'Route stopped.');
+        toast(simpleState.online ? 'Route started.' : 'Route paused.');
+      });
+
+      document.querySelectorAll('[data-shift-toggle-mirror]').forEach((button) => {
+        button.addEventListener('click', () => {
+          elements.shiftToggle?.click();
+        });
       });
 
       elements.driverRouteSelect?.addEventListener('change', () => {
         simpleState.managedRouteId = Number(elements.driverRouteSelect?.value || '1');
+        const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || null;
+        if (activeRoute && elements.driverStartPoint) {
+          elements.driverStartPoint.value = activeRoute.from;
+        }
         refreshSimpleDriver();
       });
 
@@ -2318,7 +2765,7 @@
           populateSimpleRoutes();
           applySimpleDriverServiceModeUI();
           refreshSimpleDriver();
-          toast(`${isSimpleTaxiMode() ? 'Taxi' : 'Trotro'} mode selected.`);
+          toast(`${isSimpleTaxiMode() ? 'Taxi' : 'Trotro'} mode is active.`);
         });
       });
 
@@ -2348,9 +2795,9 @@
 
     syncRoutesFromFleetState();
 
-    const currentRole = localStorage.getItem(roleStorageKey);
+    const currentRole = storageGet(roleStorageKey, null);
     if (currentRole && currentRole !== 'driver') {
-      toast('This looks like a passenger account. Sign in as a driver to continue.');
+      toast('This account is set as passenger. Sign in as driver to continue.');
     }
 
     const driverState = {
@@ -2397,7 +2844,7 @@
 
       elements.driverRouteSelect.value = String(driverState.managedRouteId);
       const activeRoute = getRouteForDriverMode();
-      if (activeRoute && elements.driverStartPoint && !elements.driverStartPoint.value.trim()) {
+      if (activeRoute && elements.driverStartPoint) {
         elements.driverStartPoint.value = activeRoute.from;
       }
     };
@@ -2465,6 +2912,7 @@
     };
 
     const syncDriverStats = () => {
+      showTransientOverlays('.driver-floating-card, .focus-alert-stack');
       const telemetry = getManagedFleetTelemetry();
       const managedRoute = getRouteForDriverMode();
       const startPoint = String(elements.driverStartPoint?.value || managedRoute?.from || '').trim().toLowerCase();
@@ -2666,7 +3114,7 @@
             fare: enteredFare,
             eta: request.eta,
             serviceType: driverState.serviceMode,
-            vehicle: getRouteForDriverMode()?.vehicle || 'Driver Assigned',
+            vehicle: getRouteForDriverMode()?.vehicle || 'Driver assigned',
             driver: 'Justice Opoku',
             status: 'Driver accepted your trip.',
             progress: 22,
@@ -2721,7 +3169,7 @@
     elements.driverRouteSelect?.addEventListener('change', () => {
       driverState.managedRouteId = Number(elements.driverRouteSelect?.value || '0') || driverState.managedRouteId;
       const activeRoute = getRouteForDriverMode();
-      if (activeRoute && elements.driverStartPoint && !elements.driverStartPoint.value.trim()) {
+      if (activeRoute && elements.driverStartPoint) {
         elements.driverStartPoint.value = activeRoute.from;
       }
       renderRequestQueue();
@@ -2845,13 +3293,44 @@
   };
 
   const initializeTheme = () => {
-    const savedTheme = localStorage.getItem(themeStorageKey);
+    const savedTheme = storageGet(themeStorageKey, null);
     setTheme(savedTheme === 'dark' ? 'dark' : 'light');
 
     elements.themeToggles.forEach((button) => {
       button.addEventListener('click', () => {
         setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
       });
+    });
+  };
+
+  const initializeHamburgerMenu = () => {
+    const hamburgerBtn = document.getElementById('hamburger-btn');
+    const mobileNavOverlay = document.getElementById('mobile-nav-overlay');
+    const navbarMenu = document.getElementById('navbar-menu');
+
+    if (!hamburgerBtn || !mobileNavOverlay) return;
+
+    hamburgerBtn.addEventListener('click', () => {
+      hamburgerBtn.classList.toggle('active');
+      mobileNavOverlay.classList.toggle('active');
+    });
+
+
+    mobileNavOverlay.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        hamburgerBtn.classList.remove('active');
+        mobileNavOverlay.classList.remove('active');
+      });
+    });
+
+
+    document.addEventListener('click', (event) => {
+      if (window.innerWidth > 860) return;
+      const isClickInsideMenu = mobileNavOverlay.contains(event.target) || hamburgerBtn.contains(event.target);
+      if (!isClickInsideMenu) {
+        hamburgerBtn.classList.remove('active');
+        mobileNavOverlay.classList.remove('active');
+      }
     });
   };
 
@@ -2862,8 +3341,18 @@
   };
 
   document.addEventListener('DOMContentLoaded', () => {
+    const markUserInteraction = () => {
+      state.hasUserInteracted = true;
+    };
+
+    document.addEventListener('pointerdown', markUserInteraction, { passive: true });
+    document.addEventListener('keydown', markUserInteraction);
+
     initializeTheme();
     initializeMotionHooks();
+    initializeHamburgerMenu();
+    initializeResponsiveSidebar();
+    initializeInteractiveCards();
     initDashboard();
     initAuthForms();
     initDriverDashboard();

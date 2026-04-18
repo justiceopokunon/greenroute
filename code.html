@@ -4,25 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Passenger</title>
+  <meta name="description" content="Find nearby rides quickly with Green Route." />
   <link rel="stylesheet" href="./app.css" />
   <script defer src="./app.js"></script>
 </head>
 <body class="dashboard-page focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./code.html">Passenger</a>
+      <a href="./driver-signin.html">Driver</a>
+      <a href="./signin.html">Sign In</a>
+      <a href="./signup.html">Sign Up</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./code.html">Passenger</a>
+    <a href="./driver-signin.html">Driver</a>
+    <a href="./signin.html">Sign In</a>
+    <a href="./signup.html">Sign Up</a>
+  </nav>
+
   <main class="dashboard-shell focus-shell">
     <aside class="sidebar-card surface focus-sidebar">
-      <a class="brand-link focus-brand" href="./index.html" aria-label="Green Route home">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
         <span class="brand-mark">GR</span>
-        <span>
-          <strong>Green Route</strong>
-          <small>Easy daily transport</small>
-        </span>
-      </a>
+      </div>
 
       <div class="profile surface card surface-elevated focus-profile">
         <div class="avatar" aria-hidden="true"></div>
         <div>
           <strong>Justice Opoku</strong>
-          <span>Premium passenger</span>
+          <span>Regular rider</span>
         </div>
       </div>
 
@@ -30,14 +55,14 @@
         <div class="section-head compact">
           <div>
             <span class="eyebrow">Your trip</span>
-            <h1 id="main-title">Find your ride quickly</h1>
+            <h1 id="main-title">Find a ride near you</h1>
           </div>
-          <span class="mini-pill" id="guest-note">Guest mode</span>
+          <span class="mini-pill" id="guest-note">Guest</span>
         </div>
 
         <label class="field">
           <span id="origin-label">Your location</span>
-          <input id="origin" type="text" value="East Legon" placeholder="Detecting location" readonly />
+          <input id="origin" type="text" value="Madina" placeholder="Detecting location" />
         </label>
 
         <label class="field">
@@ -66,15 +91,14 @@
         </div>
 
         <div class="action-row">
-          <button id="search-routes" class="cta" type="button">Find a car</button>
-          <button id="reset-search" class="ghost" type="button">Reset</button>
+          <button id="search-routes" class="cta" type="button">Find ride</button>
+          <button id="reset-search" class="ghost" type="button">Clear</button>
         </div>
 
-        <details class="focus-advanced">
-          <summary>More options</summary>
+        <details class="focus-advanced" open>
+          <summary>Options</summary>
 
           <div class="action-row">
-            <button id="easy-mode-toggle" class="ghost" type="button">Easy Mode: On</button>
             <select id="language-toggle" aria-label="Language selection">
               <option value="en">English</option>
               <option value="twi">Twi</option>
@@ -87,8 +111,9 @@
           </div>
 
           <div class="intelligence-chips">
-            <span class="chip">Less waiting</span>
-            <span class="chip">More comfort</span>
+            <span class="chip">East Legon</span>
+            <span class="chip">Accra Central</span>
+            <span class="chip">Madina</span>
           </div>
 
           <div class="schedule-stack">
@@ -105,7 +130,7 @@
           <div class="service-toggle" role="group" aria-label="Service mode toggle">
             <button class="service-toggle-btn active" type="button" data-service-mode="trotro" aria-pressed="true">Trotro</button>
             <button class="service-toggle-btn" type="button" data-service-mode="taxi" aria-pressed="false">Taxi</button>
-            <span class="mini-pill" id="service-mode-pill">Trotro mode</span>
+            <span class="mini-pill" id="service-mode-pill">Trotro</span>
           </div>
 
           <div class="choice-grid" aria-label="Top ride choices">
@@ -120,18 +145,13 @@
         <div class="section-head">
           <div>
             <span class="eyebrow">Available rides</span>
-            <h2 id="results-title">Cars near you</h2>
+            <h2 id="results-title">Rides near you</h2>
           </div>
           <span class="mini-pill" id="results-count">0</span>
         </div>
         <div class="route-list" id="route-list"></div>
       </section>
 
-      <div class="focus-sidebar-footer" aria-label="Passenger quick actions">
-        <a class="ghost" href="./driver-signin.html">Driver</a>
-        <a class="ghost" href="./signin.html">Sign In</a>
-        <button id="theme-toggle" class="ghost" type="button">Theme</button>
-      </div>
     </aside>
 
     <section class="map-column focus-map-column">
@@ -167,9 +187,9 @@
           <div class="map-label secondary" id="map-vehicle-label">GR-214 · Toyota Hiace</div>
           <div class="map-label secondary" id="map-distance-label">Distance — · ETA — · Seats —</div>
           <div class="map-controls" aria-label="Map controls">
-            <button id="locate-me" class="ghost" type="button">Start Live Location</button>
+            <button id="locate-me" class="ghost" type="button">Use My Location</button>
           </div>
-          <div class="user-location-chip" id="user-location-chip">Live Location: Off</div>
+          <div class="user-location-chip" id="user-location-chip">Live location off</div>
           <div class="user-dot" id="user-dot" aria-hidden="true" hidden></div>
         </div>
 
@@ -179,7 +199,10 @@
               <span class="eyebrow">Trip details</span>
               <h2 id="selected-route-name">Madina → Circle</h2>
             </div>
-            <span class="status confirmed" id="selected-fare">GHS 2.50</span>
+            <div class="tracker-head-actions">
+              <span class="status confirmed" id="selected-fare">GHS 2.50</span>
+              <button id="close-tracker-card" class="icon-button tracker-close-button" type="button" aria-label="Close trip details">×</button>
+            </div>
           </div>
           <div class="driver-trust">
             <img id="driver-photo" src="" alt="Driver photo" />
@@ -207,7 +230,7 @@
             <span class="alert-icon">🔔</span>
             <div>
               <strong id="approach-alert-title">Trotro approach</strong>
-              <p id="approach-alert-copy">Your vehicle is nearby and arriving soon.</p>
+              <p id="approach-alert-copy">Your ride is close and almost at your stop.</p>
             </div>
           </article>
 
@@ -215,7 +238,7 @@
             <span class="alert-icon muted">🪑</span>
             <div>
               <strong id="vehicle-alert-title">Seat update</strong>
-              <p id="vehicle-alert-copy">Only a few seats remain on this route.</p>
+              <p id="vehicle-alert-copy">Only a few seats are left on this route.</p>
             </div>
           </article>
         </div>

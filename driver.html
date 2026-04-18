@@ -4,78 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Driver</title>
+  <meta name="description" content="Driver dashboard for managing routes and seats." />
   <link rel="stylesheet" href="./app.css" />
   <script defer src="./app.js"></script>
 </head>
-<body class="driver-page">
-  <header class="topbar surface">
-    <a class="brand-link" href="./index.html" aria-label="Green Route home">
+<body class="driver-page focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
       <span class="brand-mark">GR</span>
-      <span>
-        <strong>Green Route</strong>
-        <small>Easy daily transport</small>
-      </span>
+      <span class="brand-name">Green Route</span>
     </a>
-
-    <nav class="topnav" aria-label="Primary">
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./index.html">Home</a>
       <a href="./code.html">Passenger</a>
-      <a class="active" href="./driver.html">Driver</a>
-      <a href="./signin.html">Passenger Sign In</a>
       <a href="./driver-signin.html">Driver Sign In</a>
-      <a href="./signup.html">Sign Up</a>
-      <button id="theme-toggle" type="button">Dark Theme</button>
+      <a href="./signin.html">Sign In</a>
     </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
   </header>
 
-  <main class="driver-shell simple-driver-shell">
-    <section class="surface driver-profile simple-driver-panel">
-      <div class="driver-head">
-        <div class="logo-mark" aria-hidden="true">D</div>
-        <div>
-          <p class="eyebrow">Driver</p>
-          <h1>Start and Count</h1>
-        </div>
-        <span class="status confirmed" id="driver-status-pill">Online</span>
-      </div>
-      <p class="driver-subtext">Keep it simple: start route, add passenger, remove passenger.</p>
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./index.html">Home</a>
+    <a href="./code.html">Passenger</a>
+    <a href="./driver-signin.html">Driver Sign In</a>
+    <a href="./signin.html">Sign In</a>
+  </nav>
 
-      <div class="service-toggle" role="group" aria-label="Driver service mode">
-        <button class="service-toggle-btn active" type="button" data-driver-service-mode="trotro" aria-pressed="true">Trotro</button>
-        <button class="service-toggle-btn" type="button" data-driver-service-mode="taxi" aria-pressed="false">Taxi</button>
-        <span class="mini-pill" id="driver-service-mode-pill">Trotro mode</span>
+  <main class="dashboard-shell focus-shell driver-focus-shell simple-driver-shell">
+    <aside class="sidebar-card surface focus-sidebar driver-focus-sidebar simple-driver-panel">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
       </div>
 
-      <label class="field">
-        <span>Route</span>
-        <select id="driver-route-select"></select>
-      </label>
-      <label class="field">
-        <span>Start point</span>
-        <input id="driver-start-point" type="text" value="Madina" placeholder="Current stop" />
-      </label>
-
-      <button class="cta full-width" id="shift-toggle" type="button">START ROUTE</button>
-
-      <div class="counter-card">
-        <div>
-          <span class="counter-label">Passengers onboard</span>
-          <strong id="onboard-display">0</strong>
+      <section class="stack-block driver-intro-block">
+        <div class="driver-head">
+          <div class="logo-mark" aria-hidden="true">D</div>
+          <div>
+            <p class="eyebrow">Driver</p>
+            <h1>Driver Dashboard</h1>
+          </div>
+          <span class="status confirmed" id="driver-status-pill">Online</span>
         </div>
-        <div class="counter-actions" aria-label="Passenger count actions">
-          <button id="onboard-minus" type="button" aria-label="Passenger dropped">−1</button>
-          <button id="onboard-plus" type="button" aria-label="Passenger entered">+1</button>
+        <p class="driver-subtext">Start your route, manage seats, and keep riders updated.</p>
+      </section>
+
+      <section class="stack-block driver-ops-block" aria-label="Driver operations">
+        <div class="service-toggle" role="group" aria-label="Driver service mode">
+          <button class="service-toggle-btn active" type="button" data-driver-service-mode="trotro" aria-pressed="true">Trotro</button>
+          <button class="service-toggle-btn" type="button" data-driver-service-mode="taxi" aria-pressed="false">Taxi</button>
+          <span class="mini-pill" id="driver-service-mode-pill">Trotro mode</span>
+        </div>
+
+        <label class="field">
+          <span>Route</span>
+          <select id="driver-route-select"></select>
+        </label>
+        <label class="field">
+          <span>Start point</span>
+          <input id="driver-start-point" type="text" value="Madina" placeholder="Current stop" />
+        </label>
+
+        <button class="cta full-width" id="shift-toggle" type="button">START ROUTE</button>
+
+        <div class="counter-card">
+          <div>
+            <span class="counter-label">Passengers onboard</span>
+            <strong id="onboard-display">0</strong>
+          </div>
+          <div class="counter-actions" aria-label="Passenger count actions">
+            <button id="onboard-minus" type="button" aria-label="Passenger dropped">−1</button>
+            <button id="onboard-plus" type="button" aria-label="Passenger entered">+1</button>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Onboard count</span>
+          <input id="onboard-count-input" type="number" min="0" step="1" value="0" />
+        </label>
+        <button class="ghost full-width" id="sync-onboard" type="button">Update Seats</button>
+
+        <p id="driver-available-seats">Available seats: 0</p>
+
+        <button class="ghost full-width" id="driver-voice-summary" type="button">Read route update</button>
+
+        <label class="field" hidden>
+          <span id="driver-fare-label">Fare</span>
+          <input id="driver-fare-input" type="number" min="0.5" step="0.1" value="3.5" />
+        </label>
+      </section>
+      <div id="driver-request-list" class="driver-request-list" hidden></div>
+      <button id="complete-ride" type="button" hidden>Complete</button>
+      <input id="auto-accept" type="checkbox" hidden />
+      <span id="next-stop" hidden>Stop</span>
+      <span id="tracking-count" hidden>0</span>
+      <span id="boarding-demand" hidden>None</span>
+      <section id="driver-telemetry-card" hidden></section>
+    </aside>
+
+    <section class="map-column focus-map-column driver-focus-map-column">
+      <div class="stats-bar surface stats-pill">
+        <div class="stat-card">
+          <small>Trips today</small>
+          <strong id="today-trips">0</strong>
+        </div>
+        <div class="stat-card">
+          <small>Earnings</small>
+          <strong id="today-earnings">0</strong>
+        </div>
+        <div class="stat-card accent">
+          <small>Active rides</small>
+          <strong id="active-ride-count">0</strong>
+        </div>
+        <div class="stat-card">
+          <small>Queue</small>
+          <strong id="queue-size">0</strong>
         </div>
       </div>
-
-      <label class="field">
-        <span>Onboard count</span>
-        <input id="onboard-count-input" type="number" min="0" step="1" value="0" />
-      </label>
-      <button class="ghost full-width" id="sync-onboard" type="button">Update Seats</button>
-
-      <p id="driver-available-seats">Available seats: 0</p>
-
-      <button class="ghost full-width" id="driver-voice-summary" type="button">Read route update</button>
 
       <section class="map-stage surface driver-live-map">
         <iframe
@@ -87,25 +138,44 @@
         ></iframe>
         <div class="driver-map-overlay">
           <div class="map-label primary" id="driver-map-label">Madina → Circle</div>
-          <div class="map-label secondary" id="driver-map-note">No seat bookings yet</div>
+          <div class="map-label secondary" id="driver-map-note">No bookings yet</div>
+        </div>
+
+        <article class="tracker-card surface focus-tracker-card driver-floating-card">
+          <div class="section-head compact">
+            <div>
+              <span class="eyebrow">Current route</span>
+              <h2 id="live-trip-title">Madina → Circle</h2>
+            </div>
+            <span class="status confirmed">Online</span>
+          </div>
+          <p id="live-trip-copy" class="driver-subtext">Seat updates and stop activity show up here.</p>
+          <p class="driver-seat-copy" data-driver-seat-copy>Available seats: 0</p>
+          <button class="cta full-width" data-shift-toggle-mirror type="button">START ROUTE</button>
+        </article>
+
+        <div class="focus-alert-stack" aria-label="Driver alerts">
+          <article class="alert-card live-trip-card">
+            <span class="alert-icon">📍</span>
+            <div>
+              <strong id="approach-alert-title">Approach alert</strong>
+              <p id="approach-alert-copy">You are getting close to a pickup stop.</p>
+            </div>
+          </article>
+
+          <article class="alert-card">
+            <span class="alert-icon muted">🧾</span>
+            <div>
+              <strong id="activity-alert-title">Trip activity</strong>
+              <p id="activity-alert-copy">Boarding and drop-off updates appear live here.</p>
+            </div>
+          </article>
         </div>
       </section>
 
-      <label class="field" hidden>
-        <span id="driver-fare-label">Fare</span>
-        <input id="driver-fare-input" type="number" min="0.5" step="0.1" value="3.5" />
-      </label>
-      <div id="driver-request-list" class="driver-request-list" hidden></div>
-      <button id="complete-ride" type="button" hidden>Complete</button>
-      <input id="auto-accept" type="checkbox" hidden />
-      <span id="today-trips" hidden>0</span>
-      <span id="today-earnings" hidden>0</span>
-      <span id="active-ride-count" hidden>0</span>
-      <span id="queue-size" hidden>0</span>
-      <span id="next-stop" hidden>Stop</span>
-      <span id="tracking-count" hidden>0</span>
-      <span id="boarding-demand" hidden>None</span>
-      <section id="driver-telemetry-card" hidden></section>
+      <span id="vehicle-alert-title" hidden>Vehicle alert</span>
+      <span id="vehicle-alert-copy" hidden>Vehicle status.</span>
+      <span id="driver-demand-zone" hidden>Green</span>
     </section>
   </main>
 </body>

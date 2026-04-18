@@ -4,50 +4,67 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Driver Sign In</title>
+  <meta name="description" content="Driver sign in for Green Route." />
   <link rel="stylesheet" href="./app.css" />
   <script defer src="./app.js"></script>
 </head>
-<body class="auth-page">
-  <header class="topbar surface">
-    <a class="brand-link" href="./index.html" aria-label="Green Route home">
+<body class="auth-page focus-page auth-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
       <span class="brand-mark">GR</span>
-      <span>
-        <strong>Green Route</strong>
-        <small>Easy daily transport</small>
-      </span>
+      <span class="brand-name">Green Route</span>
     </a>
-
-    <nav class="topnav" aria-label="Primary">
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
       <a href="./code.html">Passenger</a>
-      <a href="./driver.html">Driver</a>
-      <a href="./signin.html">Passenger Sign In</a>
-      <a class="active" href="./driver-signin.html">Driver Sign In</a>
-      <button id="theme-toggle" type="button">Dark Theme</button>
+      <a href="./index.html">Home</a>
+      <a href="./signin.html">Sign In</a>
+      <a href="./signup.html">Sign Up</a>
     </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
   </header>
 
-  <main class="auth-shell">
-    <section class="auth-layout surface reverse">
-      <aside class="auth-story">
-        <span class="eyebrow">Driver access</span>
-        <h1>Sign in and start your driver day quickly.</h1>
-        <p>
-          Driver and passenger accounts are separate, so your tools stay focused and simple.
-        </p>
-        <div class="feature-list">
-          <div class="feature-item">Dedicated driver sign-in flow.</div>
-          <div class="feature-item">Clear route and seat controls.</div>
-          <div class="feature-item">Quick start into driver mode.</div>
-        </div>
-      </aside>
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./code.html">Passenger</a>
+    <a href="./index.html">Home</a>
+    <a href="./signin.html">Sign In</a>
+    <a href="./signup.html">Sign Up</a>
+  </nav>
 
-      <form class="auth-card-panel" data-auth-form="driver-signin">
+  <main class="focus-shell auth-focus-shell">
+    <aside class="sidebar-card surface focus-sidebar auth-focus-sidebar">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
+      </div>
+
+      <section class="stack-block">
+        <span class="eyebrow">Driver access</span>
+        <h1>Welcome back, driver.</h1>
+        <p>Sign in to manage your route, seats, and trip updates.</p>
+        <div class="feature-list">
+          <div class="feature-item">Simple driver sign-in.</div>
+          <div class="feature-item">Clear route and seat controls.</div>
+          <div class="feature-item">Start your shift in seconds.</div>
+        </div>
+      </section>
+
+    </aside>
+
+    <section class="map-column auth-focus-main">
+      <div class="auth-stage surface">
+      <form class="auth-card-panel auth-focus-form" data-auth-form="driver-signin">
         <div class="section-head compact">
           <div>
             <span class="eyebrow">Driver account</span>
             <h2 id="auth-title">Driver Sign In</h2>
           </div>
-          <span class="mini-pill">Fleet</span>
+          <span class="mini-pill">Driver login</span>
         </div>
 
         <label class="field">
@@ -71,17 +88,23 @@
           <button class="password-toggle" type="button" data-password-toggle>Show</button>
         </label>
 
+        <label class="field">
+          <span>Profile photo</span>
+          <input name="driverPhoto" type="file" accept="image/*" />
+        </label>
+
         <div class="auth-options">
           <label class="checkbox">
             <input type="checkbox" name="remember" />
             <span>Keep me signed in</span>
           </label>
-          <a href="./signin.html">Passenger Sign In</a>
+          <a href="./signin.html">Passenger sign in</a>
         </div>
 
-        <button class="cta full-width" type="submit">Enter driver app</button>
-        <p class="form-note" data-form-note>Use your registered driver credentials.</p>
+        <button class="cta full-width" type="submit">Open driver app</button>
+        <p class="form-note" data-form-note>Use the same details you registered with.</p>
       </form>
+      </div>
     </section>
   </main>
 </body>

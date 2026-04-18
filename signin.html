@@ -4,50 +4,67 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Sign In</title>
+  <meta name="description" content="Sign in to your Green Route account." />
   <link rel="stylesheet" href="./app.css" />
   <script defer src="./app.js"></script>
 </head>
-<body class="auth-page">
-  <header class="topbar surface">
-    <a class="brand-link" href="./index.html" aria-label="Green Route home">
+<body class="auth-page focus-page auth-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
       <span class="brand-mark">GR</span>
-      <span>
-        <strong>Green Route</strong>
-        <small>Easy daily transport</small>
-      </span>
+      <span class="brand-name">Green Route</span>
     </a>
-
-    <nav class="topnav" aria-label="Primary">
-      <a href="./code.html">Passenger App</a>
-      <a href="./driver-signin.html">Driver Sign In</a>
-      <a class="active" href="./signin.html">Sign In</a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./code.html">Passenger</a>
+      <a href="./driver-signin.html">Driver</a>
+      <a href="./index.html">Home</a>
       <a href="./signup.html">Sign Up</a>
-      <button id="theme-toggle" type="button">Dark Theme</button>
     </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
   </header>
 
-  <main class="auth-shell">
-    <section class="auth-layout surface">
-      <aside class="auth-story">
-        <span class="eyebrow">Welcome back</span>
-        <h1>Sign in and continue your trip in a few taps.</h1>
-        <p>
-          Check nearby rides, choose a seat, and move quickly with a familiar flow.
-        </p>
-        <div class="feature-list">
-          <div class="feature-item">Simple ride choices near your location.</div>
-          <div class="feature-item">Saved settings each time you return.</div>
-          <div class="feature-item">Fast sign-in and clear next steps.</div>
-        </div>
-      </aside>
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./code.html">Passenger</a>
+    <a href="./driver-signin.html">Driver</a>
+    <a href="./index.html">Home</a>
+    <a href="./signup.html">Sign Up</a>
+  </nav>
 
-      <form class="auth-card-panel" data-auth-form="signin">
+  <main class="focus-shell auth-focus-shell">
+    <aside class="sidebar-card surface focus-sidebar auth-focus-sidebar">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
+      </div>
+
+      <section class="stack-block">
+        <span class="eyebrow">Welcome back</span>
+        <h1>Welcome back. Let us get you moving.</h1>
+        <p>Sign in to see nearby rides and pick the one that works for you.</p>
+        <div class="feature-list">
+          <div class="feature-item">Real-time routes around you.</div>
+          <div class="feature-item">Your preferences stay saved.</div>
+          <div class="feature-item">Book faster with fewer taps.</div>
+        </div>
+      </section>
+
+    </aside>
+
+    <section class="map-column auth-focus-main">
+      <div class="auth-stage surface">
+      <form class="auth-card-panel auth-focus-form" data-auth-form="signin">
         <div class="section-head compact">
           <div>
             <span class="eyebrow">Account access</span>
             <h2 id="auth-title">Sign In</h2>
           </div>
-          <span class="mini-pill">Secure</span>
+          <span class="mini-pill">Safe login</span>
         </div>
 
         <label class="field">
@@ -70,8 +87,9 @@
         </div>
 
         <button class="cta full-width" type="submit">Sign In</button>
-        <p class="form-note" data-form-note>Use your registered email and password.</p>
+        <p class="form-note" data-form-note>Enter your email and password to continue.</p>
       </form>
+      </div>
     </section>
   </main>
 </body>

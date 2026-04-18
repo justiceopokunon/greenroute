@@ -4,56 +4,90 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Find Rides Fast</title>
+  <meta name="description" content="Green Route helps you find a ride quickly and move around the city with less stress." />
   <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
 </head>
-<body>
-  <main class="landing-shell">
-    <section class="surface landing-card">
-      <div class="landing-hero">
-        <div class="brand-link" aria-label="Green Route brand">
-          <span class="brand-mark">GR</span>
-          <span>
-            <strong>Green Route</strong>
-            <small>Easy daily transport</small>
-          </span>
-        </div>
+<body class="focus-page landing-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./code.html">Passenger</a>
+      <a href="./driver-signin.html">Driver</a>
+      <a href="./signin.html">Sign In</a>
+      <a href="./signup.html">Sign Up</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
 
-        <div>
-          <span class="eyebrow">Find your ride quickly</span>
-          <h1 class="landing-title">Get where you are going without the usual stress.</h1>
-          <p class="landing-copy">
-            Green Route helps you choose a car in a few taps. It is simple, clear, and built for everyday trips.
-          </p>
-        </div>
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./code.html">Passenger</a>
+    <a href="./driver-signin.html">Driver</a>
+    <a href="./signin.html">Sign In</a>
+    <a href="./signup.html">Sign Up</a>
+  </nav>
 
+  <main class="focus-shell landing-focus-shell">
+    <aside class="sidebar-card surface focus-sidebar landing-focus-sidebar">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
+      </div>
+
+      <section class="stack-block">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">Welcome</span>
+            <h1 class="landing-title">Getting around the city just got easier.</h1>
+          </div>
+        </div>
+        <p class="landing-copy">Pick Passenger or Driver and get moving in seconds.</p>
         <div class="feature-list">
-          <div class="feature-item"><strong>Simple choices</strong><br />Pick a ride quickly with clear info.</div>
-          <div class="feature-item"><strong>Comfort first</strong><br />Avoid crowding and move with confidence.</div>
-          <div class="feature-item"><strong>Made for daily use</strong><br />Fast enough for your regular routine.</div>
+          <div class="feature-item">See nearby rides without extra steps.</div>
+          <div class="feature-item">Clean screens that are easy to use on the go.</div>
+          <div class="feature-item">Sign in once and continue where you left off.</div>
         </div>
+      </section>
+
+      <div class="focus-sidebar-footer landing-focus-links" aria-label="Entry actions">
+        <a class="cta" href="./code.html">Open Passenger App</a>
       </div>
+    </aside>
 
-      <div class="landing-actions">
-        <div class="panel">
-          <h2>Start here</h2>
-          <p>Choose your side and continue in seconds.</p>
-          <div class="landing-buttons">
-            <a class="button primary" href="./code.html">Passenger App</a>
-            <a class="button secondary" href="./driver-signin.html">Driver App</a>
-          </div>
-          <div class="subtle-links" aria-label="More options">
-            <a href="./signin.html">Passenger Sign In</a>
-            <a href="./signup.html">Passenger Sign Up</a>
-          </div>
+    <section class="map-column landing-focus-main">
+      <section class="map-stage surface focus-map-stage landing-map-stage">
+        <iframe
+          class="map-frame"
+          title="Accra route map"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
+        ></iframe>
+        <div class="map-overlay">
+          <div class="map-label primary">Accra routes</div>
+          <div class="map-label secondary">Choose Passenger or Driver to continue</div>
         </div>
 
-        <div class="panel">
-          <h2>Why people like it</h2>
-          <p>It keeps the process clear, so riders and drivers can focus on the trip, not the app.</p>
-        </div>
-
-        <div class="landing-note">Green Route · Simple rides, everyday</div>
-      </div>
+        <article class="tracker-card surface focus-tracker-card landing-tracker-card">
+          <div class="section-head compact">
+            <div>
+              <span class="eyebrow">Start now</span>
+              <h2>Ready when you are</h2>
+            </div>
+          </div>
+          <p class="driver-subtext">Open the app, choose your route, and head out.</p>
+          <a class="cta full-width" href="./code.html">Open Passenger App</a>
+        </article>
+      </section>
     </section>
   </main>
 </body>

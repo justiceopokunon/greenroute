@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+/.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+__pycache__/
+
+# Build outputs
+dist/
+*.min.js
+*.min.css
+
+# Local development
+.cache/
+.temp/
+temp/
+
+# IDE specific files
+.eslintcache
+
+# GitHub workflows (if private repo)
+.github/workflows/*.local.yml
