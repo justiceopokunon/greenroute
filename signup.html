@@ -15,10 +15,9 @@
       <span class="brand-name">Green Route</span>
     </a>
     <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
-      <a href="./code.html">Passenger</a>
-      <a href="./driver-signin.html">Driver</a>
       <a href="./index.html">Home</a>
-      <a href="./signin.html">Sign In</a>
+      <a href="./signin.html">Already have an account?</a>
+      <a href="./driver-signin.html">Driver Sign In</a>
     </nav>
     <div class="navbar-actions">
       <button id="theme-toggle" class="ghost" type="button">Theme</button>
@@ -31,10 +30,9 @@
   </header>
 
   <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
-    <a href="./code.html">Passenger</a>
-    <a href="./driver-signin.html">Driver</a>
     <a href="./index.html">Home</a>
-    <a href="./signin.html">Sign In</a>
+    <a href="./signin.html">Already have an account?</a>
+    <a href="./driver-signin.html">Driver Sign In</a>
   </nav>
 
   <main class="focus-shell auth-focus-shell">
@@ -45,12 +43,12 @@
 
       <section class="stack-block">
         <span class="eyebrow">Create account</span>
-        <h1>Create your account in under a minute.</h1>
-        <p>Once you sign up, booking your next ride is quick and easy.</p>
+        <h1>Travel smarter, starting now.</h1>
+        <p>Join thousands who enjoy stress-free rides across the city.</p>
         <div class="feature-list">
-          <div class="feature-item">Save your details once.</div>
-          <div class="feature-item">Keep your theme and preferences.</div>
-          <div class="feature-item">Book rides faster each time.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Book in just a few taps.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 19 21 12 17 5 21 12 2"></polygon></svg> Real-time tracking & updates.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg> Your preferences, always remembered.</div>
         </div>
       </section>
 
@@ -62,55 +60,56 @@
         <div class="section-head compact">
           <div>
             <span class="eyebrow">New account</span>
-            <h2 id="auth-title">Sign Up</h2>
+            <h2 id="auth-title">Let's get you started</h2>
           </div>
-          <span class="mini-pill">Quick setup</span>
+          <span class="mini-pill">1 minute setup</span>
         </div>
 
         <div class="field-row">
-          <label class="field">
+          <label class="field" for="firstName-signup">
             <span>First name</span>
-            <input name="firstName" type="text" autocomplete="given-name" placeholder="First name" required />
+            <input id="firstName-signup" name="firstName" type="text" autocomplete="given-name" placeholder="First name" required />
           </label>
-          <label class="field">
+          <label class="field" for="lastName-signup">
             <span>Last name</span>
-            <input name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required />
+            <input id="lastName-signup" name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required />
           </label>
         </div>
 
-        <label class="field">
+        <label class="field" for="email-signup">
           <span>Email address</span>
-          <input name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
+          <input id="email-signup" name="email" type="email" autocomplete="email" placeholder="you@example.com" required />
         </label>
 
-        <label class="field">
+        <label class="field" for="phone-signup">
           <span>Phone number</span>
-          <input name="phone" type="tel" autocomplete="tel" placeholder="024 000 0000" required />
+          <input id="phone-signup" name="phone" type="tel" autocomplete="tel" placeholder="024 000 0000" required />
         </label>
 
-        <label class="field password-field">
+        <label class="field password-field" for="password-signup">
           <span>Password</span>
-          <input name="password" type="password" autocomplete="new-password" placeholder="Create a password" required />
+          <input id="password-signup" name="password" type="password" autocomplete="new-password" placeholder="Create a password" required />
           <button class="password-toggle" type="button" data-password-toggle>Show</button>
         </label>
 
-        <label class="field password-field">
+        <label class="field password-field" for="confirmPassword-signup">
           <span>Confirm password</span>
-          <input name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm password" required />
+          <input id="confirmPassword-signup" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm password" required />
           <button class="password-toggle" type="button" data-password-toggle>Show</button>
         </label>
 
-        <label class="checkbox terms">
-          <input type="checkbox" name="terms" required />
+        <label class="checkbox terms" for="terms-signup">
+          <input id="terms-signup" type="checkbox" name="terms" required />
           <span>I agree to the terms and privacy policy.</span>
         </label>
 
         <div class="auth-options">
           <a href="./signin.html">Already have an account?</a>
+          <a href="./driver-signup.html" style="font-size: 0.85rem; opacity: 0.7;">Sign up as Driver</a>
         </div>
 
-        <button class="cta full-width" type="submit">Create account</button>
-        <p class="form-note" data-form-note>Use a real email and a strong password.</p>
+        <button class="cta full-width" type="submit">Join Green Route</button>
+        <p class="form-note" data-form-note>Safe, secure, and ready to go.</p>
       </form>
       </div>
     </section>

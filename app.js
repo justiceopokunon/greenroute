@@ -306,8 +306,7 @@
     trustScorePill: document.getElementById('trust-score-pill'),
     crowdMoodPill: document.getElementById('crowd-mood-pill'),
     driverTrustScore: document.getElementById('driver-trust-score'),
-    driverDemandZone: document.getElementById('driver-demand-zone'),
-    driverVoiceSummary: document.getElementById('driver-voice-summary')
+    driverDemandZone: document.getElementById('driver-demand-zone')
   };
 
   const state = {
@@ -461,6 +460,12 @@
     if (elements.destination?.value) {
       storageSet(lastDestinationStorageKey, elements.destination.value.trim());
     }
+    if (elements.driverRouteSelect?.value) {
+      storageSet(lastOriginStorageKey, elements.driverRouteSelect.value.trim());
+    }
+    if (elements.driverStartPoint?.value) {
+      storageSet(lastDestinationStorageKey, elements.driverStartPoint.value.trim());
+    }
   };
 
   const readActiveTrip = () => {
@@ -572,30 +577,6 @@
     return claims.filter((claim) => Number(claim?.expiresAt || 0) > now);
   };
 
-  const getDemandByStop = (mode = state.serviceMode) => {
-    const fleetState = readFleetState();
-    const demand = new Map();
-
-    routes.filter((route) => (route.serviceType || 'trotro') === mode).forEach((route) => {
-      const telemetry = fleetState.routes?.[route.id];
-      const trackingCount = Number(telemetry?.trackingCount || 0);
-      const claimedSeats = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
-      const stopWeight = 1 + trackingCount + (route.seats <= 2 ? 1 : 0) + Math.min(2, claimedSeats);
-
-      if (route.from) {
-        demand.set(route.from, (demand.get(route.from) || 0) + stopWeight);
-      }
-
-      Object.entries(telemetry?.boardingByStop || {}).forEach(([stop, count]) => {
-        demand.set(stop, (demand.get(stop) || 0) + Number(count || 0));
-      });
-    });
-
-    return Array.from(demand.entries())
-      .map(([stop, count]) => ({ stop, count }))
-      .sort((a, b) => b.count - a.count);
-  };
-
   const getRouteTrustScore = (route, telemetry) => {
     const base = Number(route?.trustScore || telemetry?.trustScore || 4.5);
     const trackingBonus = Math.min(0.2, Number(telemetry?.trackingCount || 0) * 0.02);
@@ -702,43 +683,6 @@
     elements.liveTripCopy.textContent = `${trip.vehicle || 'Driver assigned'} · ${trip.fare ? `GHS ${Number(trip.fare).toFixed(2)}` : 'Fare pending'} · ${etaText}`;
   };
 
-  const renderHeatZones = (overlayElement, mode) => {
-    if (!overlayElement) {
-      return;
-    }
-
-    const layer = overlayElement.querySelector('.entity-layer');
-    if (!layer) {
-      return;
-    }
-
-    layer.querySelectorAll('.map-heat').forEach((node) => node.remove());
-
-    getDemandByStop(mode).slice(0, 5).forEach((item) => {
-      const hotspot = elements.mapHotspots.find((node) => (node.dataset.place || '').trim().toLowerCase() === String(item.stop || '').trim().toLowerCase());
-      if (!hotspot) {
-        return;
-      }
-
-      const latitude = Number(hotspot.dataset.lat || '0');
-      const longitude = Number(hotspot.dataset.lon || '0');
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        return;
-      }
-
-      const point = coordinatesFromLatLon(latitude, longitude);
-      const heat = document.createElement('div');
-      const level = item.count >= 5 ? 'red' : item.count >= 2 ? 'yellow' : 'green';
-      heat.className = `map-heat zone-${level}`;
-      heat.style.left = `${point.x}%`;
-      heat.style.top = `${point.y}%`;
-      heat.style.setProperty('--heat-scale', String(Math.min(1.8, 0.9 + item.count * 0.16)));
-      heat.title = `${item.stop}: ${item.count} waiting`;
-      heat.innerHTML = `<span>${item.count}</span>`;
-      layer.appendChild(heat);
-    });
-  };
-
   const updateContextAlerts = (route, trip) => {
     if (!elements.approachAlertTitle || !elements.approachAlertCopy || !elements.vehicleAlertTitle || !elements.vehicleAlertCopy || !elements.activityAlertTitle || !elements.activityAlertCopy) {
       return;
@@ -823,87 +767,12 @@
     elements.mapDistanceLabel.textContent = `Distance ${formatDistance(distance)} · ETA ${eta ? `${eta} min` : '—'} · Seats ${seatCount}`;
   };
 
-  const renderEntityMarkers = (overlayElement, mode) => {
-    if (!overlayElement) {
-      return;
-    }
-
-    let layer = overlayElement.querySelector('.entity-layer');
-    if (!layer) {
-      layer = document.createElement('div');
-      layer.className = 'entity-layer';
-      overlayElement.appendChild(layer);
-    }
-
-    layer.replaceChildren();
-
-    const visibleVehicles = routes.filter((route) => (route.serviceType || 'trotro') === mode);
-    visibleVehicles.forEach((route) => {
-      if (!Number.isFinite(route.vehicleLat) || !Number.isFinite(route.vehicleLon)) {
-        return;
-      }
-
-      const point = coordinatesFromLatLon(route.vehicleLat, route.vehicleLon);
-      const marker = document.createElement('div');
-      marker.className = 'map-entity map-entity-vehicle';
-      marker.style.left = `${point.x}%`;
-      marker.style.top = `${point.y}%`;
-      marker.title = `${route.vehicle} (${route.from} to ${route.to})`;
-      marker.innerHTML = '<span>C</span>';
-      layer.appendChild(marker);
-    });
-
-    const visiblePassengers = readDispatchQueue().filter((request) => (request.serviceType || 'trotro') === mode);
-    visiblePassengers.forEach((request) => {
-      if (!Number.isFinite(request.lat) || !Number.isFinite(request.lon)) {
-        return;
-      }
-
-      const point = coordinatesFromLatLon(request.lat, request.lon);
-      const marker = document.createElement('div');
-      marker.className = 'map-entity map-entity-passenger';
-      marker.style.left = `${point.x}%`;
-      marker.style.top = `${point.y}%`;
-      marker.title = `${request.rider} waiting at ${request.from}`;
-      marker.innerHTML = '<span>P</span>';
-      layer.appendChild(marker);
-    });
-
-    const fleetState = readFleetState();
-    const visibleBooked = routes.filter((route) => (route.serviceType || 'trotro') === mode);
-    visibleBooked.forEach((route) => {
-      const telemetry = fleetState.routes?.[route.id];
-      const bookedSeats = getActiveClaims(telemetry).reduce((sum, claim) => sum + Number(claim.amount || 0), 0);
-      if (bookedSeats <= 0) {
-        return;
-      }
-
-      const stopPoint = placeToCoordinates(route.from);
-      if (!stopPoint) {
-        return;
-      }
-
-      const point = coordinatesFromLatLon(stopPoint.latitude, stopPoint.longitude);
-      const marker = document.createElement('div');
-      marker.className = 'map-entity map-entity-booked';
-      marker.style.left = `${point.x}%`;
-      marker.style.top = `${point.y}%`;
-      marker.title = `${bookedSeats} booked seat${bookedSeats === 1 ? '' : 's'} at ${route.from}`;
-      marker.innerHTML = `<span>${bookedSeats}</span>`;
-      layer.appendChild(marker);
-    });
-  };
-
   const renderPassengerMapEntities = () => {
-    showTransientOverlays('.focus-alert-stack');
-    renderEntityMarkers(elements.mapOverlay, state.serviceMode);
-    renderHeatZones(elements.mapOverlay, state.serviceMode);
+    // Map entities rendering disabled for cleaner interface
   };
 
   const renderDriverMapEntities = (mode) => {
-    showTransientOverlays('.driver-floating-card, .focus-alert-stack');
-    renderEntityMarkers(elements.driverMapOverlay, mode || 'trotro');
-    renderHeatZones(elements.driverMapOverlay, mode || 'trotro');
+    // Map entities rendering disabled for cleaner interface
   };
 
   const registerTrackingInterest = (route) => {
@@ -1037,6 +906,13 @@
       elements.destination.value = lastDestination;
     }
 
+    if (elements.driverRouteSelect && lastOrigin) {
+      elements.driverRouteSelect.value = lastOrigin;
+    }
+    if (elements.driverStartPoint && lastDestination) {
+      elements.driverStartPoint.value = lastDestination;
+    }
+
     const recentPlaces = parseStoredJson(storageGet(lastRecentPlacesStorageKey, '[]'), []);
     if (recentPlaces.length) {
       elements.recentPlaceButtons.forEach((button, index) => {
@@ -1046,6 +922,21 @@
         }
       });
     }
+  };
+
+  const syncStorageChanges = () => {
+    window.addEventListener('storage', (event) => {
+      if (event.key === lastOriginStorageKey) {
+        const value = event.newValue || '';
+        if (elements.origin) elements.origin.value = value;
+        if (elements.driverRouteSelect) elements.driverRouteSelect.value = value;
+      }
+      if (event.key === lastDestinationStorageKey) {
+        const value = event.newValue || '';
+        if (elements.destination) elements.destination.value = value;
+        if (elements.driverStartPoint) elements.driverStartPoint.value = value;
+      }
+    });
   };
 
   const setTheme = (theme) => {
@@ -1068,56 +959,6 @@
     }, 2400);
   };
 
-  const overlayHideTimers = new Map();
-
-  const showTransientOverlays = (selector) => {
-    const overlayCards = Array.from(document.querySelectorAll(selector));
-    if (!overlayCards.length) {
-      return;
-    }
-
-    const previousTimer = overlayHideTimers.get(selector);
-    if (previousTimer) {
-      window.clearTimeout(previousTimer);
-    }
-
-    overlayCards.forEach((element) => {
-      element.hidden = false;
-      element.style.display = '';
-      element.classList.remove('is-hidden');
-    });
-
-    const nextTimer = window.setTimeout(() => {
-      overlayCards.forEach((element) => element.classList.add('is-hidden'));
-      window.setTimeout(() => {
-        overlayCards.forEach((element) => {
-          element.hidden = true;
-          element.style.display = 'none';
-        });
-      }, 350);
-    }, 6500);
-    overlayHideTimers.set(selector, nextTimer);
-  };
-
-  const hideTransientOverlays = (selector) => {
-    const overlayCards = Array.from(document.querySelectorAll(selector));
-    if (!overlayCards.length) {
-      return;
-    }
-
-    const previousTimer = overlayHideTimers.get(selector);
-    if (previousTimer) {
-      window.clearTimeout(previousTimer);
-      overlayHideTimers.delete(selector);
-    }
-
-    overlayCards.forEach((element) => {
-      element.classList.add('is-hidden');
-      element.hidden = true;
-      element.style.display = 'none';
-    });
-  };
-
   const revealOverlays = (selector) => {
     const overlayCards = Array.from(document.querySelectorAll(selector));
     if (!overlayCards.length) {
@@ -1133,7 +974,7 @@
 
   const t = {
     en: {
-      findCar: 'Find ride',
+      findCar: 'Find my ride',
       destination: 'Where are you going?',
       origin: 'Your location',
       carsNearYou: 'Rides near you',
@@ -2201,7 +2042,10 @@
     elements.shareTrip?.addEventListener('click', shareTripDetails);
     elements.shareTripMobile?.addEventListener('click', shareTripDetails);
     elements.closeTrackerCard?.addEventListener('click', () => {
-      hideTransientOverlays('.focus-tracker-card');
+      const trackerCard = document.querySelector('.focus-tracker-card');
+      if (trackerCard) {
+        trackerCard.classList.add('is-hidden');
+      }
     });
     document.addEventListener('click', (event) => {
       const target = event.target;
@@ -2210,7 +2054,10 @@
       }
 
       if (target.closest('#close-tracker-card')) {
-        hideTransientOverlays('.focus-tracker-card');
+        const trackerCard = document.querySelector('.focus-tracker-card');
+        if (trackerCard) {
+          trackerCard.classList.add('is-hidden');
+        }
       }
     });
 
@@ -2273,6 +2120,7 @@
     });
 
     initializeRememberedInputs();
+    syncStorageChanges();
     state.language = storageGet(languageStorageKey, 'en') === 'twi' ? 'twi' : 'en';
     if (elements.languageToggle) {
       elements.languageToggle.value = state.language;
@@ -2586,26 +2434,7 @@
   };
 
   const initializeInteractiveCards = () => {
-    if (reducedMotionQuery.matches || !window.matchMedia('(pointer: fine)').matches) {
-      return;
-    }
-
-    const interactiveCards = Array.from(document.querySelectorAll('.stack-block, .focus-tracker-card, .auth-focus-form, .route-card, .alert-card'));
-    interactiveCards.forEach((card) => {
-      card.classList.add('interactive-card');
-      card.addEventListener('pointermove', (event) => {
-        const rect = card.getBoundingClientRect();
-        const offsetX = (event.clientX - rect.left) / rect.width;
-        const offsetY = (event.clientY - rect.top) / rect.height;
-        const rotateY = (offsetX - 0.5) * 6;
-        const rotateX = (0.5 - offsetY) * 5;
-        card.style.transform = `perspective(700px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg)`;
-      });
-
-      card.addEventListener('pointerleave', () => {
-        card.style.transform = '';
-      });
-    });
+    // 3D interactive effects disabled for simpler design
   };
 
   const initDriverDashboard = () => {
@@ -2746,13 +2575,19 @@
         });
       });
 
-      elements.driverRouteSelect?.addEventListener('change', () => {
-        simpleState.managedRouteId = Number(elements.driverRouteSelect?.value || '1');
-        const activeRoute = routes.find((route) => route.id === simpleState.managedRouteId) || null;
-        if (activeRoute && elements.driverStartPoint) {
-          elements.driverStartPoint.value = activeRoute.from;
+      elements.driverRouteSelect?.addEventListener('input', () => {
+        const origin = elements.driverRouteSelect?.value || '';
+        if (origin) {
+          storageSet(lastOriginStorageKey, origin);
+          if (elements.origin) elements.origin.value = origin;
         }
-        refreshSimpleDriver();
+      });
+      elements.driverStartPoint?.addEventListener('input', () => {
+        const destination = elements.driverStartPoint?.value || '';
+        if (destination) {
+          storageSet(lastDestinationStorageKey, destination);
+          if (elements.destination) elements.destination.value = destination;
+        }
       });
 
       elements.driverServiceModeButtons.forEach((button) => {
@@ -3166,15 +3001,19 @@
       }
     });
 
-    elements.driverRouteSelect?.addEventListener('change', () => {
-      driverState.managedRouteId = Number(elements.driverRouteSelect?.value || '0') || driverState.managedRouteId;
-      const activeRoute = getRouteForDriverMode();
-      if (activeRoute && elements.driverStartPoint) {
-        elements.driverStartPoint.value = activeRoute.from;
+    elements.driverRouteSelect?.addEventListener('input', () => {
+      const origin = elements.driverRouteSelect?.value || '';
+      if (origin) {
+        storageSet(lastOriginStorageKey, origin);
+        if (elements.origin) elements.origin.value = origin;
       }
-      renderRequestQueue();
-      syncDriverStats();
-      toast(`Route set to ${activeRoute ? `${activeRoute.from} to ${activeRoute.to}` : 'selected route'}.`);
+    });
+    elements.driverStartPoint?.addEventListener('input', () => {
+      const destination = elements.driverStartPoint?.value || '';
+      if (destination) {
+        storageSet(lastDestinationStorageKey, destination);
+        if (elements.destination) elements.destination.value = destination;
+      }
     });
 
     elements.driverStartPoint?.addEventListener('input', () => {
@@ -3383,6 +3222,32 @@
   window.addEventListener('beforeunload', () => {
     if (elements.routeList) {
       clearTrackingInterest();
+    }
+  });
+
+  // Dismissible alert handlers
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    // Close buttons on alerts (X button)
+    if (target.closest('.alert-card .close-btn')) {
+      const alertCard = target.closest('.alert-card');
+      if (alertCard) {
+        alertCard.style.display = 'none';
+        alertCard.classList.add('is-hidden');
+      }
+    }
+
+    // Dismiss buttons on demand zone cards
+    if (target.closest('[data-dismiss]')) {
+      const card = target.closest('[data-dismiss]');
+      if (card) {
+        card.style.display = 'none';
+        card.classList.add('is-hidden');
+      }
     }
   });
 })();

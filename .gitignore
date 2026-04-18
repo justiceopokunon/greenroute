@@ -48,6 +48,12 @@ dist/
 
 # Local development
 .cache/
+
+# AI Agent & Customization Files (local, not synced)
+.github/agents/
+.github/hooks/
+.github/prompts/
+.github/instructions/
 .temp/
 temp/
 

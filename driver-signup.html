@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Driver Sign Up</title>
+  <meta name="description" content="Register as a driver for Green Route." />
+  <link rel="stylesheet" href="./app.css" />
+  <script defer src="./app.js"></script>
+</head>
+<body class="auth-page focus-page auth-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./index.html">Home</a>
+      <a href="./driver-signin.html">Driver Sign In</a>
+      <a href="./signup.html">Passenger Sign Up</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./index.html">Home</a>
+    <a href="./driver-signin.html">Driver Sign In</a>
+    <a href="./signup.html">Passenger Sign Up</a>
+  </nav>
+
+  <main class="focus-shell auth-focus-shell">
+    <aside class="sidebar-card surface focus-sidebar auth-focus-sidebar">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
+      </div>
+
+      <section class="stack-block">
+        <span class="eyebrow">Join as driver</span>
+        <h1>Earn on your terms.</h1>
+        <p>Flexible schedules, fair earnings, and real support.</p>
+        <div class="feature-list">
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Work when you want.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 17"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg> Transparent earnings dashboard.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Growing community of drivers.</div>
+        </div>
+      </section>
+
+    </aside>
+
+    <section class="map-column auth-focus-main">
+      <div class="auth-stage surface">
+      <form class="auth-card-panel auth-focus-form" data-auth-form="driver-signup">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">Driver registration</span>
+            <h2 id="auth-title">Become a driver</h2>
+          </div>
+          <span class="mini-pill">Quick verification</span>
+        </div>
+
+        <div class="field-row">
+          <label class="field" for="firstName-driver-signup">
+            <span>First name</span>
+            <input id="firstName-driver-signup" name="firstName" type="text" autocomplete="given-name" placeholder="First name" required />
+          </label>
+          <label class="field" for="lastName-driver-signup">
+            <span>Last name</span>
+            <input id="lastName-driver-signup" name="lastName" type="text" autocomplete="family-name" placeholder="Last name" required />
+          </label>
+        </div>
+
+        <label class="field" for="email-driver-signup">
+          <span>Email address</span>
+          <input id="email-driver-signup" name="email" type="email" autocomplete="email" placeholder="driver@example.com" required />
+        </label>
+
+        <label class="field" for="phone-driver-signup">
+          <span>Phone number</span>
+          <input id="phone-driver-signup" name="phone" type="tel" autocomplete="tel" placeholder="024 000 0000" required />
+        </label>
+
+        <label class="field" for="driverId-driver-signup">
+          <span>Driver ID</span>
+          <input id="driverId-driver-signup" name="driverId" type="text" autocomplete="off" placeholder="GR-214" required />
+        </label>
+
+        <label class="field" for="vehiclePlate-driver-signup">
+          <span>Vehicle plate number</span>
+          <input id="vehiclePlate-driver-signup" name="vehiclePlate" type="text" autocomplete="off" placeholder="GT-214-25" required />
+        </label>
+
+        <label class="field password-field" for="password-driver-signup">
+          <span>Password</span>
+          <input id="password-driver-signup" name="password" type="password" autocomplete="new-password" placeholder="Create a password" required />
+          <button class="password-toggle" type="button" data-password-toggle>Show</button>
+        </label>
+
+        <label class="field password-field" for="confirmPassword-driver-signup">
+          <span>Confirm password</span>
+          <input id="confirmPassword-driver-signup" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm password" required />
+          <button class="password-toggle" type="button" data-password-toggle>Show</button>
+        </label>
+
+        <label class="field" for="driverPhoto-signup">
+          <span>Profile photo</span>
+          <input id="driverPhoto-signup" name="driverPhoto" type="file" accept="image/*" required />
+          <span class="field-hint">Required for driver verification</span>
+        </label>
+
+        <label class="checkbox terms" for="terms-driver-signup">
+          <input id="terms-driver-signup" type="checkbox" name="terms" required />
+          <span>I agree to the driver terms and privacy policy.</span>
+        </label>
+
+        <div class="auth-options">
+          <a href="./driver-signin.html">Already have a driver account?</a>
+        </div>
+
+        <button class="cta full-width" type="submit">Start earning</button>
+        <p class="form-note" data-form-note>Your photo helps us keep the community safe and trustworthy.</p>
+      </form>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

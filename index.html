@@ -15,10 +15,8 @@
       <span class="brand-name">Green Route</span>
     </a>
     <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
-      <a href="./code.html">Passenger</a>
-      <a href="./driver-signin.html">Driver</a>
-      <a href="./signin.html">Sign In</a>
-      <a href="./signup.html">Sign Up</a>
+      <a href="./code.html">Passenger App</a>
+      <a href="./driver-signin.html">Driver App</a>
     </nav>
     <div class="navbar-actions">
       <button id="theme-toggle" class="ghost" type="button">Theme</button>
@@ -31,10 +29,8 @@
   </header>
 
   <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
-    <a href="./code.html">Passenger</a>
-    <a href="./driver-signin.html">Driver</a>
-    <a href="./signin.html">Sign In</a>
-    <a href="./signup.html">Sign Up</a>
+    <a href="./code.html">Passenger App</a>
+    <a href="./driver-signin.html">Driver App</a>
   </nav>
 
   <main class="focus-shell landing-focus-shell">
@@ -46,20 +42,21 @@
       <section class="stack-block">
         <div class="section-head compact">
           <div>
-            <span class="eyebrow">Welcome</span>
-            <h1 class="landing-title">Getting around the city just got easier.</h1>
+            <span class="eyebrow">Welcome to Green Route</span>
+            <h1 class="landing-title">Demand meets supply in real time.</h1>
           </div>
         </div>
-        <p class="landing-copy">Pick Passenger or Driver and get moving in seconds.</p>
+        <p class="landing-copy">Drivers find high-demand areas. Passengers get rides fast. No waiting forever.</p>
         <div class="feature-list">
-          <div class="feature-item">See nearby rides without extra steps.</div>
-          <div class="feature-item">Clean screens that are easy to use on the go.</div>
-          <div class="feature-item">Sign in once and continue where you left off.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Drivers: See where passengers are waiting.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 19 21 12 17 5 21 12 2"></polygon></svg> Passengers: Know your car is coming.</div>
+          <div class="feature-item"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg> Everyone: Fair pricing, real transparency.</div>
         </div>
       </section>
 
-      <div class="focus-sidebar-footer landing-focus-links" aria-label="Entry actions">
-        <a class="cta" href="./code.html">Open Passenger App</a>
+      <div class="focus-sidebar-footer landing-focus-links" aria-label="Entry actions" style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <a class="cta pad-md" href="./code.html" style="text-align: center; display: flex; align-items: center; justify-content: center;">Booking a ride?</a>
+        <a class="cta secondary pad-md" href="./driver-signup.html" style="text-align: center; display: flex; align-items: center; justify-content: center;">Want to earn?</a>
       </div>
     </aside>
 
@@ -72,20 +69,44 @@
           referrerpolicy="no-referrer-when-downgrade"
           src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
         ></iframe>
-        <div class="map-overlay">
-          <div class="map-label primary">Accra routes</div>
-          <div class="map-label secondary">Choose Passenger or Driver to continue</div>
+        <div class="map-overlay" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+          <div style="padding: var(--space-xl); background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);">
+            <div class="map-label primary" style="font-size: 1.2rem; font-weight: 600;">Active in Accra & beyond</div>
+            <div class="map-label secondary" style="margin-top: 0.5rem;">See live routes across the city</div>
+          </div>
         </div>
 
-        <article class="tracker-card surface focus-tracker-card landing-tracker-card">
+        <article class="tracker-card surface focus-tracker-card landing-tracker-card" style=" border: 1px solid rgba(255,255,255,0.1);">
           <div class="section-head compact">
             <div>
-              <span class="eyebrow">Start now</span>
-              <h2>Ready when you are</h2>
+              <span class="eyebrow" style="color: var(--primary);">Why choose Green Route</span>
+              <h2 style="margin-top: 0.5rem;">Trusted by thousands</h2>
             </div>
           </div>
-          <p class="driver-subtext">Open the app, choose your route, and head out.</p>
-          <a class="cta full-width" href="./code.html">Open Passenger App</a>
+          <div style="display: grid; gap: 1rem; margin: 1.5rem 0;">
+            <div style="display: flex; gap: 0.75rem; align-items: start;">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M12 6v6l4 2.4"></path></svg>
+              <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 0.25rem;">Live demand zones</strong>
+                <span style="opacity: 0.8; font-size: 0.9rem;">Drivers see where passengers wait</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: start;">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 19 21 12 17 5 21 12 2"></polygon></svg>
+              <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 0.25rem;">Real assurance</strong>
+                <span style="opacity: 0.8; font-size: 0.9rem;">Passengers know car is coming</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: start;">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.267 4.859A1 1 0 018 4h6a2 2 0 110 4h-1.052A2 2 0 1110 8v3.5H8V8a2 2 0 10-1.733 3.854z"></path></svg>
+              <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 0.25rem;">No more waiting</strong>
+                <span style="opacity: 0.8; font-size: 0.9rem;">Match happens in seconds</span>
+              </div>
+            </div>
+          </div>
+          <p class="driver-subtext" style="margin: 1.5rem 0 0; font-style: italic; opacity: 0.9;">Join us and experience the difference.</p>
         </article>
       </section>
     </section>
