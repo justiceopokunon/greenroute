@@ -242,7 +242,6 @@
     passengerCount: document.getElementById('passenger-count'),
     origin: document.getElementById('origin'),
     destination: document.getElementById('destination'),
-    voiceDestination: document.getElementById('voice-destination'),
     languageToggle: document.getElementById('language-toggle'),
     noStressControls: document.querySelector('.no-stress-controls'),
     noStressToggle: document.getElementById('no-stress-toggle'),
