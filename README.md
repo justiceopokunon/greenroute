@@ -31,18 +31,21 @@ green-route/
 
 ## Getting Started
 
-Need to run this locally? You'll need Python 3.x since we're using Python's built-in HTTP server.
+Need to run this locally? You'll need Node.js installed (v16+).
 
-Clone the repo and start the dev server on port 3000:
+1. Install dependencies:
+```bash
+npm install
+```
 
+2. Start the server (port 3000 by default):
 ```bash
 npm run dev
 ```
 
-Then open `http://localhost:3000` in your browser. If you want to run it on 8000 instead:
-
+Then open `http://localhost:3000` in your browser. To run on a different port:
 ```bash
-npm start
+PORT=8000 npm start
 ```
 
 ## How It Works
@@ -55,11 +58,29 @@ Theme preference and user info get saved to localStorage, so you'll stay logged 
 
 ## Development
 
-This is vanilla JavaScript—no frameworks, no build tools. Just HTML, CSS, and JS. The whole state management runs through localStorage.
+This runs Node.js/Express on the backend with SQLite for the database. The frontend is vanilla JavaScript.
 
-The main logic is in `app.js` and styles are in `app.css`. Each page is its own HTML file (`index.html`, `signin.html`, `code.html`, etc.).
+**Backend**:
+- Express server handles API routes
+- SQLite stores users, rides, and bookings
+- Endpoints in `/routes/` directory (auth, rides, bookings)
+- Password hashing with bcryptjs
 
-Running `npm test` will execute smoke tests if you've set those up.
+**Frontend**:
+- Vanilla JS in `app.js` and individual HTML pages
+- Calls API at `http://localhost:3000/api/*`
+- LocalStorage manages theme and session preferences
+- Real-time driver tracking with Leaflet + OpenStreetMap (`tracking.js`)
+
+**Live Driver Tracking**:
+- Shows driver location on interactive map (completely FREE, no API key needed!)
+- Uses OpenStreetMap tiles powered by Leaflet
+- Displays ETA and real-time distance
+- Driver info card with name, vehicle, and contact options
+- Auto-refreshes every 3 seconds
+- Works offline after first load
+
+Running `npm test` will run smoke tests if you've set those up.
 
 ## Scripts
 

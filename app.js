@@ -54,7 +54,7 @@
 
   const routes = [
     {
-      id: 1,
+      id: 'rq1',
       serviceType: 'trotro',
       from: 'Madina',
       to: 'Circle',
@@ -77,7 +77,7 @@
       timeline: [['Madina', 'Departed'], ['37 Junction', 'In transit'], ['Airport', '2 mins'], ['Circle', 'ETA 6 mins']]
     },
     {
-      id: 2,
+      id: 'rq2',
       serviceType: 'trotro',
       from: 'Adenta',
       to: 'Accra Central',
@@ -100,7 +100,7 @@
       timeline: [['Adenta', 'Boarding'], ['Madina', 'Upcoming'], ['Circle', 'Upcoming'], ['Accra Central', 'ETA 12 mins']]
     },
     {
-      id: 3,
+      id: 'rq3',
       serviceType: 'trotro',
       from: 'Kaneshie',
       to: 'Tema Station',
@@ -123,13 +123,13 @@
       timeline: [['Kaneshie', 'Departed'], ['Odorkor', 'In transit'], ['Abossey Okai', 'In transit'], ['Tema Station', 'ETA 9 mins']]
     },
     {
-      id: 101,
+      id: 'rq4',
       serviceType: 'taxi',
-      from: 'East Legon',
-      to: 'Airport',
+      from: 'Circle',
+      to: 'Madina',
       fare: 24,
       eta: 5,
-      seats: 4,
+      seats: 1,
       capacity: 4,
       onboard: 1,
       vehicleLat: 5.628,
@@ -143,52 +143,6 @@
       status: 'Available',
       note: 'Private ride',
       progress: 30,
-      timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
-    },
-    {
-      id: 102,
-      serviceType: 'taxi',
-      from: 'Madina',
-      to: 'Accra Central',
-      fare: 27,
-      eta: 7,
-      seats: 4,
-      capacity: 4,
-      onboard: 1,
-      vehicleLat: 5.664,
-      vehicleLon: -0.176,
-      vehicle: 'TX-213 · Kia Rio',
-      driverName: 'Ama Ofori',
-      driverPhone: '+233206667788',
-      plate: 'TX-213',
-      driverPhoto: '',
-      trustScore: 4.8,
-      status: 'Available',
-      note: 'Private ride',
-      progress: 26,
-      timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
-    },
-    {
-      id: 103,
-      serviceType: 'taxi',
-      from: 'Kaneshie',
-      to: 'Circle',
-      fare: 21,
-      eta: 6,
-      seats: 4,
-      capacity: 4,
-      onboard: 1,
-      vehicleLat: 5.578,
-      vehicleLon: -0.224,
-      vehicle: 'TX-118 · Hyundai Elantra',
-      driverName: 'Nana Adu',
-      driverPhone: '+233209991122',
-      plate: 'TX-118',
-      driverPhoto: '',
-      trustScore: 4.6,
-      status: 'Available',
-      note: 'Private ride',
-      progress: 34,
       timeline: [['Driver nearby', 'En route to pickup'], ['Pickup', 'Pending'], ['Drop-off', 'Direct route']]
     }
   ];
@@ -1746,7 +1700,7 @@
     }
   };
 
-  const handleBooking = () => {
+  const handleBooking = async () => {
     const selectedRoute = getSelectedRoute();
     if (!selectedRoute) {
       toast('Select a ride first.');
@@ -1758,21 +1712,55 @@
       return;
     }
 
-    const fleetState = readFleetState();
-    const telemetry = fleetState.routes?.[selectedRoute.id];
-    if (telemetry) {
-      telemetry.seatClaims = Array.isArray(telemetry.seatClaims) ? telemetry.seatClaims : [];
-      telemetry.seatClaims.push({ amount: state.passengers, expiresAt: Date.now() + (2 * 60 * 1000) });
-      saveFleetState(fleetState);
-      syncRoutesFromFleetState();
+    // Get or create a passenger ID for booking
+    let passengerId = window.localStorage.getItem('passengerId');
+    if (!passengerId) {
+      passengerId = 'passenger-' + Math.random().toString(36).substr(2, 9);
+      window.localStorage.setItem('passengerId', passengerId);
     }
-    rememberRecentPlace(selectedRoute.to);
-    saveLastInputs();
-    toast(isTaxiMode()
-      ? `Taxi reserved for ${selectedRoute.from} → ${selectedRoute.to}.`
-      : `Seat held for 2 minutes on ${selectedRoute.from} → ${selectedRoute.to}.`);
-    renderRoutes();
-    updatePassengerCount(state.passengers);
+
+    console.log('Booking with selectedRoute:', selectedRoute);
+    console.log('Ride ID being sent:', selectedRoute?.id);
+
+    try {
+      // Call API to book the ride using direct fetch
+      console.log('Calling booking API with rideId:', selectedRoute.id);
+      const bookingResponse = await fetch('http://localhost:3000/api/bookings/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rideId: selectedRoute.id, passengerId: passengerId })
+      });
+      if (!bookingResponse.ok) throw new Error(await bookingResponse.text());
+      const booking = await bookingResponse.json();
+      
+      // Start live tracking with the booking
+      if (window.Tracking && window.Tracking.startTracking) {
+        window.Tracking.startTracking(selectedRoute.id, booking.id, passengerId);
+      } else {
+        toast('Tracking unavailable. Please try again.');
+        return;
+      }
+      
+      // Update local state
+      const fleetState = readFleetState();
+      const telemetry = fleetState.routes?.[selectedRoute.id];
+      if (telemetry) {
+        telemetry.seatClaims = Array.isArray(telemetry.seatClaims) ? telemetry.seatClaims : [];
+        telemetry.seatClaims.push({ amount: state.passengers, expiresAt: Date.now() + (2 * 60 * 1000) });
+        saveFleetState(fleetState);
+        syncRoutesFromFleetState();
+      }
+      rememberRecentPlace(selectedRoute.to);
+      saveLastInputs();
+      toast(isTaxiMode()
+        ? `Taxi booked! Live tracking started.`
+        : `Seat booked! Live tracking started.`);
+      renderRoutes();
+      updatePassengerCount(state.passengers);
+    } catch (err) {
+      console.error('Booking error:', err);
+      toast(`Unable to book ride: ${err.message}`);
+    }
   };
 
   const initDashboard = () => {
