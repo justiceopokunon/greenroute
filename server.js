@@ -5,6 +5,7 @@ const { initDB } = require('./db');
 const authRoutes = require('./routes/auth');
 const rideRoutes = require('./routes/rides');
 const bookingRoutes = require('./routes/bookings');
+const rateLimit = require('./middleware/rateLimit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,12 +20,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+// Rate limiting middleware (apply before routes)
+app.use(rateLimit);
+
 // Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
-    console.log(`${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
+    console.log(`${req.method} ${req.path} - ${res.statusCode} (${duration}ms) - IP: ${req.ip}`);
   });
   next();
 });
@@ -44,7 +48,11 @@ app.use('/api/bookings', bookingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Serve frontend files with proper caching
