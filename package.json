@@ -2,12 +2,11 @@
   "name": "green-route",
   "version": "1.0.0",
   "description": "Green Route web app",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
-    "dev": "node server.js",
-    "seed": "node seed.js",
-    "test": "echo \"Tests pending\"",
-    "start": "node server.js"
+    "dev": "python3 -m http.server 3000",
+    "test": "python3 smoke_test.py",
+    "start": "python3 -m http.server 8000"
   },
   "keywords": ["rideshare", "transport"],
   "author": "Green Route Team",
@@ -15,12 +14,5 @@
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "sqlite3": "^5.1.6",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0"
   }
 }

@@ -1909,25 +1909,6 @@ html[data-theme="light"] .map-label {
   gap: 8px;
   width: min(320px, calc(100% - 32px));
   pointer-events: auto;
-  z-index: 500;
-}
-
-.map-overlay .map-controls {
-  position: static;
-  width: auto;
-  right: auto;
-  top: auto;
-  margin-top: auto;
-  margin-left: auto;
-}
-
-/* Hide Leaflet attribution to prevent overlap */
-.leaflet-attribution-control {
-  display: none !important;
-}
-
-.leaflet-control-container {
-  z-index: 400;
 }
 
 .map-controls .ghost {
@@ -3420,7 +3401,6 @@ body::after,
   left: 16px;
   bottom: 16px;
   width: auto;
-  z-index: 500;
 }
 
 .focus-map-stage .map-controls .ghost {
