@@ -1,7 +1,7 @@
 const cors = require('cors');
 const express = require('express');
 const path = require('path');
-const { initDB } = require('./db');
+const { initDB, close } = require('./db');
 
 // Import routes
 const authRoutes = require('./backend/routes/auth');
@@ -52,17 +52,6 @@ app.get('/app.js', (req, res) => {
     if (err) {
       console.error('Error serving app.js:', err);
       res.status(404).json({ error: 'app.js not found' });
-    }
-  });
-});
-
-app.get('/road-routing.js', (req, res) => {
-  const filePath = path.join(__dirname, 'road-routing.js');
-  res.setHeader('Content-Type', 'application/javascript');
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.error('Error serving road-routing.js:', err);
-      res.status(404).json({ error: 'road-routing.js not found' });
     }
   });
 });
@@ -165,10 +154,21 @@ process.on('unhandledRejection', (reason, promise) => {
 startServer();
 
 // Handle shutdown gracefully
-process.on('SIGTERM', () => {
-  process.exit(0);
-});
+const gracefulShutdown = async (signal) => {
+  console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Close database connection
+    await close();
+    console.log('✅ Database connection closed');
+    
+    console.log('✅ Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+};
 
-process.on('SIGINT', () => {
-  process.exit(0);
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

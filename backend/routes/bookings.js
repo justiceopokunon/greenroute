@@ -1,5 +1,5 @@
 const express = require('express');
-const { run, get, all } = require('../../db');
+const { run, get, all, transaction } = require('../../db');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
@@ -58,18 +58,18 @@ router.post('/create', async (req, res) => {
     // Calculate total fare
     const totalFare = ride.fare * seatsNum;
 
-    // Create booking with fare information
+    // Create booking with fare information using transaction
     const bookingId = uuidv4();
-    await run(
-      'INSERT INTO bookings (id, rideId, passengerId, status, passengerLat, passengerLon, fare, seats) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [bookingId, rideId, passengerId, 'confirmed', passengerLat || null, passengerLon || null, totalFare, seatsNum]
-    );
-
-    // Decrement available seats by requested amount
-    await run(
-      'UPDATE rides SET seats = seats - ? WHERE id = ?',
-      [seatsNum, rideId]
-    );
+    await transaction([
+      {
+        sql: 'INSERT INTO bookings (id, rideId, passengerId, status, passengerLat, passengerLon, fare, seats) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        params: [bookingId, rideId, passengerId, 'confirmed', passengerLat || null, passengerLon || null, totalFare, seatsNum]
+      },
+      {
+        sql: 'UPDATE rides SET seats = seats - ? WHERE id = ? AND seats >= ?',
+        params: [seatsNum, rideId, seatsNum]
+      }
+    ]);
 
     res.status(201).json({ 
       id: bookingId, 
@@ -161,7 +161,7 @@ router.delete('/:bookingId', async (req, res) => {
     }
 
     await run('UPDATE bookings SET status = ? WHERE id = ?', ['cancelled', bookingId]);
-    await run('UPDATE rides SET seats = seats + 1 WHERE id = ?', [booking.rideId]);
+    await run('UPDATE rides SET seats = seats + ? WHERE id = ?', [booking.seats || 1, booking.rideId]);
 
     res.json({ message: 'Booking cancelled successfully', bookingId });
   } catch (err) {

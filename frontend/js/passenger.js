@@ -12,7 +12,7 @@
     passengerMap: null,
     userMarker: null,
     isTracking: false,
-    passengerId: GreenRoute.utils.getStorage(GreenRoute.storage.passengerId, 'ca1f1983-a755-4359-8a5d-6699a1988c29') // Use real passenger ID
+    passengerId: GreenRoute.utils.getStorage(GreenRoute.storage.passengerId, null)
   };
 
   const elements = {

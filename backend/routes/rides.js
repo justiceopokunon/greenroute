@@ -179,6 +179,14 @@ router.put('/driver/:driverId', async (req, res) => {
       });
     }
 
+    // Validate isOnline parameter
+    if (isOnline !== undefined && typeof isOnline !== 'boolean' && isOnline !== 'true' && isOnline !== 'false') {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['isOnline must be a boolean value']
+      });
+    }
+
     // Verify driver exists
     const driver = await get('SELECT id FROM drivers WHERE id = ?', [driverId]);
     if (!driver) {

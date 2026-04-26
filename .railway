@@ -1,0 +1,47 @@
+# Railway Deployment Configuration for GreenRoute
+
+## Overview
+This file contains Railway-specific deployment settings for the GreenRoute rideshare application.
+
+## Deployment Setup
+1. Connect your GitHub repository to Railway
+2. Railway will automatically detect the Node.js application
+3. The railway.toml file will configure the deployment settings
+
+## Environment Variables
+Set these in Railway dashboard:
+
+### Required Variables
+- `NODE_ENV=production`
+- `PORT=3001`
+
+### Optional Variables
+- `DATABASE_URL` (for PostgreSQL if migrating from SQLite)
+- `JWT_SECRET` (for authentication)
+- `REDIS_URL` (for caching if needed)
+
+## Build Process
+- Railway uses Nixpacks to build Node.js applications
+- Automatically runs `npm install` and `npm build`
+- Starts with `npm start` command
+
+## Health Checks
+- Health check endpoint: `/api/health`
+- Timeout: 100 seconds
+- Automatic restart on failure
+
+## Scaling
+- Railway supports automatic scaling
+- Can add environment variables for performance tuning
+- Supports database add-ons
+
+## Migration from SQLite
+Consider migrating to PostgreSQL for production:
+1. Add PostgreSQL addon in Railway
+2. Update database connection in db.js
+3. Run migration scripts
+
+## Monitoring
+- Railway provides built-in monitoring
+- Check logs via Railway dashboard
+- Set up alerts for errors

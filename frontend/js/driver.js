@@ -3,8 +3,8 @@
   'use strict';
 
   const state = {
-    driverId: GreenRoute.utils.getStorage(GreenRoute.storage.driverId, 'driver-c260f9d0-228c-4149-9150-ec68dcb9a4ed'), // Use real driver ID
-    userId: 'c260f9d0-228c-4149-9150-ec68dcb9a4ed',
+    driverId: GreenRoute.utils.getStorage(GreenRoute.storage.driverId, null),
+    userId: GreenRoute.utils.getStorage('userId', null),
     isOnline: false,
     activeRide: null,
     locationInterval: null,

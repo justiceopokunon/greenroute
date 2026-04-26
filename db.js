@@ -108,10 +108,61 @@ const all = (sql, params = []) => {
   });
 };
 
+const transaction = async (operations) => {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION', (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        let completed = 0;
+        const total = operations.length;
+
+        operations.forEach(({ sql, params = [] }, index) => {
+          db.run(sql, params, function(err) {
+            if (err) {
+              db.run('ROLLBACK');
+              reject(err);
+              return;
+            }
+
+            completed++;
+            if (completed === total) {
+              db.run('COMMIT', (commitErr) => {
+                if (commitErr) {
+                  reject(commitErr);
+                } else {
+                  resolve();
+                }
+              });
+            }
+          });
+        });
+      });
+    });
+  });
+};
+
+const close = () => {
+  return new Promise((resolve, reject) => {
+    db.close((err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+};
+
 module.exports = {
   db,
   initDB,
   run,
   get,
-  all
+  all,
+  transaction,
+  close
 };
