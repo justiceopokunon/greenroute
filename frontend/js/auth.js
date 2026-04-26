@@ -31,6 +31,13 @@
     btn.textContent = loading ? 'Please wait...' : (labels[form.dataset.authForm] || 'Submit');
   };
 
+  const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read image file'));
+    reader.readAsDataURL(file);
+  });
+
   // ─── Passenger sign-in ────────────────────────────────────────────────────
   const signinForm = document.querySelector('[data-auth-form="signin"]');
   if (signinForm) {
@@ -45,6 +52,7 @@
       try {
         const res  = await fetch('/api/auth/signin', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
@@ -52,11 +60,14 @@
 
         if (!res.ok) throw new Error(data.message || data.error || 'Sign in failed');
 
+        if (data.sessionId) {
+          localStorage.setItem('sessionId', data.sessionId);
+        }
         GreenRoute.utils.setStorage(GreenRoute.storage.passengerId, data.id);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'passenger');
 
         setNote(signinForm, 'Signed in! Redirecting...');
-        window.location.href = './passenger.html';
+        window.location.href = './code.html';
 
       } catch (err) {
         setNote(signinForm, err.message, true);
@@ -90,6 +101,7 @@
       try {
         const res  = await fetch('/api/auth/signup', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, phone, password, role: 'passenger' })
         });
@@ -97,11 +109,14 @@
 
         if (!res.ok) throw new Error(data.message || data.error || 'Sign up failed');
 
+        if (data.sessionId) {
+          localStorage.setItem('sessionId', data.sessionId);
+        }
         GreenRoute.utils.setStorage(GreenRoute.storage.passengerId, data.id);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'passenger');
 
         setNote(signupForm, 'Account created! Redirecting...');
-        window.location.href = './passenger.html';
+        window.location.href = './code.html';
 
       } catch (err) {
         setNote(signupForm, err.message, true);
@@ -124,6 +139,7 @@
       try {
         const res  = await fetch('/api/auth/driver-signin', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
@@ -131,6 +147,9 @@
 
         if (!res.ok) throw new Error(data.message || data.error || 'Sign in failed');
 
+        if (data.sessionId) {
+          localStorage.setItem('sessionId', data.sessionId);
+        }
         GreenRoute.utils.setStorage(GreenRoute.storage.driverId, data.driverId);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'driver');
 
@@ -164,6 +183,7 @@
       const licensePlate = driverSignupForm.querySelector('[name="vehiclePlate"]')?.value.trim()
                         || driverSignupForm.querySelector('[name="licensePlate"]')?.value.trim();
       const vehicleModel = driverSignupForm.querySelector('[name="vehicleModel"]')?.value.trim();
+      const driverPhotoFile = driverSignupForm.querySelector('[name="driverPhoto"]')?.files?.[0] || null;
 
       if (confirmPassword !== undefined && password !== confirmPassword) {
         setNote(driverSignupForm, 'Passwords do not match', true);
@@ -171,16 +191,40 @@
         return;
       }
 
+      if (!driverPhotoFile) {
+        setNote(driverSignupForm, 'Driver photo is required', true);
+        setLoading(driverSignupForm, false);
+        return;
+      }
+
+      if (!driverPhotoFile.type.startsWith('image/')) {
+        setNote(driverSignupForm, 'Driver photo must be an image file', true);
+        setLoading(driverSignupForm, false);
+        return;
+      }
+
+      if (driverPhotoFile.size > 2 * 1024 * 1024) {
+        setNote(driverSignupForm, 'Driver photo must be 2MB or smaller', true);
+        setLoading(driverSignupForm, false);
+        return;
+      }
+
       try {
+        const driverPhoto = await fileToDataUrl(driverPhotoFile);
+
         const res  = await fetch('/api/auth/driver-signup', {
           method: 'POST',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, phone, password, vehicleType, licensePlate, vehicleModel })
+          body: JSON.stringify({ name, email, phone, password, vehicleType, licensePlate, vehicleModel, driverPhoto })
         });
         const data = await res.json();
 
         if (!res.ok) throw new Error(data.message || data.error || 'Sign up failed');
 
+        if (data.sessionId) {
+          localStorage.setItem('sessionId', data.sessionId);
+        }
         GreenRoute.utils.setStorage(GreenRoute.storage.driverId, data.driverId);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'driver');
 

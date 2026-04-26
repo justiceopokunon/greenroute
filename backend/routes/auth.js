@@ -5,6 +5,19 @@ const { run, get } = require('../../db');
 
 const router = express.Router();
 
+const setSessionCookie = (res, sessionId) => {
+  const maxAge = 7 * 24 * 60 * 60;
+  const secure = process.env.NODE_ENV === 'production';
+  const cookie = `sessionId=${encodeURIComponent(sessionId)}; Path=/; Max-Age=${maxAge}; SameSite=Lax; HttpOnly${secure ? '; Secure' : ''}`;
+  res.setHeader('Set-Cookie', cookie);
+};
+
+const clearSessionCookie = (res) => {
+  const secure = process.env.NODE_ENV === 'production';
+  const cookie = `sessionId=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly${secure ? '; Secure' : ''}`;
+  res.setHeader('Set-Cookie', cookie);
+};
+
 const validateSignupInput = (data) => {
   const { email, password, name, phone, role } = data;
   const errors = [];
@@ -95,10 +108,12 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    const existingUser = await get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
+    const existingUser = await get('SELECT id, role FROM users WHERE email = ?', [email.toLowerCase()]);
     if (existingUser) {
+      const roleLabel = existingUser.role === 'driver' ? 'driver' : 'passenger';
       return res.status(409).json({
-        error: 'User already exists'
+        error: 'Account already exists',
+        message: `A ${roleLabel} account with this email already exists. Please sign in or use a different email.`
       });
     }
 
@@ -110,11 +125,28 @@ router.post('/signup', async (req, res) => {
       [userId, email.toLowerCase(), hashedPassword, name.trim(), phone.trim(), role, new Date().toISOString()]
     );
 
+    // Create session
+    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const sessionData = {
+      userId: userId,
+      email: email.toLowerCase(),
+      name: name,
+      role: role,
+      createdAt: new Date()
+    };
+    
+    // Store session
+    global.sessions = global.sessions || new Map();
+    global.sessions.set(sessionId, sessionData);
+
+    setSessionCookie(res, sessionId);
+
     return res.status(201).json({
       id: userId,
       email: email.toLowerCase(),
       name,
       role,
+      sessionId: sessionId,
       message: 'Account created successfully'
     });
   } catch (err) {
@@ -162,12 +194,30 @@ router.post('/signin', async (req, res) => {
       });
     }
 
+    // Create session
+    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const sessionData = {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      createdAt: new Date()
+    };
+    
+    // Store session (in a real app, use Redis or database)
+    global.sessions = global.sessions || new Map();
+    global.sessions.set(sessionId, sessionData);
+
+    setSessionCookie(res, sessionId);
+
     return res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       phone: user.phone,
       role: user.role,
+      sessionId: sessionId,
       message: 'Sign in successful'
     });
   } catch (err) {
@@ -216,7 +266,7 @@ router.get('/:userId', async (req, res) => {
 // Driver signup
 router.post('/driver-signup', async (req, res) => {
   try {
-    const { email, password, name, phone, vehicleType, licensePlate, vehicleModel } = req.body;
+    const { email, password, name, phone, vehicleType, licensePlate, vehicleModel, driverPhoto } = req.body;
 
     // Validate input
     const validation = validateSignupInput({
@@ -249,12 +299,27 @@ router.post('/driver-signup', async (req, res) => {
       });
     }
 
-    // Check if driver already exists
-    const existingDriver = await get('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
-    if (existingDriver) {
+    if (!driverPhoto || typeof driverPhoto !== 'string' || !driverPhoto.startsWith('data:image/')) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['Driver photo is required and must be a valid image']
+      });
+    }
+
+    if (driverPhoto.length > 3 * 1024 * 1024) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: ['Driver photo is too large']
+      });
+    }
+
+    // Check if an account already exists with this email
+    const existingUser = await get('SELECT id, role FROM users WHERE email = ?', [email.toLowerCase()]);
+    if (existingUser) {
+      const roleLabel = existingUser.role === 'driver' ? 'driver' : 'passenger';
       return res.status(409).json({
-        error: 'Driver account already exists',
-        message: 'An account with this email already exists'
+        error: 'Account already exists',
+        message: `A ${roleLabel} account with this email already exists. Please sign in or use a different email.`
       });
     }
 
@@ -265,8 +330,8 @@ router.post('/driver-signup', async (req, res) => {
 
     // Insert user
     await run(
-      'INSERT INTO users (id, email, password, name, phone, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [userId, email.toLowerCase(), hashedPassword, name.trim(), phone.trim(), 'driver', new Date().toISOString()]
+      'INSERT INTO users (id, email, password, name, phone, role, profilePhoto, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [userId, email.toLowerCase(), hashedPassword, name.trim(), phone.trim(), 'driver', driverPhoto, new Date().toISOString()]
     );
 
     // Insert driver profile
@@ -275,12 +340,30 @@ router.post('/driver-signup', async (req, res) => {
       [driverId, userId, vehicleType.trim(), licensePlate.trim(), vehicleModel?.trim() || '', 5.0, 100, 0, 5.6, -0.2, new Date().toISOString()]
     );
 
+    // Create session
+    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const sessionData = {
+      userId: userId,
+      driverId: driverId,
+      email: email.toLowerCase(),
+      name: name,
+      role: 'driver',
+      createdAt: new Date()
+    };
+    
+    // Store session
+    global.sessions = global.sessions || new Map();
+    global.sessions.set(sessionId, sessionData);
+
+    setSessionCookie(res, sessionId);
+
     return res.status(201).json({
       userId,
       driverId,
       email: email.toLowerCase(),
       name,
       role: 'driver',
+      sessionId: sessionId,
       message: 'Driver account created successfully'
     });
   } catch (err) {
@@ -331,6 +414,29 @@ router.post('/driver-signin', async (req, res) => {
     // Get driver profile
     const driver = await get('SELECT id, vehicleType, licensePlate, vehicleModel FROM drivers WHERE userId = ?', [user.id]);
 
+    // Create session
+    const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const sessionData = {
+      userId: user.id,
+      driverId: driver?.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      vehicle: driver ? {
+        type: driver.vehicleType,
+        licensePlate: driver.licensePlate,
+        model: driver.vehicleModel
+      } : null,
+      createdAt: new Date()
+    };
+    
+    // Store session
+    global.sessions = global.sessions || new Map();
+    global.sessions.set(sessionId, sessionData);
+
+    setSessionCookie(res, sessionId);
+
     return res.json({
       userId: user.id,
       driverId: driver?.id,
@@ -338,6 +444,7 @@ router.post('/driver-signin', async (req, res) => {
       name: user.name,
       phone: user.phone,
       role: user.role,
+      sessionId: sessionId,
       vehicle: driver ? {
         type: driver.vehicleType,
         licensePlate: driver.licensePlate,
@@ -352,6 +459,21 @@ router.post('/driver-signin', async (req, res) => {
       message: 'Failed to sign in'
     });
   }
+});
+
+// Sign out endpoint
+router.post('/signout', (req, res) => {
+  const sessionId = req.headers['x-session-id'] || req.body.sessionId;
+  
+  if (sessionId && global.sessions) {
+    global.sessions.delete(sessionId);
+  }
+
+  clearSessionCookie(res);
+  
+  return res.json({
+    message: 'Sign out successful'
+  });
 });
 
 module.exports = router;

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Passenger Dashboard</title>
+  <meta name="description" content="Book rides and track your journey with Green Route" />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/app-responsive.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="../api.js"></script>
+  <script defer src="../../app.js"></script>
+  <script defer src="../js/auth-check.js"></script>
+  <script defer src="../js/passenger.js"></script>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
+</head>
+<body class="focus-page passenger-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./passenger.html" class="active">Dashboard</a>
+      <a href="#" id="bookings-link">My Bookings</a>
+      <a href="#" id="profile-link">Profile</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./passenger.html" class="active">Dashboard</a>
+    <a href="#" id="mobile-bookings-link">My Bookings</a>
+    <a href="#" id="mobile-profile-link">Profile</a>
+    <button id="mobile-signout-btn" class="ghost" type="button">Sign Out</button>
+  </nav>
+
+  <main class="focus-shell passenger-focus-shell">
+      <aside class="sidebar-card surface focus-sidebar passenger-focus-sidebar">
+        <div class="brand-link focus-brand" aria-label="Green Route brand">
+          <span class="brand-mark">GR</span>
+        </div>
+
+        <section class="stack-block">
+          <div class="section-head compact">
+            <span class="eyebrow">Book Your Ride</span>
+            <h2>Where to?</h2>
+          </div>
+        <form id="booking-form" class="stack-block">
+          <div class="fields">
+            <div class="field">
+              <span>Pickup Location</span>
+              <input 
+                type="text" 
+                id="pickup-input" 
+                name="pickup" 
+                placeholder="Enter pickup location"
+                autocomplete="off"
+                required
+              />
+            </div>
+            <div class="field">
+              <span>Destination</span>
+              <input 
+                type="text" 
+                id="destination-input" 
+                name="destination" 
+                placeholder="Where are you going?"
+                autocomplete="off"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="choice-grid">
+            <input type="hidden" name="rideType" id="ride-type-input" value="taxi" />
+            <button type="button" class="choice-btn active" data-ride-type="taxi">
+              <span>🚗</span>
+              <strong>Taxi</strong>
+              <small>Quick and affordable</small>
+            </button>
+            <button type="button" class="choice-btn" data-ride-type="trotro">
+              <span>🚐</span>
+              <strong>Trotro</strong>
+              <small>Shared ride, best value</small>
+            </button>
+          </div>
+
+          <div class="field">
+            <span>Passengers</span>
+            <select id="passengers-count" name="passengers">
+              <option value="1">1 Passenger</option>
+              <option value="2">2 Passengers</option>
+              <option value="3">3 Passengers</option>
+              <option value="4">4 Passengers</option>
+            </select>
+          </div>
+
+          <button type="submit" id="find-ride-btn" class="cta primary btn-lg">
+            Find Available Rides
+          </button>
+        </form>
+      </section>
+    </aside>
+
+    <div class="passenger-focus-map-column">
+      <div class="passenger-focus-map-stage">
+        <div class="driver-live-map">
+          <div id="map" class="driver-map-canvas"></div>
+          <div class="map-loading">
+            <div class="pv2-spinner"></div>
+            <p>Loading map...</p>
+          </div>
+        </div>
+
+        <!-- Available Drivers Panel -->
+        <div id="drivers-panel" class="passenger-stats-pill surface" style="display: none;">
+          <span id="drivers-count">0 drivers nearby</span>
+        </div>
+
+        <!-- Active Booking Panel -->
+        <div id="active-booking" class="driver-floating-card surface" style="display: none;">
+          <div class="section-head">
+            <h3>Your Ride</h3>
+            <span id="ride-status">Driver confirmed</span>
+          </div>
+          <div class="passenger-driver-row">
+            <img id="driver-photo" src="" alt="Driver" class="driver-avatar">
+            <div>
+              <h4 id="driver-name">-</h4>
+              <p id="driver-rating">⭐ 4.5</p>
+              <p id="driver-trips">• 234 trips</p>
+            </div>
+          </div>
+          <div class="ride-progress">
+            <div class="progress-item">
+              <span class="progress-label">ETA</span>
+              <span id="arrival-time">5 min</span>
+            </div>
+            <div class="progress-item">
+              <span class="progress-label">Distance</span>
+              <span id="ride-distance">2.0 km</span>
+            </div>
+          </div>
+          <div class="passenger-active-actions">
+            <button id="contact-driver-btn" class="ghost">Contact Driver</button>
+            <button id="cancel-ride-btn" class="ghost">Cancel Ride</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Notification -->
+  <div id="notification" class="notification" style="display: none;">
+    <div class="notification-content">
+      <span id="notification-message"></span>
+      <button id="notification-close" class="notification-close">&times;</button>
+    </div>
+  </div>
+
+  <!-- Booking History Modal -->
+  <div id="bookings-modal" class="modal" style="display: none;">
+    <div class="modal-content surface">
+      <div class="modal-header">
+        <h3>Booking History</h3>
+        <button class="modal-close" id="close-bookings-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="bookings-list" class="bookings-list">
+          <!-- Bookings will be populated here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div id="profile-modal" class="modal" style="display: none;">
+    <div class="modal-content surface">
+      <div class="modal-header">
+        <h3>My Profile</h3>
+        <button class="modal-close" id="close-profile-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="profile-form" class="profile-form">
+          <div class="form-group">
+            <label for="profile-name">Full Name</label>
+            <input type="text" id="profile-name" name="name" required />
+          </div>
+          <div class="form-group">
+            <label for="profile-email">Email</label>
+            <input type="email" id="profile-email" name="email" required />
+          </div>
+          <div class="form-group">
+            <label for="profile-phone">Phone Number</label>
+            <input type="tel" id="profile-phone" name="phone" />
+          </div>
+          <button type="submit" class="cta primary">Update Profile</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  </body>
+</html>

@@ -3,6 +3,62 @@ const express = require('express');
 const path = require('path');
 const { initDB, close } = require('./db');
 
+// Session management
+const sessions = new Map();
+
+// Make sessions globally accessible
+global.sessions = sessions;
+
+// Session middleware
+const sessionMiddleware = (req, res, next) => {
+  const cookieHeader = req.headers.cookie || '';
+  const cookieSessionId = cookieHeader
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith('sessionId='))
+    ?.split('=')[1];
+
+  const sessionId = req.headers['x-session-id'] || req.query.sessionId || cookieSessionId;
+  
+  if (sessionId && sessions.has(sessionId)) {
+    req.session = sessions.get(sessionId);
+    req.sessionId = sessionId;
+  } else {
+    req.session = null;
+    req.sessionId = null;
+  }
+  
+  next();
+};
+
+// Authentication middleware for protected routes
+const requireAuth = (req, res, next) => {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      message: 'Please sign in to access this resource',
+      redirectTo: '/signin.html'
+    });
+  }
+  next();
+};
+
+// Create session helper
+const createSession = (userData) => {
+  const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  sessions.set(sessionId, {
+    ...userData,
+    createdAt: new Date(),
+    lastAccess: new Date()
+  });
+  return sessionId;
+};
+
+// Clear session helper
+const clearSession = (sessionId) => {
+  sessions.delete(sessionId);
+};
+
 // Import routes
 const authRoutes = require('./backend/routes/auth');
 const rideRoutes = require('./backend/routes/rides');
@@ -19,7 +75,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(sessionMiddleware);
 app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Serve JS files from root directory
@@ -72,8 +129,11 @@ app.use('/api/bookings', bookingRoutes);
 
 
 // Serve frontend files
-const htmlFiles = ['index', 'code', 'driver', 'signin', 'signup', 'driver-signin', 'driver-signup'];
-htmlFiles.forEach(file => {
+const publicFiles = ['index', 'signin', 'signup', 'driver-signin', 'driver-signup', 'passenger'];
+const protectedFiles = ['code', 'driver'];
+
+// Public routes (no authentication required)
+publicFiles.forEach(file => {
   app.get('/' + file, (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend/html', file + '.html'));
   });
@@ -81,6 +141,17 @@ htmlFiles.forEach(file => {
     res.sendFile(path.join(__dirname, 'frontend/html', file + '.html'));
   });
 });
+
+// Protected routes (authentication required)
+protectedFiles.forEach(file => {
+  app.get('/' + file, requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/html', file + '.html'));
+  });
+  app.get('/' + file + '.html', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/html', file + '.html'));
+  });
+});
+
 
 // Root redirect
 app.get('/', (req, res) => {

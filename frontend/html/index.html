@@ -6,8 +6,9 @@
   <title>Green Route | Find Rides Fast</title>
   <meta name="description" content="Green Route helps you find a ride quickly and move around the city with less stress." />
   <link rel="stylesheet" href="../css/app.css" />
-  <script defer src="../../api.js"></script>
+  <script defer src="../api.js"></script>
   <script defer src="../../app.js"></script>
+  <script defer src="../../js/auth-check.js"></script>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
 </head>
@@ -75,7 +76,7 @@
       </section>
 
       <div class="focus-sidebar-footer landing-focus-links" aria-label="Entry actions">
-        <a class="cta pad-md" href="./code.html">Booking a ride?</a>
+        <a class="cta pad-md" href="./signup.html">Booking a ride?</a>
         <a class="cta secondary pad-md" href="./driver-signup.html">Want to earn?</a>
       </div>
     </aside>
@@ -86,7 +87,7 @@
           class="map-frame"
           title="Accra route map"
           loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
+          referrerpolicy="strict-origin-when-cross-origin"
           src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
         ></iframe>
         <div class="map-overlay">

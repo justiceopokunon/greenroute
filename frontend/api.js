@@ -1,6 +1,9 @@
 
 const API_BASE = '/api';
 
+// Session management
+let currentSessionId = null;
+
 const api = {
   signup: async (email, password, name, role, phone) => {
     const response = await fetch(`${API_BASE}/auth/signup`, {
@@ -9,7 +12,12 @@ const api = {
       body: JSON.stringify({ email, password, name, role, phone })
     });
     if (!response.ok) throw new Error(await response.text());
-    return response.json();
+    const data = await response.json();
+    if (data.sessionId) {
+      currentSessionId = data.sessionId;
+      localStorage.setItem('sessionId', data.sessionId);
+    }
+    return data;
   },
 
   signin: async (email, password) => {
@@ -19,7 +27,12 @@ const api = {
       body: JSON.stringify({ email, password })
     });
     if (!response.ok) throw new Error(await response.text());
-    return response.json();
+    const data = await response.json();
+    if (data.sessionId) {
+      currentSessionId = data.sessionId;
+      localStorage.setItem('sessionId', data.sessionId);
+    }
+    return data;
   },
 
   getProfile: async (userId) => {
@@ -30,7 +43,7 @@ const api = {
 
   // Rides
   getAvailableRides: async () => {
-    const response = await fetch(`${API_BASE}/rides/available`);
+    const response = await fetch(`${API_BASE}/rides/available`, addSessionHeader());
     if (!response.ok) throw new Error(await response.text());
     return response.json();
   },
@@ -38,7 +51,7 @@ const api = {
   createRide: async (driverId, origin, destination, fare, seats, capacity) => {
     const response = await fetch(`${API_BASE}/rides/create`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: addSessionHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ driverId, origin, destination, fare, seats, capacity })
     });
     if (!response.ok) throw new Error(await response.text());
@@ -46,7 +59,7 @@ const api = {
   },
 
   getRide: async (rideId) => {
-    const response = await fetch(`${API_BASE}/rides/${rideId}`);
+    const response = await fetch(`${API_BASE}/rides/${rideId}`, addSessionHeader());
     if (!response.ok) throw new Error(await response.text());
     return response.json();
   },
@@ -54,7 +67,7 @@ const api = {
   updateDriverLocation: async (driverId, latitude, longitude, isOnline) => {
     const response = await fetch(`${API_BASE}/rides/driver/${driverId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: addSessionHeader({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ latitude, longitude, isOnline })
     });
     if (!response.ok) throw new Error(await response.text());
@@ -115,13 +128,70 @@ const api = {
   // Get active booking for passenger
   getActiveBooking: async (passengerId) => {
     try {
-      const bookings = await this.getPassengerBookings(passengerId);
+      const bookings = await api.getPassengerBookings(passengerId);
       return bookings.find(b => b.status === 'confirmed') || null;
+    } catch {
+      return null;
+    }
+  },
+
+  // Sign out
+  signout: async () => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/signout`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-session-id': currentSessionId
+        }
+      });
+      if (!response.ok) throw new Error(await response.text());
+      currentSessionId = null;
+      localStorage.removeItem('sessionId');
+      localStorage.removeItem('passengerId');
+      localStorage.removeItem('driverId');
+      return response.json();
     } catch {
       return null;
     }
   }
 };
+
+// Initialize session from localStorage
+currentSessionId = localStorage.getItem('sessionId');
+
+
+// Helper function to add session header to fetch options
+const addSessionHeader = (options = {}) => {
+  if (currentSessionId) {
+    options.headers = {
+      ...options.headers,
+      'x-session-id': currentSessionId
+    };
+  }
+  return options;
+};
+
+// Update all API calls to include session header
+Object.keys(api).forEach(key => {
+  if (typeof api[key] === 'function' && key !== 'signout') {
+    const originalMethod = api[key];
+    api[key] = async (...args) => {
+      // Add session header to fetch calls
+      if (args.length > 0 && typeof args[0] === 'object' && args[0].url) {
+        args[0] = addSessionHeader(args[0]);
+      } else if (typeof args[0] === 'string' && args[0].startsWith(API_BASE)) {
+        // For calls like fetch(url, options)
+        const urlIndex = args.findIndex(arg => typeof arg === 'string' && arg.startsWith(API_BASE));
+        const optionsIndex = urlIndex + 1;
+        if (args[optionsIndex]) {
+          args[optionsIndex] = addSessionHeader(args[optionsIndex]);
+        }
+      }
+      return originalMethod(...args);
+    };
+  }
+});
 
 // Expose API to window global so it can be accessed from other scripts
 window.api = api;

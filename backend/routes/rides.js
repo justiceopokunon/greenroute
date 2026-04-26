@@ -123,7 +123,7 @@ router.get('/available', async (req, res) => {
         r.status, r.createdAt,
         d.vehicleType, d.licensePlate, d.vehicleModel, d.rating, d.trustScore,
         d.latitude, d.longitude,
-        u.name as driverName, u.phone as driverPhone
+        u.name as driverName, u.phone as driverPhone, u.profilePhoto as driverPhoto
       FROM rides r
       JOIN drivers d ON r.driverId = d.id
       JOIN users u ON d.userId = u.id
@@ -229,7 +229,7 @@ router.get('/:rideId', async (req, res) => {
         r.status, r.createdAt,
         d.vehicleType, d.licensePlate, d.vehicleModel, d.rating, d.trustScore,
         d.latitude, d.longitude,
-        u.name as driverName, u.phone as driverPhone
+        u.name as driverName, u.phone as driverPhone, u.profilePhoto as driverPhoto
       FROM rides r
       JOIN drivers d ON r.driverId = d.id
       JOIN users u ON d.userId = u.id

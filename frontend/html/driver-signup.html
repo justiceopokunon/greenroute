@@ -6,8 +6,9 @@
   <title>Green Route | Driver Sign Up</title>
   <meta name="description" content="Register as a driver for Green Route." />
   <link rel="stylesheet" href="../css/app.css" />
-  <script defer src="../../api.js"></script>
+  <script defer src="../api.js"></script>
   <script defer src="../../app.js"></script>
+  <script defer src="../js/auth.js"></script>
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
 </head>
@@ -109,9 +110,23 @@
           <input id="phone-driver-signup" name="phone" type="tel" autocomplete="tel" placeholder="024 000 0000" required />
         </label>
 
-        <label class="field" for="driverId-driver-signup">
-          <span>Driver ID</span>
-          <input id="driverId-driver-signup" name="driverId" type="text" autocomplete="off" placeholder="GR-214" required />
+        <label class="field" for="vehicleType-driver-signup">
+          <span>Vehicle type</span>
+          <select id="vehicleType-driver-signup" name="vehicleType" required>
+            <option value="" disabled selected>Select vehicle type</option>
+            <option value="sedan">Sedan</option>
+            <option value="suv">SUV</option>
+            <option value="hatchback">Hatchback</option>
+            <option value="pickup">Pickup truck</option>
+            <option value="van">Van / Minivan</option>
+            <option value="motorcycle">Motorcycle</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+
+        <label class="field" for="vehicleModel-driver-signup">
+          <span>Vehicle model</span>
+          <input id="vehicleModel-driver-signup" name="vehicleModel" type="text" autocomplete="off" placeholder="e.g. Toyota Corolla 2022" />
         </label>
 
         <label class="field" for="vehiclePlate-driver-signup">

@@ -100,7 +100,7 @@ router.get('/passenger/:passengerId', async (req, res) => {
         b.id, b.rideId, b.status, b.createdAt, b.fare as bookingFare, b.seats as bookingSeats,
         r.origin, r.destination, r.fare as rideFare, r.capacity, r.seats as availableSeats,
         d.vehicleType, d.licensePlate, d.vehicleModel, d.rating,
-        u.name as driverName, u.phone as driverPhone
+        u.name as driverName, u.phone as driverPhone, u.profilePhoto as driverPhoto
       FROM bookings b
       JOIN rides r ON b.rideId = r.id
       JOIN drivers d ON r.driverId = d.id

@@ -50,23 +50,7 @@
     fareContainer: document.querySelector('label:has(#driver-fare-input)')
   };
 
-  // Initialize map
-  const initMap = () => {
-    if (!elements.driverMap || state.driverMap) return;
-
-    if (typeof L === 'undefined') {
-      console.error('Leaflet not loaded');
-      return;
-    }
-
-    state.driverMap = L.map('driver-map').setView(GreenRoute.config.mapCenter, GreenRoute.config.defaultZoom);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(state.driverMap);
-
-    };
-
+  
   // SOS functionality - Graceful handling if element doesn't exist
   const handleSOS = () => {
     const sosMessage = `
@@ -202,24 +186,53 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     return knownStops[normalizedRoute] || null;
   };
 
-  // Create road-based route path
-  const createRoadBasedRoutePath = (fromLat, fromLng, toLat, toLng, color = '#10b981') => {
+  const fetchRoadGeometry = async (fromLat, fromLng, toLat, toLng, retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        const coordinates = data?.routes?.[0]?.geometry?.coordinates;
+        if (!Array.isArray(coordinates) || coordinates.length < 2) {
+          continue;
+        }
+
+        // OSRM returns [lng, lat], Leaflet expects [lat, lng].
+        return coordinates.map(([lng, lat]) => [lat, lng]);
+      } catch (error) {
+        console.warn(`OSRM road routing attempt ${attempt + 1} failed:`, error.message);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+      }
+    }
+    return null;
+  };
+
+  // Create road-based route path - follows actual roads via OSRM
+  const createRoadBasedRoutePath = async (fromLat, fromLng, toLat, toLng, color = '#10b981') => {
     // Remove existing route if it exists
     if (state.routePolyline) {
       state.driverMap.removeLayer(state.routePolyline);
     }
 
-    let roadPath = null;
+    let roadPath = await fetchRoadGeometry(fromLat, fromLng, toLat, toLng);
 
-    // Try to find road path between known stops
-    const fromStop = findNearestStop(fromLat, fromLng);
-    const toStop = findNearestStop(toLat, toLng);
-    
-    if (fromStop && toStop && window.RoadRouting) {
-      roadPath = window.RoadRouting.getRoadPath(fromStop, toStop);
+    // Fallback to local road graph for known nearby stops.
+    if (!roadPath) {
+      const fromStop = findNearestStop(fromLat, fromLng);
+      const toStop = findNearestStop(toLat, toLng);
+
+      if (fromStop && toStop && window.RoadRouting) {
+        roadPath = window.RoadRouting.getRoadPath(fromStop, toStop);
+      }
     }
 
-    // If no road path found, create realistic path
+    // Final fallback if routing providers are unavailable.
     if (!roadPath) {
       roadPath = createRealisticPath([fromLat, fromLng], [toLat, toLng]);
     }
@@ -232,9 +245,9 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     // Create the polyline with road-following appearance
     const polyline = L.polyline(roadPath, {
       color: color,
-      weight: 5,
+      weight: 4,
       opacity: 0.8,
-      dashArray: '15, 10',
+      dashArray: null,
       lineCap: 'round',
       lineJoin: 'round',
       className: 'road-route-path'
@@ -590,7 +603,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         
         // Create road-based route path
         if (routeCoords && destCoords) {
-          createRoadBasedRoutePath(routeCoords.lat, routeCoords.lng, destCoords.lat, destCoords.lng);
+          await createRoadBasedRoutePath(routeCoords.lat, routeCoords.lng, destCoords.lat, destCoords.lng);
         }
         
         startGpsTracking();
@@ -738,8 +751,57 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     updateSeatCounts();
   };
 
+  const initMap = () => {
+    if (!elements.driverMap) {
+      console.error('Map element not found');
+      return;
+    }
+
+    if (state.driverMap) {
+      console.log('Map already initialized');
+      return;
+    }
+
+    if (typeof L !== 'undefined') {
+      try {
+        state.driverMap = L.map(elements.driverMap).setView(GreenRoute.config.mapCenter, GreenRoute.config.defaultZoom);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(state.driverMap);
+
+        const mapLoading = document.querySelector('.map-loading');
+        if (mapLoading) {
+          mapLoading.style.display = 'none';
+        }
+
+        console.log('Driver map initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize driver map:', error);
+      }
+    } else {
+      console.error('Leaflet not available');
+    }
+  };
+
   // Initialize driver app with manual fare functionality
   const init = () => {
+    // Add sign out handler
+    const logoutBtn = document.getElementById('driver-logout');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await api.signout();
+          window.location.href = './driver-signin.html';
+        } catch (error) {
+          console.error('Sign out error:', error);
+          alert('Error signing out. Please try again.');
+        }
+      });
+    }
+    
     // Load road routing system
     if (!window.RoadRouting) {
       const script = document.createElement('script');

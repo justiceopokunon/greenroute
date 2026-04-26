@@ -6,7 +6,7 @@
     apiBase: '/api',
     mapCenter: [5.6037, -0.1870],
     defaultZoom: 13,
-    pollingInterval: 3000,
+    pollingInterval: 10000,
     gpsTimeout: 10000,
     maxRetries: 3
   };

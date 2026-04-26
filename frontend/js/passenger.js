@@ -2,6 +2,16 @@
 (() => {
   'use strict';
 
+  const byIds = (...ids) => {
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) {
+        return el;
+      }
+    }
+    return null;
+  };
+
   const state = {
     userLocation: null,
     activeBooking: null,
@@ -15,54 +25,116 @@
     passengerId: GreenRoute.utils.getStorage(GreenRoute.storage.passengerId, null)
   };
 
+  const handleSignOut = async () => {
+    const sessionId = localStorage.getItem('sessionId');
+    try {
+      await fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(sessionId ? { 'x-session-id': sessionId } : {}) },
+        body: JSON.stringify({ sessionId })
+      });
+    } catch (error) {
+      console.warn('Sign out request failed, clearing local session only:', error);
+    }
+
+    localStorage.removeItem('sessionId');
+    GreenRoute.utils.removeStorage(GreenRoute.storage.passengerId);
+    GreenRoute.utils.removeStorage(GreenRoute.storage.userRole);
+    window.location.href = '../index.html';
+  };
+
   const elements = {
-    originInput: document.getElementById('pv2-origin'),
-    destinationInput: document.getElementById('pv2-destination'),
-    passengerCount: document.getElementById('pv2-passenger-count'),
-    findRideBtn: document.getElementById('pv2-find-ride'),
-    activeTripPanel: document.getElementById('pv2-active-trip-panel'),
-    driverName: document.getElementById('pv2-driver-name'),
-    driverPlate: document.getElementById('pv2-driver-plate'),
-    driverPhoto: document.getElementById('pv2-driver-photo'),
-    liveEta: document.getElementById('pv2-live-eta'),
-    cancelBtn: document.getElementById('pv2-cancel-btn'),
-    statsPill: document.getElementById('pv2-stats-pill'),
-    passengerMap: document.getElementById('passenger-map'),
-    userName: document.getElementById('pv2-user-name'),
-    minusBtn: document.getElementById('pv2-minus'),
-    plusBtn: document.getElementById('pv2-plus'),
-    modal: document.getElementById('pv2-modal'),
-    modalSearching: document.getElementById('pv2-modal-searching'),
-    modalNoMatch: document.getElementById('pv2-modal-no-match'),
-    modalMatched: document.getElementById('pv2-modal-matched'),
-    modalDriverName: document.getElementById('pv2-modal-driver-name'),
-    modalPlate: document.getElementById('pv2-modal-plate'),
-    modalVehicle: document.getElementById('pv2-modal-vehicle'),
-    modalEta: document.getElementById('pv2-modal-eta'),
-    modalFare: document.getElementById('pv2-modal-fare'),
-    liveEta: document.getElementById('pv2-live-eta'),
-    liveFare: document.getElementById('pv2-live-fare'),
-    trackMapBtn: document.getElementById('pv2-track-map'),
-    cancelModalBtn: document.getElementById('pv2-cancel-modal'),
-    tryDifferentBtn: document.getElementById('pv2-try-different'),
-    sosButton: document.getElementById('panic-button'),
-    tripFare: document.getElementById('pv2-trip-fare'),
-    tripSeats: document.getElementById('pv2-trip-seats')
+    // Map
+    map: byIds('map', 'passenger-map'),
+    
+    // Form elements
+    bookingForm: byIds('booking-form'),
+    pickupInput: byIds('pickup-input', 'pv2-origin'),
+    destinationInput: byIds('destination-input', 'pv2-destination'),
+    rideTypeInput: byIds('ride-type-input'),
+    findRideBtn: byIds('find-ride-btn', 'pv2-find-ride'),
+    passengersCount: byIds('passengers-count', 'pv2-passenger-count'),
+    
+    // Driver elements
+    driversPanel: byIds('drivers-panel', 'pv2-stats-pill'),
+    driversCount: byIds('drivers-count', 'pv2-stats-pill'),
+    
+    // Active booking elements
+    activeRide: byIds('active-booking', 'pv2-active-trip-panel'),
+    driverName: byIds('driver-name', 'pv2-driver-name'),
+    driverPhoto: byIds('driver-photo', 'pv2-driver-photo'),
+    driverRating: byIds('driver-rating'),
+    driverTrips: byIds('driver-trips'),
+    rideStatus: byIds('ride-status'),
+    arrivalTime: byIds('arrival-time', 'pv2-live-eta'),
+    rideDistance: byIds('ride-distance'),
+    
+    // Action buttons
+    cancelBtn: byIds('cancel-ride-btn', 'pv2-cancel-btn'),
+    contactDriverBtn: byIds('contact-driver-btn'),
+    
+    // Navigation
+    mobileSignoutBtn: byIds('mobile-signout-btn', 'passenger-logout-mobile'),
+    bookingsLink: byIds('bookings-link'),
+    mobileBookingsLink: byIds('mobile-bookings-link'),
+    profileLink: byIds('profile-link'),
+    mobileProfileLink: byIds('mobile-profile-link'),
+    
+    // Modals
+    bookingsModal: byIds('bookings-modal'),
+    profileModal: byIds('profile-modal'),
+    closeBookingsModal: byIds('close-bookings-modal'),
+    closeProfileModal: byIds('close-profile-modal'),
+    
+    // Notification element
+    notification: byIds('notification'),
+    notificationMessage: byIds('notification-message'),
+    notificationClose: byIds('notification-close'),
+    desktopSignoutBtn: byIds('passenger-logout'),
+    sosButton: byIds('panic-button')
   };
 
   const initMap = () => {
-    if (!elements.passengerMap || state.passengerMap) return;
-
-    if (typeof L === 'undefined') {
-      console.error('Leaflet not loaded');
+    if (!elements.map) {
+      console.error('Map element not found');
       return;
     }
 
-    state.passengerMap = L.map('passenger-map').setView(GreenRoute.config.mapCenter, GreenRoute.config.defaultZoom);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(state.passengerMap);
+    if (state.passengerMap) {
+      console.log('Map already initialized');
+      return;
+    }
+
+    // Initialize map immediately if L is available
+    if (typeof L !== 'undefined') {
+      try {
+        state.passengerMap = L.map(elements.map).setView(GreenRoute.config.mapCenter, GreenRoute.config.defaultZoom);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(state.passengerMap);
+
+        // Hide loading indicator
+        const mapLoading = document.querySelector('.map-loading');
+        if (mapLoading) {
+          mapLoading.style.display = 'none';
+        }
+
+        console.log('Map initialized successfully');
+        
+        // Get user location after map loads
+        setTimeout(() => {
+          getUserLocation();
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Failed to initialize map:', error);
+      }
+    } else {
+      console.error('Leaflet not available');
+    }
   };
 
   const handleSOS = () => {
@@ -83,12 +155,16 @@
   // Get user location
   const getUserLocation = () => {
     if (!navigator.geolocation) {
-      elements.originInput.value = 'Enable location to continue';
-      elements.originInput.disabled = true;
+      if (elements.pickupInput) {
+        elements.pickupInput.value = 'Enable location to continue';
+        elements.pickupInput.disabled = true;
+      }
       return;
     }
 
-    elements.originInput.value = 'Detecting your location...';
+    if (elements.pickupInput) {
+      elements.pickupInput.value = 'Detecting your location...';
+    }
     
     navigator.geolocation.getCurrentPosition(
       async (position) => {
@@ -98,7 +174,9 @@
         };
         
         const address = await GreenRoute.utils.reverseGeocode(state.userLocation.lat, state.userLocation.lng);
-        elements.originInput.value = address || 'Current location';
+        if (elements.pickupInput) {
+          elements.pickupInput.value = address || 'Current location';
+        }
 
         // Add user marker to map
         if (state.passengerMap && state.userLocation) {
@@ -121,8 +199,10 @@
       },
       (error) => {
         console.error('Geolocation error:', error);
-        elements.originInput.value = 'Enable location to continue';
-        elements.originInput.disabled = false;
+        if (elements.pickupInput) {
+          elements.pickupInput.value = 'Enable location to continue';
+          elements.pickupInput.disabled = false;
+        }
         
         let errorMessage = 'Enable location to continue';
         switch(error.code) {
@@ -136,7 +216,9 @@
             errorMessage = 'Location request timed out.';
             break;
         }
-        elements.originInput.value = errorMessage;
+        if (elements.pickupInput) {
+          elements.pickupInput.value = errorMessage;
+        }
       },
       {
         enableHighAccuracy: true,
@@ -227,27 +309,81 @@
     };
 
     const normalizedDest = destination.toLowerCase().trim();
-    return knownStops[normalizedDest] || null;
+    if (knownStops[normalizedDest]) {
+      return knownStops[normalizedDest];
+    }
+
+    // Fallback to geocoding so free-text destinations can still use road routing.
+    try {
+      const query = encodeURIComponent(`${destination}, Accra, Ghana`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${query}`);
+      if (!response.ok) {
+        return null;
+      }
+
+      const results = await response.json();
+      const first = Array.isArray(results) ? results[0] : null;
+      if (!first) {
+        return null;
+      }
+
+      return {
+        lat: Number(first.lat),
+        lng: Number(first.lon)
+      };
+    } catch (error) {
+      console.warn('Destination geocoding failed:', error);
+      return null;
+    }
+  };
+
+  const fetchRoadGeometry = async (fromLat, fromLng, toLat, toLng, retries = 2) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
+        const response = await fetch(url);
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        const coordinates = data?.routes?.[0]?.geometry?.coordinates;
+        if (!Array.isArray(coordinates) || coordinates.length < 2) {
+          continue;
+        }
+
+        // OSRM returns [lng, lat], Leaflet expects [lat, lng].
+        return coordinates.map(([lng, lat]) => [lat, lng]);
+      } catch (error) {
+        console.warn(`OSRM road routing attempt ${attempt + 1} failed:`, error.message);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        }
+      }
+    }
+    return null;
   };
 
   // Create road-based route path - FIXED TO FOLLOW ACTUAL ROADS
-  const createRoadBasedRoutePath = (fromLat, fromLng, toLat, toLng, routeId = 'default', color = '#3b82f6') => {
+  const createRoadBasedRoutePath = async (fromLat, fromLng, toLat, toLng, routeId = 'default', color = '#3b82f6') => {
     // Remove existing route if it exists
     if (state.routePolylines.has(routeId)) {
       state.passengerMap.removeLayer(state.routePolylines.get(routeId));
     }
 
-    let roadPath = null;
+    let roadPath = await fetchRoadGeometry(fromLat, fromLng, toLat, toLng);
 
-    // Try to find road path between known stops
-    const fromStop = findNearestStop(fromLat, fromLng);
-    const toStop = findNearestStop(toLat, toLng);
-    
-    if (fromStop && toStop && window.RoadRouting) {
-      roadPath = window.RoadRouting.getRoadPath(fromStop, toStop);
+    // Fallback to local road graph for known nearby stops.
+    if (!roadPath) {
+      const fromStop = findNearestStop(fromLat, fromLng);
+      const toStop = findNearestStop(toLat, toLng);
+
+      if (fromStop && toStop && window.RoadRouting) {
+        roadPath = window.RoadRouting.getRoadPath(fromStop, toStop);
+      }
     }
 
-    // If no road path found, create realistic path
+    // Final fallback if routing providers are unavailable.
     if (!roadPath) {
       roadPath = createRealisticPath([fromLat, fromLng], [toLat, toLng]);
     }
@@ -262,39 +398,11 @@
       color: color,
       weight: 4,
       opacity: 0.8,
-      dashArray: '15, 10',
+      dashArray: null,
       lineCap: 'round',
       lineJoin: 'round',
       className: 'road-route-path'
     }).addTo(state.passengerMap);
-
-    // Add directional arrows at road intersections
-    const arrowInterval = Math.max(3, Math.floor(roadPath.length / 6));
-    for (let i = arrowInterval; i < roadPath.length - 1; i += arrowInterval) {
-      const point = roadPath[i];
-      const nextPoint = roadPath[Math.min(i + 2, roadPath.length - 1)];
-      
-      if (nextPoint) {
-        const angle = Math.atan2(nextPoint[0] - point[0], nextPoint[1] - point[1]) * 180 / Math.PI;
-        
-        L.marker(point, {
-          icon: L.divIcon({
-            html: `<div style="
-              width: 0;
-              height: 0;
-              border-left: 8px solid transparent;
-              border-right: 8px solid transparent;
-              border-bottom: 12px solid ${color};
-              transform: rotate(${angle}deg);
-              filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
-            "></div>`,
-            iconSize: [16, 12],
-            iconAnchor: [8, 12],
-            className: 'road-route-arrow'
-          })
-        }).addTo(state.passengerMap);
-      }
-    }
 
     state.routePolylines.set(routeId, polyline);
     
@@ -367,7 +475,15 @@
   };
 
   // Update driver markers with improved icons
+  let lastApiCall = 0;
   const updateDriverMarkers = async () => {
+    // Rate limiting: don't make API calls more frequently than every 5 seconds
+    const now = Date.now();
+    if (now - lastApiCall < 5000) {
+      return;
+    }
+    lastApiCall = now;
+
     try {
       const rides = await window.api.getAvailableRides();
       
@@ -416,7 +532,9 @@
       }
 
       const activeDrivers = rides.filter(r => r.latitude && r.longitude && (r.isOnline !== false)).length;
-      elements.statsPill.textContent = activeDrivers > 0 ? `${activeDrivers} drivers active` : 'No drivers active';
+      if (elements.driversCount) {
+        elements.driversCount.textContent = `${activeDrivers} drivers found`;
+      }
       
       } catch (error) {
       console.error('Failed to update driver markers:', error);
@@ -440,7 +558,7 @@
         }
 
         // Update ETA if user location is available
-        if (state.userLocation && elements.liveEta) {
+        if (state.userLocation && elements.arrivalTime) {
           const distance = GreenRoute.utils.calculateDistance(
             ride.latitude, ride.longitude,
             state.userLocation.lat, state.userLocation.lng
@@ -455,27 +573,27 @@
             eta = Math.ceil(distance * 2); // Fallback: 2 minutes per km
           }
           
-          elements.liveEta.textContent = `${eta} min`;
+          elements.arrivalTime.textContent = `${eta} min`;
           // Create road-based route from driver to passenger
-          createRoadBasedRoutePath(
+          await createRoadBasedRoutePath(
             ride.latitude, ride.longitude,
             state.userLocation.lat, state.userLocation.lng,
             'driver-to-passenger',
             '#10b981'
           );
         } else {
-          console.warn('Cannot update ETA - missing user location or liveEta element');
+          console.warn('Cannot update ETA - missing user location or arrivalTime element');
         }
       } else {
         console.warn('No driver location available for tracking');
-        if (elements.liveEta) {
-          elements.liveEta.textContent = 'Searching...';
+        if (elements.arrivalTime) {
+          elements.arrivalTime.textContent = 'Searching...';
         }
       }
     } catch (error) {
       console.error('Failed to track active trip:', error);
-      if (elements.liveEta) {
-        elements.liveEta.textContent = 'Error';
+      if (elements.arrivalTime) {
+        elements.arrivalTime.textContent = 'Error';
       }
     }
   };
@@ -500,28 +618,96 @@
     state.isTracking = false;
     };
 
+  const restoreActiveBooking = async (showMessage = false) => {
+    if (!state.passengerId) {
+      return false;
+    }
+
+    try {
+      const existing = await window.api.getActiveBooking(state.passengerId);
+      if (!existing) {
+        return false;
+      }
+
+      const seats = Number(existing.bookingSeats || existing.seats || 1);
+      const fare = Number(existing.bookingFare || existing.fare || existing.rideFare || 0);
+
+      state.activeBooking = {
+        ...existing,
+        rideId: existing.rideId,
+        driverName: existing.driverName,
+        driverPlate: existing.licensePlate,
+        vehicleType: existing.vehicleType,
+        destination: existing.destination,
+        origin: existing.origin,
+        fare,
+        seats,
+        farePerPerson: Number(existing.rideFare || 0)
+      };
+
+      showActiveRide(state.activeBooking, fare, seats);
+
+      const destination = state.activeBooking.destination;
+      if (destination && state.userLocation) {
+        const destCoords = await getDestinationCoordinates(destination);
+        if (destCoords) {
+          await createRoadBasedRoutePath(
+            state.userLocation.lat, state.userLocation.lng,
+            destCoords.lat, destCoords.lng,
+            'passenger-to-destination',
+            '#3b82f6'
+          );
+        }
+      }
+
+      startTracking();
+
+      if (showMessage) {
+        showNotification('You already have an active ride. Resuming it now.', 'info');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to restore active booking:', error);
+      return false;
+    }
+  };
+
   // Find and book ride with road-based routing
   const findRide = async () => {
-    const origin = elements.originInput.value.trim();
-    const destination = elements.destinationInput.value.trim();
-    const passengers = parseInt(elements.passengerCount.textContent);
+    const origin = elements.pickupInput?.value.trim();
+    const destination = elements.destinationInput?.value.trim();
+    const passengerValue = elements.passengersCount?.value ?? elements.passengersCount?.textContent;
+    const passengers = parseInt(String(passengerValue || '1').trim(), 10) || 1;
 
     if (!origin || !destination) {
-      alert('Please enter both origin and destination');
+      showNotification('Please enter both pickup and destination', 'error');
       return;
     }
 
     if (!state.userLocation) {
-      alert('Location access is required to book a ride');
+      showNotification('Location access is required to book a ride', 'error');
       return;
     }
 
-    elements.modal.hidden = false;
-    elements.modalSearching.hidden = false;
-    elements.modalNoMatch.hidden = true;
-    elements.modalMatched.hidden = true;
+    if (state.activeBooking) {
+      showNotification('You already have an active ride. Cancel it before booking another.', 'info');
+      return;
+    }
 
     try {
+      const resumed = await restoreActiveBooking(false);
+      if (resumed) {
+        showNotification('You already have an active ride. Resuming it now.', 'info');
+        return;
+      }
+
+      // Show loading state
+      if (elements.findRideBtn) {
+        elements.findRideBtn.disabled = true;
+        elements.findRideBtn.textContent = 'Finding drivers...';
+      }
+
       const rides = await window.api.getAvailableRides();
       
       const suitableRide = rides.find(ride => 
@@ -531,8 +717,7 @@
       );
 
       if (!suitableRide) {
-        elements.modalSearching.hidden = true;
-        elements.modalNoMatch.hidden = false;
+        showNotification('No available drivers found. Please try again later.', 'error');
         return;
       }
 
@@ -547,48 +732,6 @@
         state.userLocation.lat,
         state.userLocation.lng
       );
-
-      elements.modalSearching.hidden = true;
-      elements.modalMatched.hidden = false;
-      
-      // Set modal driver information
-      if (elements.modalDriverName) {
-        elements.modalDriverName.textContent = suitableRide.driverName || suitableRide.name || 'Driver';
-      }
-      if (elements.modalPlate) {
-        elements.modalPlate.textContent = `Plate: ${suitableRide.licensePlate || suitableRide.plate || 'N/A'}`;
-      }
-      if (elements.modalVehicle) {
-        elements.modalVehicle.textContent = `Vehicle: ${suitableRide.vehicleType || 'Vehicle'}`;
-      }
-      
-      // Display fare information
-      if (elements.modalFare) {
-        elements.modalFare.textContent = `GHS ${totalFare.toFixed(2)}`;
-        elements.modalFare.style.color = '#10b981';
-        elements.modalFare.style.fontWeight = 'bold';
-      }
-      
-      // Calculate and display ETA
-      if (suitableRide.latitude && suitableRide.longitude && state.userLocation) {
-        const distance = GreenRoute.utils.calculateDistance(
-          suitableRide.latitude, suitableRide.longitude,
-          state.userLocation.lat, state.userLocation.lng
-        );
-        let eta;
-        try {
-          eta = GreenRoute.utils.calculateETA(distance);
-        } catch (etaError) {
-          eta = Math.ceil(distance * 2); // Fallback
-        }
-        if (elements.modalEta) {
-          elements.modalEta.textContent = `${eta} min`;
-        }
-      } else {
-        if (elements.modalEta) {
-          elements.modalEta.textContent = 'Calculating...';
-        }
-      }
 
       // Store booking with fare information
       state.activeBooking = {
@@ -605,61 +748,13 @@
         farePerPerson: farePerPerson
       };
 
-      // Show active trip panel with driver info
-      if (elements.activeTripPanel) {
-        elements.activeTripPanel.hidden = false;
-        elements.activeTripPanel.style.display = 'block';
-        }
+      // Show active ride panel
+      showActiveRide(suitableRide, totalFare, passengers);
       
-      // Display driver information with fallbacks
-      if (elements.driverName) {
-        const driverName = suitableRide.driverName || suitableRide.name || 'Driver';
-        elements.driverName.textContent = driverName;
-        }
-      
-      if (elements.driverPlate) {
-        const plate = suitableRide.licensePlate || suitableRide.plate || 'N/A';
-        elements.driverPlate.textContent = `Plate: ${plate}`;
-        }
-      
-      // Set driver photo if available
-      if (elements.driverPhoto) {
-        elements.driverPhoto.src = suitableRide.driverPhoto || suitableRide.photo || '';
-        elements.driverPhoto.alt = suitableRide.driverName || suitableRide.name || 'Driver';
-      }
-      
-      // Display fare in active trip panel
-      if (elements.liveFare) {
-        elements.liveFare.textContent = `GHS ${totalFare.toFixed(2)}`;
-        elements.liveFare.style.color = '#10b981';
-        elements.liveFare.style.fontWeight = 'bold';
-      }
-      
-      if (elements.tripSeats) {
-        elements.tripSeats.textContent = `${passengers} ${passengers === 1 ? 'seat' : 'seats'}`;
-      }
-      
-      // Calculate initial ETA if driver location is available
-      if (suitableRide.latitude && suitableRide.longitude && state.userLocation) {
-        const distance = GreenRoute.utils.calculateDistance(
-          suitableRide.latitude, suitableRide.longitude,
-          state.userLocation.lat, state.userLocation.lng
-        );
-        const eta = GreenRoute.utils.calculateETA(distance);
-        if (elements.liveEta) {
-          elements.liveEta.textContent = `${eta} min`;
-          }
-      } else {
-        console.warn('Cannot calculate ETA - missing driver location or user location');
-        if (elements.liveEta) {
-          elements.liveEta.textContent = 'Calculating...';
-        }
-      }
-      
-      // Create road-based route from passenger to destination
+      // Create route to destination
       const destCoords = await getDestinationCoordinates(destination);
       if (destCoords) {
-        createRoadBasedRoutePath(
+        await createRoadBasedRoutePath(
           state.userLocation.lat, state.userLocation.lng,
           destCoords.lat, destCoords.lng,
           'passenger-to-destination',
@@ -683,12 +778,87 @@
       }
       
       startTracking();
+      showNotification('Ride booked successfully!', 'success');
 
     } catch (error) {
-      console.error('Failed to find ride:', error);
-      elements.modalSearching.hidden = true;
-      elements.modalNoMatch.hidden = false;
+      const errorText = String(error?.message || '');
+      if (errorText.includes('You already have an active booking for this ride')) {
+        const resumed = await restoreActiveBooking(true);
+        if (!resumed) {
+          showNotification('You already have an active booking. Refresh and try again.', 'error');
+        }
+      } else {
+        console.error('Failed to find ride:', error);
+        showNotification('Failed to book ride. Please try again.', 'error');
+      }
+    } finally {
+      // Reset button state
+      if (elements.findRideBtn) {
+        elements.findRideBtn.disabled = false;
+        elements.findRideBtn.textContent = 'Find Available Rides';
+      }
     }
+  };
+
+  // Show notification
+  const showNotification = (message, type = 'info') => {
+    if (elements.notification && elements.notificationMessage) {
+      elements.notificationMessage.textContent = message;
+      elements.notification.className = `notification ${type}`;
+      elements.notification.style.display = 'block';
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        if (elements.notification) {
+          elements.notification.style.display = 'none';
+        }
+      }, 5000);
+    }
+  };
+
+  // Show active ride panel
+  const showActiveRide = (ride, totalFare, passengers) => {
+    if (!elements.activeRide) return;
+    
+    // Update driver information
+    if (elements.driverName) {
+      elements.driverName.textContent = ride.driverName || 'Driver';
+    }
+    if (elements.driverPhoto) {
+      elements.driverPhoto.src = ride.driverPhoto || '/assets/default-driver.svg';
+    }
+    if (elements.driverRating) {
+      elements.driverRating.textContent = `⭐ ${ride.rating || '4.5'}`;
+    }
+    if (elements.driverTrips) {
+      elements.driverTrips.textContent = `• ${ride.trips || '234'} trips`;
+    }
+    if (elements.rideStatus) {
+      elements.rideStatus.textContent = 'Driver confirmed';
+    }
+    
+    // Show the active ride panel
+    elements.activeRide.style.display = 'block';
+    elements.activeRide.hidden = false;
+
+    const liveFare = byIds('pv2-live-fare');
+    if (liveFare) {
+      liveFare.textContent = `GHS ${Number(totalFare || 0).toFixed(2)}`;
+    }
+  };
+
+  // Handle contact driver
+  const handleContactDriver = () => {
+    if (state.activeBooking && state.activeBooking.driverName) {
+      showNotification(`Contacting ${state.activeBooking.driverName}...`, 'info');
+    } else {
+      showNotification('Driver information not available', 'error');
+    }
+  };
+
+  // Handle cancel ride (alias for cancelBooking)
+  const handleCancelRide = () => {
+    cancelBooking();
   };
 
   // Cancel booking
@@ -700,30 +870,10 @@
       
       state.activeBooking = null;
       
-      // Hide and reset Active Trip panel
-      if (elements.activeTripPanel) {
-        elements.activeTripPanel.hidden = true;
-        elements.activeTripPanel.style.display = 'none';
-      }
-      
-      // Reset driver information displays
-      if (elements.driverName) {
-        elements.driverName.textContent = '-';
-      }
-      if (elements.driverPlate) {
-        elements.driverPlate.textContent = 'Plate: -';
-      }
-      if (elements.driverPhoto) {
-        elements.driverPhoto.src = '';
-        elements.driverPhoto.alt = 'Driver';
-      }
-      if (elements.liveEta) {
-        elements.liveEta.textContent = '--';
-      }
-      
-      // Hide modal
-      if (elements.modal) {
-        elements.modal.hidden = true;
+      // Hide active ride panel
+      if (elements.activeRide) {
+        elements.activeRide.style.display = 'none';
+        elements.activeRide.hidden = true;
       }
       
       // Clear all route polylines
@@ -738,26 +888,18 @@
         state.destinationMarker = null;
       }
       
-      // Clear fare displays
-      if (elements.tripFare) {
-        elements.tripFare.textContent = '';
-      }
-      if (elements.tripSeats) {
-        elements.tripSeats.textContent = '';
-      }
-      
       stopTracking();
       
       // Reset form inputs
       if (elements.destinationInput) {
         elements.destinationInput.value = '';
       }
-      if (elements.passengerCount) {
-        elements.passengerCount.textContent = '1';
-      }
       
-      } catch (error) {
+      showNotification('Ride cancelled successfully', 'success');
+      
+    } catch (error) {
       console.error('Failed to cancel booking:', error);
+      showNotification('Failed to cancel ride. Please try again.', 'error');
     }
   };
 
@@ -767,85 +909,101 @@
     if (!window.RoadRouting) {
       const script = document.createElement('script');
       script.src = '../../road-routing.js';
-      script.onload = () => {
-        };
+      script.defer = true;
       document.head.appendChild(script);
     }
     
     initMap();
     getUserLocation();
     
-    // Add SOS button event listener
-    if (elements.sosButton) {
-      elements.sosButton.addEventListener('click', handleSOS);
-      } else {
-      console.warn('SOS button not found in DOM');
-    }
-    
-    // Start driver polling after a short delay
-    setTimeout(() => {
-      const driverPollInterval = setInterval(updateDriverMarkers, GreenRoute.config.pollingInterval);
-      state.pollingIntervals.set('driverPolling', driverPollInterval);
-      
-      updateDriverMarkers();
-    }, 1000);
-    
     // Event listeners
+    elements.bookingForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      findRide();
+    });
+    
     elements.findRideBtn?.addEventListener('click', findRide);
     elements.cancelBtn?.addEventListener('click', cancelBooking);
-    elements.trackMapBtn?.addEventListener('click', () => {
-      // Close modal and show Active Trip
-      if (elements.modal) {
-        elements.modal.hidden = true;
-      }
-      
-      // Ensure Active Trip panel is visible
-      if (elements.activeTripPanel) {
-        elements.activeTripPanel.hidden = false;
-        elements.activeTripPanel.style.display = 'block';
-      }
-      
-      // Center map on user location
-      if (state.userLocation && state.passengerMap) {
-        state.passengerMap.setView([state.userLocation.lat, state.userLocation.lng], 15);
-      }
-      
+    elements.contactDriverBtn?.addEventListener('click', handleContactDriver);
+
+    // Event listeners for updated HTML
+    // Ride type selection
+    document.querySelectorAll('.choice-btn[data-ride-type]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.choice-btn[data-ride-type]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Update hidden input if exists
+        if (elements.rideTypeInput) {
+          elements.rideTypeInput.value = btn.dataset.rideType;
+        }
       });
-    
-    elements.cancelModalBtn?.addEventListener('click', cancelBooking);
-    elements.tryDifferentBtn?.addEventListener('click', () => {
-      elements.modal.hidden = true;
-    });
-    
-    // Passenger count controls
-    let currentCount = 1;
-    elements.minusBtn?.addEventListener('click', () => {
-      if (currentCount > 1) {
-        currentCount--;
-        elements.passengerCount.textContent = currentCount;
-      }
-    });
-    
-    elements.plusBtn?.addEventListener('click', () => {
-      if (currentCount < 10) {
-        currentCount++;
-        elements.passengerCount.textContent = currentCount;
-      }
     });
     
     // Quick route buttons
     document.querySelectorAll('[data-pv2-from][data-pv2-to]').forEach(btn => {
       btn.addEventListener('click', () => {
-        elements.originInput.value = btn.dataset.pv2From;
-        elements.destinationInput.value = btn.dataset.pv2To;
+        if (elements.pickupInput) {
+          elements.pickupInput.value = btn.dataset.pv2From;
+        }
+        if (elements.destinationInput) {
+          elements.destinationInput.value = btn.dataset.pv2To;
+        }
       });
     });
+    
+    // Sign out buttons
+    elements.mobileSignoutBtn?.addEventListener('click', handleSignOut);
+    elements.desktopSignoutBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleSignOut();
+    });
+    elements.sosButton?.addEventListener('click', handleSOS);
+    
+    // Navigation links
+    elements.bookingsLink?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotification('Booking history coming soon', 'info');
+    });
+    elements.mobileBookingsLink?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotification('Booking history coming soon', 'info');
+    });
+    elements.profileLink?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotification('Profile management coming soon', 'info');
+    });
+    elements.mobileProfileLink?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotification('Profile management coming soon', 'info');
+    });
+    
+    // Modal close buttons
+    elements.closeBookingsModal?.addEventListener('click', () => {
+      if (elements.bookingsModal) {
+        elements.bookingsModal.style.display = 'none';
+      }
+    });
+    elements.closeProfileModal?.addEventListener('click', () => {
+      if (elements.profileModal) {
+        elements.profileModal.style.display = 'none';
+      }
+    });
+    
+    // Notification close
+    elements.notificationClose?.addEventListener('click', () => {
+      if (elements.notification) {
+        elements.notification.style.display = 'none';
+      }
+    });
+
+    // Restore any server-side active booking on load to avoid duplicate booking attempts.
+    restoreActiveBooking(false);
     
     window.addEventListener('beforeunload', () => {
       stopTracking();
     });
-    
-    };
+  };
 
   // Start app when DOM is ready
   if (document.readyState === 'loading') {
