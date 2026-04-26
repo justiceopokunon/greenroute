@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Driver</title>
+  <meta name="description" content="Driver dashboard for managing routes and seats." />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script defer src="../../api.js"></script>
+  <script defer src="../../app.js"></script>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
+</head>
+<body class="driver-page focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./index.html">Home</a>
+      <a href="./code.html">Passenger App</a>
+      <a href="./driver-signin.html" id="driver-logout">Sign Out</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./index.html">Home</a>
+    <a href="./code.html">Passenger App</a>
+    <a href="./driver-signin.html" id="driver-logout-mobile">Sign Out</a>
+  </nav>
+
+  <main class="driver-layout simple-driver-shell" aria-label="Driver layout">
+    <aside class="driver-sidebar" aria-label="Driver controls">
+      <section class="driver-panel driver-identity" aria-label="Driver identity">
+        <div class="driver-identity-row">
+          <div class="driver-avatar" aria-hidden="true">DO</div>
+          <div>
+            <strong id="driver-display-name">Driver Opoku</strong>
+            <p class="driver-muted">Ready for dispatch</p>
+          </div>
+        </div>
+        <label class="driver-switch-row" for="driver-online-switch">
+          <span id="driver-online-status" class="driver-online-status">OFFLINE</span>
+          <span class="driver-switch">
+            <input id="driver-online-switch" type="checkbox" />
+            <span class="driver-switch-track"></span>
+          </span>
+        </label>
+      </section>
+
+      <section id="driver-setup-panel" class="driver-panel" aria-label="Route setup">
+        <h2 class="driver-panel-title">Route Setup</h2>
+        <div class="service-toggle" role="group" aria-label="Driver service mode">
+          <button class="service-toggle-btn active" type="button" data-driver-service-mode="trotro" aria-pressed="true">Trotro</button>
+          <button class="service-toggle-btn" type="button" data-driver-service-mode="taxi" aria-pressed="false">Taxi</button>
+          <span class="mini-pill" id="driver-service-mode-pill">Trotro mode</span>
+        </div>
+        <label class="field">
+          <span>Vehicle Plate</span>
+          <input id="driver-vehicle-plate" type="text" value="GR-214" readonly />
+        </label>
+        <label class="field">
+          <span>Start Location</span>
+          <input id="driver-route-select" type="text" placeholder="Starting point" value="Madina" />
+        </label>
+        <label class="field">
+          <span>End Location</span>
+          <input id="driver-start-point" type="text" placeholder="Destination" value="Circle" />
+        </label>
+        <label class="field">
+          <span>Stops (comma separated)</span>
+          <input id="driver-stops-input" type="text" placeholder="Adenta, Airport" />
+        </label>
+        <label class="field">
+          <span>Total Seats</span>
+          <input id="driver-vehicle-capacity" type="number" min="1" max="20" value="14" readonly />
+        </label>
+        <label class="field">
+          <span>Fare per person (GHS)</span>
+          <input id="driver-fare-input" type="number" min="0.5" step="0.1" value="5.50" />
+        </label>
+      </section>
+
+      <section id="driver-live-panel" class="driver-panel" aria-label="Live route stats" hidden>
+        <h2 class="driver-panel-title">Live Stats</h2>
+        <div class="driver-live-grid">
+          <div class="driver-stat-item">
+            <small>Seats Available</small>
+            <strong id="driver-available-seats">0</strong>
+          </div>
+          <div class="driver-stat-item">
+            <small>Riders Onboard</small>
+            <strong id="onboard-display">0</strong>
+          </div>
+          <div class="driver-stat-item">
+            <small>Current Stop</small>
+            <strong id="next-stop">-</strong>
+          </div>
+          <div class="driver-stat-item">
+            <small>Fare Total</small>
+            <strong id="driver-fare-total">GHS 0.00</strong>
+          </div>
+        </div>
+        <div class="driver-live-actions">
+          <button id="onboard-minus" type="button" class="ghost">- Rider</button>
+          <button id="onboard-plus" type="button" class="ghost">+ Rider</button>
+          <button id="sync-onboard" type="button" class="ghost">Sync Seats</button>
+          <input id="onboard-count-input" type="number" min="0" step="1" value="0" hidden />
+        </div>
+      </section>
+
+      <button class="cta btn-lg full-width" id="shift-toggle" type="button">Start Route</button>
+
+      <section class="driver-panel driver-earnings-strip" aria-label="Earnings summary">
+        <div class="driver-earnings-item">
+          <small>Today's Trips</small>
+          <strong id="today-trips">0</strong>
+        </div>
+        <div class="driver-earnings-item">
+          <small>Today's Earnings</small>
+          <strong id="today-earnings">GHS 0.00</strong>
+        </div>
+      </section>
+
+      <div id="driver-request-list" class="driver-request-list" hidden></div>
+      <button id="complete-ride" type="button" hidden>Complete</button>
+      <input id="auto-accept" type="checkbox" hidden />
+      <span id="tracking-count" hidden>0</span>
+      <span id="boarding-demand" hidden>None</span>
+      <section id="driver-telemetry-card" hidden></section>
+      <span id="driver-status-pill" hidden>Offline</span>
+    </aside>
+
+    <section class="driver-map-stage" aria-label="Driver awareness map">
+      <div id="driver-map" class="driver-map-canvas"></div>
+      <button id="driver-recenter-btn" class="driver-recenter-btn" type="button" aria-label="Recenter to current location">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
+        </svg>
+        Recenter
+      </button>
+      <div class="driver-legend-pill" id="driver-legend-pill">
+        <button id="driver-legend-toggle" type="button" class="ghost">Demand Legend</button>
+        <div id="driver-legend-content" class="driver-legend-content">
+          <span><i class="legend-dot red"></i> Red = high demand</span>
+          <span><i class="legend-dot green"></i> Green = moderate</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

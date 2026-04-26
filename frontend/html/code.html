@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Passenger</title>
+  <meta name="description" content="Find nearby rides quickly with Green Route." />
+  <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script defer src="../../api.js"></script>
+  <script defer src="../../app.js"></script>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
+</head>
+<body class="dashboard-page focus-page passenger-v2-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="./index.html">Home</a>
+      <a href="./driver-signin.html">Switch to Driver</a>
+      <a href="./signin.html" id="passenger-logout">Sign Out</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="./index.html">Home</a>
+    <a href="./driver-signin.html">Switch to Driver</a>
+    <a href="./signin.html" id="passenger-logout-mobile">Sign Out</a>
+  </nav>
+
+  <main class="passenger-v2-shell" aria-label="Passenger layout">
+    <aside class="passenger-v2-sidebar" aria-label="Passenger controls">
+      <section class="passenger-v2-panel">
+        <div class="passenger-v2-identity">
+          <div class="passenger-v2-avatar" aria-hidden="true">JO</div>
+          <div>
+            <strong id="pv2-user-name">Justice Opoku</strong>
+            <p class="passenger-v2-sub">Regular Rider</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="pv2-booking-panel" class="passenger-v2-panel" aria-label="Booking form">
+        <h2 class="passenger-v2-title">Book a Ride</h2>
+
+        <label class="field">
+          <span>Your Location</span>
+          <input id="pv2-origin" type="text" placeholder="Detecting your location..." />
+        </label>
+
+        <label class="field">
+          <span>Where To</span>
+          <input id="pv2-destination" type="text" placeholder="Enter destination" />
+        </label>
+
+        <div class="passenger-v2-stepper-row" aria-label="Passenger count">
+          <span>Passengers</span>
+          <div class="passenger-v2-stepper">
+            <button id="pv2-minus" type="button" class="ghost" aria-label="Decrease passengers">-</button>
+            <strong id="pv2-passenger-count">1</strong>
+            <button id="pv2-plus" type="button" class="ghost" aria-label="Increase passengers">+</button>
+          </div>
+        </div>
+
+        <button id="pv2-find-ride" class="cta full-width" type="button">Find Ride</button>
+
+        <div class="passenger-v2-chip-row" aria-label="Quick routes">
+          <button type="button" class="ghost" data-pv2-from="Madina" data-pv2-to="Circle">Home → Circle</button>
+          <button type="button" class="ghost" data-pv2-from="Kaneshie" data-pv2-to="Tema Station">Kaneshie → Tema</button>
+          <button type="button" class="ghost" data-pv2-from="Adenta" data-pv2-to="Kasoa">School → Kasoa</button>
+        </div>
+      </section>
+
+      <section id="pv2-active-trip-panel" class="passenger-v2-panel" aria-label="Active trip" hidden>
+        <h2 class="passenger-v2-title">Active Trip</h2>
+        <div class="passenger-v2-driver-row">
+          <img id="pv2-driver-photo" src="" alt="Driver" />
+          <div>
+            <strong id="pv2-driver-name">-</strong>
+            <p id="pv2-driver-plate" class="passenger-v2-sub">Plate: -</p>
+          </div>
+        </div>
+        <div class="passenger-v2-live-eta">ETA: <strong id="pv2-live-eta">--</strong></div>
+        <div class="passenger-v2-live-fare">Fare: <strong id="pv2-live-fare">GHS 0.00</strong></div>
+        <div class="passenger-v2-active-actions">
+          <button id="pv2-cancel-btn" type="button" class="ghost">Cancel</button>
+        </div>
+      </section>
+
+      <button id="panic-button" type="button" class="passenger-v2-sos">SOS</button>
+    </aside>
+
+    <section class="passenger-v2-map-stage" aria-label="Passenger map">
+      <div id="passenger-map" class="passenger-v2-map"></div>
+      <div id="pv2-stats-pill" class="passenger-v2-stats-pill">No drivers active</div>
+    </section>
+  </main>
+
+  <div id="pv2-modal" class="pv2-modal" hidden>
+    <div class="pv2-modal-card">
+      <section id="pv2-modal-searching" hidden>
+        <h3>Looking for a driver near you...</h3>
+        <div class="pv2-spinner" aria-hidden="true"></div>
+      </section>
+
+      <section id="pv2-modal-no-match" hidden>
+        <h3>No drivers available on this route right now.</h3>
+        <button id="pv2-try-different" class="cta full-width" type="button">Try a different route</button>
+      </section>
+
+      <section id="pv2-modal-matched" hidden>
+        <h3>Your ride is confirmed.</h3>
+        <p><strong id="pv2-modal-driver-name">-</strong></p>
+        <p id="pv2-modal-plate">Plate: -</p>
+        <p id="pv2-modal-vehicle">Vehicle: -</p>
+        <p>ETA: <strong id="pv2-modal-eta">--</strong></p>
+        <p>Fare: <strong id="pv2-modal-fare">GHS 0.00</strong></p>
+        <div class="pv2-modal-actions">
+          <button id="pv2-track-map" class="cta" type="button">Track on map</button>
+          <button id="pv2-cancel-modal" class="ghost" type="button">Cancel</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
