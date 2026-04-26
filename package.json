@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "build": "echo 'Build complete'",
+    "vercel-build": "npm install",
     "test": "node tests/test-suite.js",
     "test:production": "node tests/production-readiness.js",
     "test:e2e": "node tests/e2e-test-suite.js",
