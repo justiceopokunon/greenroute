@@ -1,18 +1,33 @@
+require('dotenv').config();
 const path = require('path');
+const dns = require('dns');
 const { Pool } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
 
-// Connection logic: Use PostgreSQL if DATABASE_URL is present (e.g., Supabase/Railway)
-// Otherwise fallback to local SQLite for development
-const isPostgres = !!process.env.DATABASE_URL;
+// Force IPv4 to avoid ENETUNREACH on IPv6-only hosts
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
+// Connection logic
+const isPostgres = !!process.env.DATABASE_URL && process.env.DATABASE_URL.includes('supabase');
 let db;
 let pool;
 
 if (isPostgres) {
   console.log('Using PostgreSQL database');
+  
+  // Parse DATABASE_URL manually to ensure dots in usernames are handled correctly
+  const connectionString = process.env.DATABASE_URL;
+  const dbUrl = new URL(connectionString);
+  
   pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Required for most cloud DBs
+    user: decodeURIComponent(dbUrl.username),
+    password: decodeURIComponent(dbUrl.password),
+    host: dbUrl.hostname,
+    port: dbUrl.port,
+    database: dbUrl.pathname.split('/')[1],
+    ssl: { rejectUnauthorized: false }
   });
 } else {
   console.log('Using local SQLite database');

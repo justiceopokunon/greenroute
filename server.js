@@ -176,35 +176,30 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     console.log('Starting GreenRoute server...');
-    
-    // Initialize database with better error handling
-    console.log('Initializing database...');
+    // Initialize database
     try {
       await initDB();
       console.log('Database initialized successfully');
     } catch (dbError) {
-      console.warn('Database initialization failed:', dbError.message);
-      console.log('Continuing server startup without database...');
+      console.error('Database initialization failed:', dbError.message);
     }
     
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-      console.log(`Frontend: http://localhost:${PORT}`);
-      console.log(`API: http://localhost:${PORT}/api`);
-      console.log(`Health check: http://localhost:${PORT}/api/health`);
-      console.log('');
-      console.log('GreenRoute is ready!');
-    });
+    // Only listen if not running on Vercel
+    if (!process.env.VERCEL) {
+      const server = app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+        console.log('GreenRoute is ready!');
+      });
 
-    server.on('error', (err) => {
-      console.error('Server error:', err);
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use. Please kill the process or use a different port.`);
-      }
-      process.exit(1);
-    });
-
-    return server;
+      server.on('error', (err) => {
+        console.error('Server error:', err);
+        if (err.code === 'EADDRINUSE') {
+          console.error(`Port ${PORT} is already in use.`);
+        }
+        process.exit(1);
+      });
+      return server;
+    }
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
@@ -222,7 +217,16 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-startServer();
+// Export for Vercel
+module.exports = app;
+
+// Only start the server if we're not running in a serverless environment
+if (!process.env.VERCEL) {
+  startServer();
+} else {
+  // On Vercel, we still want to init the DB once
+  initDB().catch(err => console.error('Vercel DB Init Error:', err));
+}
 
 // Handle shutdown gracefully
 const gracefulShutdown = async (signal) => {
