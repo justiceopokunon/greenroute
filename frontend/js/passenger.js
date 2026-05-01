@@ -239,7 +239,7 @@
     const isTrotro = driver.vehicleType?.toLowerCase() === 'trotro';
     const photoUrl = driver.driverPhoto || '../assets/default-driver.svg';
     const borderColor = isTrotro ? '#f59e0b' : '#3b82f6';
-    
+
     const iconHtml = `<div style="
       width: 48px;
       height: 48px;
@@ -400,7 +400,7 @@
       lineJoin: 'round',
       className: 'road-route-path'
     }).addTo(state.passengerMap);
-    
+
     state.routePolylines.set(routeId, polyline);
 
     // Calculate road distance
@@ -481,7 +481,7 @@
   let lastApiCall = 0;
   const updateDriverMarkers = async (forceRefresh = false) => {
     if (!state.passengerMap) return;
-    
+
     // Rate limiting: don't make API calls more frequently than every 5 seconds
     if (!forceRefresh) {
       const now = Date.now();
@@ -584,7 +584,7 @@
         elements.nearbyVehicles.innerHTML = orderedVehicles.map(vehicle => {
           const isTracking = state.trackedDriverId && vehicle.ride && state.trackedDriverId === vehicle.ride.driverId;
           const photoUrl = vehicle.driverPhoto || '../assets/default-driver.svg';
-          
+
           return `
           <div class="vehicle-row-v2 ${isTracking ? 'active' : ''}" data-driver-id="${vehicle.ride?.driverId || ''}">
             <img src="${photoUrl}" alt="${vehicle.driverName}" class="vehicle-avatar-v2" onerror="this.src='../assets/default-driver.svg'">
@@ -631,7 +631,7 @@
             // Only update if driver has moved significantly (> 50m)
             const lastLoc = state.lastTrackedLocation;
             const hasMoved = !lastLoc || GreenRoute.utils.calculateDistance(
-              trackedRide.latitude, trackedRide.longitude, 
+              trackedRide.latitude, trackedRide.longitude,
               lastLoc.lat, lastLoc.lng
             ) > 0.05;
 
@@ -713,8 +713,8 @@
                   await window.api.stopTrackingDriver(state.passengerId, state.trackedDriverId);
                 }
                 await window.api.startTrackingDriver(
-                  state.passengerId, 
-                  driverId, 
+                  state.passengerId,
+                  driverId,
                   state.userLocation ? state.userLocation.lat : null,
                   state.userLocation ? state.userLocation.lng : null,
                   elements.destinationInput?.value || ''
@@ -733,7 +733,7 @@
                     try {
                       console.log(`[Tracking] Sending heartbeat for driver ${state.trackedDriverId}...`);
                       await window.api.startTrackingDriver(
-                        state.passengerId, 
+                        state.passengerId,
                         state.trackedDriverId,
                         state.userLocation.lat,
                         state.userLocation.lng,
@@ -1385,19 +1385,19 @@
       console.warn('[Passenger] No passenger ID found in state or storage');
       return;
     }
-    
+
     try {
       console.log(`[Passenger] Loading profile for ID: ${pId}`);
       const profile = await window.api.getProfile(pId);
       console.log('[Passenger] Profile loaded:', profile);
-      
+
       if (profile.name) {
         state.passengerName = profile.name;
         if (elements.passengerDisplayName) {
           elements.passengerDisplayName.textContent = profile.name;
         }
       }
-      
+
       const photo = profile.profilePhoto || profile.photo || profile.driverPhoto;
       if (photo) {
         state.passengerPhoto = photo;
@@ -1418,7 +1418,7 @@
       console.warn('[Passenger] App already initialized');
       return;
     }
-    
+
     // UI elements initialization
     elements = {
       // Map
@@ -1615,7 +1615,7 @@
     const nearbyHeader = document.getElementById('nearby-vehicles-header');
     const nearbyContainer = document.getElementById('nearby-vehicles-container');
     const nearbyCollapseBtn = document.getElementById('nearby-collapse-btn');
-    
+
     if (nearbyHeader && nearbyContainer) {
       nearbyHeader.addEventListener('click', () => {
         const isCollapsed = nearbyContainer.style.maxHeight === '45px';
