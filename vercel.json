@@ -7,22 +7,17 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/html/$1",
-      "check": true
-    },
-    {
-      "src": "/(.*)",
-      "dest": "frontend/$1"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/server.js" },
+    { "source": "/", "destination": "/frontend/html/index.html" },
+    { "source": "/css/(.*)", "destination": "/frontend/css/$1" },
+    { "source": "/js/(.*)", "destination": "/frontend/js/$1" },
+    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" },
+    { "source": "/api.js", "destination": "/frontend/api.js" },
+    { "source": "/app.js", "destination": "/app.js" },
+    { "source": "/road-routing.js", "destination": "/road-routing.js" },
+    { "source": "/(.*).html", "destination": "/frontend/html/$1.html" },
+    { "source": "/(.*)", "destination": "/frontend/html/$1.html" }
+  ]
 }
