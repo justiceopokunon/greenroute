@@ -11,10 +11,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
 const initDB = () => {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
+      // Ensure users table exists and supports multiple accounts per email if roles differ.
+      // We'll create or migrate the table so that `email` is NOT globally UNIQUE,
+      // and instead enforce uniqueness on (email, role).
+
       db.run(`
         CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
-          email TEXT UNIQUE NOT NULL,
+          email TEXT NOT NULL,
           password TEXT NOT NULL,
           name TEXT NOT NULL,
           role TEXT NOT NULL CHECK(role IN ('passenger', 'driver')),
@@ -23,6 +27,45 @@ const initDB = () => {
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // Create a unique index on (email, role) to allow same email across different roles
+      db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
+
+      // Migrate existing DB if it had a single-column unique constraint on email
+      db.all("PRAGMA index_list('users')", (err, indexes) => {
+        if (err || !indexes) return;
+
+        const emailUniqueIndex = indexes.find(idx => idx.unique === 1);
+        if (!emailUniqueIndex) return;
+
+        // Check if the unique index is on the single column 'email'
+        db.all(`PRAGMA index_info(${emailUniqueIndex.name})`, (err2, cols) => {
+          if (err2 || !cols) return;
+          if (cols.length === 1 && cols[0].name === 'email') {
+            // Perform migration: recreate table without single-column unique on email
+            db.serialize(() => {
+              db.run('BEGIN TRANSACTION');
+              db.run(`
+                CREATE TABLE IF NOT EXISTS users_new (
+                  id TEXT PRIMARY KEY,
+                  email TEXT NOT NULL,
+                  password TEXT NOT NULL,
+                  name TEXT NOT NULL,
+                  role TEXT NOT NULL CHECK(role IN ('passenger', 'driver')),
+                  phone TEXT,
+                  profilePhoto TEXT,
+                  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+              `);
+              db.run(`INSERT OR IGNORE INTO users_new (id, email, password, name, role, phone, profilePhoto, createdAt) SELECT id, email, password, name, role, phone, profilePhoto, createdAt FROM users`);
+              db.run('DROP TABLE users');
+              db.run('ALTER TABLE users_new RENAME TO users');
+              db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)');
+              db.run('COMMIT');
+            });
+          }
+        });
+      });
 
       db.run(`
         CREATE TABLE IF NOT EXISTS drivers (
@@ -37,9 +80,25 @@ const initDB = () => {
           latitude REAL,
           longitude REAL,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updatedAt DATETIME,
           FOREIGN KEY (userId) REFERENCES users (id)
         )
       `);
+
+      // Ensure existing databases have the updatedAt column on drivers
+      db.all("PRAGMA table_info(drivers)", (err, cols) => {
+        if (err || !cols) return;
+        const hasUpdatedAt = cols.some(c => c && c.name === 'updatedAt');
+        if (!hasUpdatedAt) {
+          // Add updatedAt column if it doesn't exist
+          db.run('ALTER TABLE drivers ADD COLUMN updatedAt DATETIME', (alterErr) => {
+            if (alterErr) {
+              // Not critical; log and continue
+              console.warn('Could not add updatedAt column to drivers table:', alterErr.message || alterErr);
+            }
+          });
+        }
+      });
 
       db.run(`
         CREATE TABLE IF NOT EXISTS rides (

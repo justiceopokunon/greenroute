@@ -141,6 +141,19 @@
       const script = document.createElement('script');
       script.src = '../js/passenger.js';
       script.defer = true;
+      script.onload = () => {
+        requestAnimationFrame(() => {
+          const fallbackButton = document.querySelector('#pv2-find-ride');
+          const passengerApi = window.GreenRoutePassenger;
+
+          if (fallbackButton && passengerApi && !passengerApi.initialized) {
+            fallbackButton.addEventListener('click', (event) => {
+              event.preventDefault();
+              passengerApi.findRide?.();
+            });
+          }
+        });
+      };
       document.head.appendChild(script);
     } else if (document.querySelector('.driver-page')) {
       // Load driver app with manual fare entry and road-based routing

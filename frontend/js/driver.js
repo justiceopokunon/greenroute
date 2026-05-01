@@ -16,15 +16,234 @@
     todayEarnings: 0,
     todayTrips: 0,
     currentTripEarnings: 0,
-    manualFare: 5.50
+    manualFare: 5.50,
+    driverProfile: null,
+    demandZoneLayers: [],
+    demandZoneInterval: null,
+    trackingCounterInterval: null,
+    trackerMarkers: new Map(),
+    routeStops: [],
+    currentStopIndex: 0,
+    prevTrackerCount: 0
+  };
+
+  const showNotification = (message, type = 'info') => {
+    const container = document.getElementById('notification-container');
+    if (!container) {
+      const newContainer = document.createElement('div');
+      newContainer.id = 'notification-container';
+      newContainer.className = 'notification-container';
+      document.body.appendChild(newContainer);
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification-toast ${type}`;
+    notification.textContent = message;
+    
+    document.getElementById('notification-container').appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('fade-out');
+      setTimeout(() => notification.remove(), 500);
+    }, 4000);
+  };
+
+  const DEMAND_ZONES = [
+    { name: 'Circle', lat: 5.560, lng: -0.205 },
+    { name: 'Kaneshie', lat: 5.570, lng: -0.234 },
+    { name: 'Madina', lat: 5.678, lng: -0.165 },
+    { name: 'Tema Station', lat: 5.614, lng: -0.072 },
+    { name: 'Airport', lat: 5.605, lng: -0.171 },
+    { name: 'East Legon', lat: 5.640, lng: -0.148 }
+  ];
+
+  const clearDemandZones = () => {
+    if (!state.driverMap || !Array.isArray(state.demandZoneLayers)) {
+      return;
+    }
+
+    state.demandZoneLayers.forEach(layer => {
+      if (state.driverMap.hasLayer(layer)) {
+        state.driverMap.removeLayer(layer);
+      }
+    });
+    state.demandZoneLayers = [];
+  };
+
+  const getDemandStyle = (score) => {
+    if (score >= 4) return { color: '#ef4444', label: 'High Demand', radius: 900, fillColor: '#ef4444' };
+    if (score >= 2) return { color: '#fbbf24', label: 'Moderate Demand', radius: 600, fillColor: '#fbbf24' };
+    return { color: '#3b82f6', label: 'Low Demand', radius: 300, fillColor: '#3b82f6' };
+  };
+
+  // Update tracking counter
+  const updateTrackingCounter = async () => {
+    if (!state.driverId || !state.isOnline) {
+      // Clear markers if offline
+      if (state.trackerMarkers.size > 0) {
+        state.trackerMarkers.forEach(marker => {
+          if (state.driverMap && state.driverMap.hasLayer(marker)) {
+            state.driverMap.removeLayer(marker);
+          }
+        });
+        state.trackerMarkers.clear();
+      }
+      return;
+    }
+
+    try {
+      const result = await window.api.getDriverTrackers(state.driverId);
+      const count = result.count || 0;
+      const trackers = result.trackers || [];
+      
+      if (count > 0) {
+        console.log(`[DriverMap] Received ${count} active trackers`);
+        
+        // Show notification if count increased
+        if (count > state.prevTrackerCount) {
+          const diff = count - state.prevTrackerCount;
+          showNotification(`${diff} new passenger${diff > 1 ? 's are' : ' is'} tracking your location`, 'success');
+        }
+      }
+      
+      state.prevTrackerCount = count;
+
+      const trackingCountDisplay = document.getElementById('tracking-count-display');
+      const trackingStatItem = document.getElementById('tracking-stat-item');
+
+      if (trackingCountDisplay) {
+        trackingCountDisplay.textContent = count;
+      }
+
+      if (trackingStatItem) {
+        trackingStatItem.hidden = count === 0;
+      }
+
+      // Update markers on map
+      if (state.driverMap) {
+        const currentTrackerIds = new Set();
+        
+        trackers.forEach((tracker) => {
+          const trackerId = tracker.id || `tracker-${Math.random()}`;
+          currentTrackerIds.add(trackerId);
+
+          if (state.trackerMarkers.has(trackerId)) {
+            state.trackerMarkers.get(trackerId).setLatLng([tracker.latitude, tracker.longitude]);
+          } else {
+            const marker = L.marker([tracker.latitude, tracker.longitude], {
+              icon: L.divIcon({
+                html: `
+                  <div style="width: 36px; height: 36px; position: relative;">
+                    <div style="width: 100%; height: 100%; border-radius: 50%; border: 2px solid white; overflow: hidden; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 2; position: relative;">
+                      <img src="${tracker.photo || '../assets/default-passenger.svg'}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='../assets/default-passenger.svg'">
+                    </div>
+                    <div class="tracker-marker-pulse" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); border-radius: 50%; z-index: 1; opacity: 0.6; animation: pulse 2s infinite;"></div>
+                  </div>
+                `,
+                className: 'tracker-marker-photo',
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+              }),
+              zIndexOffset: 1000
+            }).addTo(state.driverMap);
+
+            const popupContent = `
+              <div style="min-width: 220px; font-family: system-ui;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <img src="${tracker.photo || '../assets/default-passenger.svg'}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                  <strong style="color: #1f2937; font-size: 14px;">${tracker.name || 'Passenger'}</strong>
+                </div>
+                <div style="margin: 4px 0;"><span style="color: #6b7280;">Destination:</span> <span style="font-weight: 600;">${tracker.destination || 'Not specified'}</span></div>
+                <div style="font-size: 11px; color: var(--primary); font-weight: 600; margin-top: 4px;">Currently tracking you</div>
+              </div>
+            `;
+            marker.bindPopup(popupContent);
+            state.trackerMarkers.set(trackerId, marker);
+          }
+        });
+
+        // Remove old markers
+        for (const [id, marker] of state.trackerMarkers.entries()) {
+          if (!currentTrackerIds.has(id)) {
+            if (state.driverMap.hasLayer(marker)) {
+              state.driverMap.removeLayer(marker);
+            }
+            state.trackerMarkers.delete(id);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch trackers:', err);
+    }
+  };
+
+  const renderDemandHeatZones = async () => {
+    if (!state.driverMap) {
+      return;
+    }
+
+    clearDemandZones();
+
+    let rides = [];
+    try {
+      const available = await window.api.getAvailableRides();
+      rides = Array.isArray(available) ? available : [];
+    } catch (error) {
+      console.warn('Could not fetch available rides for demand zones:', error);
+    }
+
+    DEMAND_ZONES.forEach(zone => {
+      const nearbyRides = rides.filter(ride => {
+        if (!(ride.latitude && ride.longitude)) {
+          return false;
+        }
+        const dist = GreenRoute.utils.calculateDistance(zone.lat, zone.lng, ride.latitude, ride.longitude);
+        return dist <= 2.5;
+      });
+
+      const outbound = rides.filter(ride => (ride.origin || '').toLowerCase().includes(zone.name.toLowerCase()));
+      const inbound = rides.filter(ride => (ride.destination || '').toLowerCase().includes(zone.name.toLowerCase()));
+      const demandScore = Math.max(1, Math.min(5, 2 + outbound.length + inbound.length - nearbyRides.length));
+      const style = getDemandStyle(demandScore);
+
+      const directionCounts = new Map();
+      outbound.forEach(ride => {
+        const key = ride.destination || 'Mixed destinations';
+        directionCounts.set(key, (directionCounts.get(key) || 0) + 1);
+      });
+      const topDirection = Array.from(directionCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Mixed destinations';
+
+      const circle = L.circle([zone.lat, zone.lng], {
+        radius: style.radius,
+        color: style.color,
+        weight: 2,
+        fillColor: style.fillColor,
+        fillOpacity: 0.22
+      }).addTo(state.driverMap);
+
+      circle.bindPopup(`
+        <div style="min-width: 220px; font-family: system-ui;">
+          <strong>${zone.name} Demand Zone</strong><br>
+          <div style="margin-top: 4px;">Status: <span style="font-weight: 600; color: ${style.color};">${style.label}</span></div>
+          <div>Nearby vehicles: <strong>${nearbyRides.length}</strong></div>
+          <div>Trips heading out: <strong>${outbound.length}</strong></div>
+          <div>Trips heading in: <strong>${inbound.length}</strong></div>
+          <div style="margin-top: 4px;">Top direction: <strong>${topDirection}</strong></div>
+        </div>
+      `);
+
+      state.demandZoneLayers.push(circle);
+    });
   };
 
   const elements = {
     onlineSwitch: document.getElementById('driver-online-switch'),
     onlineStatus: document.getElementById('driver-online-status'),
     displayName: document.getElementById('driver-display-name'),
+    profilePhoto: document.getElementById('driver-profile-photo'),
     setupPanel: document.getElementById('driver-setup-panel'),
     livePanel: document.getElementById('driver-live-panel'),
+    statusText: document.getElementById('driver-status-text'),
     routeSelect: document.getElementById('driver-route-select'),
     startPoint: document.getElementById('driver-start-point'),
     vehiclePlate: document.getElementById('driver-vehicle-plate'),
@@ -41,20 +260,24 @@
     onboardPlus: document.getElementById('onboard-plus'),
     syncOnboard: document.getElementById('sync-onboard'),
     nextStop: document.getElementById('next-stop'),
+    nextStopBtn: document.getElementById('next-stop-btn'),
+    focusTrackersBtn: document.getElementById('focus-trackers-btn'),
     serviceModeButtons: document.querySelectorAll('[data-driver-service-mode]'),
     serviceModePill: document.getElementById('driver-service-mode-pill'),
     sosButton: document.getElementById('panic-button'),
+    totalCapacityDisplay: document.getElementById('driver-total-capacity'),
+    updateCapacityBtn: document.getElementById('update-capacity-btn'),
     // Manual fare elements - NEW
     fareLabel: document.getElementById('driver-fare-label'),
     fareInput: document.getElementById('driver-fare-input'),
     fareContainer: document.querySelector('label:has(#driver-fare-input)')
   };
 
-  
+
   // SOS functionality - Graceful handling if element doesn't exist
   const handleSOS = () => {
     const sosMessage = `
-🚨 DRIVER EMERGENCY ALERT 🚨
+DRIVER EMERGENCY ALERT
 Driver: ${state.driverId}
 Name: ${getDriverCredentials().name}
 Plate: ${getDriverCredentials().plate}
@@ -65,7 +288,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     `.trim();
 
     alert(sosMessage);
-    
+
     console.log('Driver SOS Event:', {
       driverId: state.driverId,
       driverName: getDriverCredentials().name,
@@ -80,7 +303,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     if (elements.sosButton) {
       elements.sosButton.style.background = '#ef4444';
       elements.sosButton.textContent = 'SOS SENT';
-      
+
       setTimeout(() => {
         elements.sosButton.style.background = '';
         elements.sosButton.textContent = 'SOS';
@@ -90,21 +313,65 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
 
   // Get driver credentials
   const getDriverCredentials = () => {
+    const p = state.driverProfile || {};
+    const storageType = GreenRoute.utils.getStorage('driverVehicleType', 'Taxi');
+    
     return {
       userId: state.userId,
       driverId: state.driverId,
-      name: 'Kofi Mensah',
-      plate: 'GR-001',
-      vehicleType: 'Trotro',
-      vehicleModel: 'Toyota Hiace'
+      name: p.name || GreenRoute.utils.getStorage('driverName', 'Justice Opoku'),
+      plate: p.licensePlate || GreenRoute.utils.getStorage('driverPlate', 'GR-001'),
+      vehicleType: p.vehicleType || storageType,
+      vehicleModel: p.vehicleModel || 'Toyota Hiace',
+      photo: p.driverPhoto || p.profilePhoto || p.photo || '../assets/default-driver.svg'
     };
+  };
+
+  const refreshDriverMarker = () => {
+    const credentials = getDriverCredentials();
+    
+    if (state.driverMarker && state.currentLocation) {
+      const { lat, lng } = state.currentLocation;
+      state.driverMarker.setIcon(createDriverMarker(lat, lng));
+      
+      state.driverMarker.getPopup()?.setContent(`
+        <div style="min-width: 220px; font-family: system-ui;">
+          <strong style="color: #1f2937; font-size: 14px;">You (Driver)</strong><br>
+          <div style="margin: 4px 0;"><span style="color: #6b7280;">Name:</span> <span style="font-weight: 600;">${credentials.name}</span></div>
+          <div style="margin: 4px 0;"><span style="color: #6b7280;">Plate:</span> <span style="font-weight: 600;">${credentials.plate}</span></div>
+          <div style="margin: 4px 0;"><span style="color: #6b7280;">Type:</span> <span style="font-weight: 600; color: ${credentials.vehicleType.toLowerCase() === 'trotro' ? '#ff6b35' : '#fbbf24'};">${credentials.vehicleType}</span></div>
+          <div style="margin: 4px 0;"><span style="color: #6b7280;">Status:</span> <span style="font-weight: 600; color: ${state.isOnline ? '#10b981' : '#ef4444'};">${state.isOnline ? 'Online' : 'Offline'}</span></div>
+        </div>
+      `);
+    }
+    
+    if (elements.profilePhoto) {
+      elements.profilePhoto.src = credentials.photo || '../assets/default-driver.svg';
+    }
+  };
+
+  const loadDriverProfile = async () => {
+    if (!state.driverId) return;
+    try {
+      const profile = await window.api.getDriverProfile(state.driverId);
+      state.driverProfile = profile;
+      if (elements.displayName && profile.name) elements.displayName.textContent = profile.name;
+      if (elements.vehiclePlate && profile.licensePlate) elements.vehiclePlate.value = profile.licensePlate;
+      
+      const photo = profile.driverPhoto || profile.profilePhoto || profile.photo;
+      if (elements.profilePhoto && photo) {
+        elements.profilePhoto.src = photo;
+      }
+    } catch (err) {
+      console.warn('Could not load driver profile:', err.message || err);
+    }
   };
 
   // Create much better driver marker
   const createDriverMarker = (lat, lng) => {
     const credentials = getDriverCredentials();
-    const isTrotro = credentials.vehicleType === 'Trotro';
-    
+    const isTrotro = credentials.vehicleType.toLowerCase() === 'trotro';
+
     if (isTrotro) {
       // Trotro Bus Icon
       const iconHtml = `<div style="
@@ -258,10 +525,10 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     for (let i = arrowInterval; i < roadPath.length - 1; i += arrowInterval) {
       const point = roadPath[i];
       const nextPoint = roadPath[Math.min(i + 2, roadPath.length - 1)];
-      
+
       if (nextPoint) {
         const angle = Math.atan2(nextPoint[0] - point[0], nextPoint[1] - point[1]) * 180 / Math.PI;
-        
+
         L.marker(point, {
           icon: L.divIcon({
             html: `<div style="
@@ -282,12 +549,12 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     }
 
     state.routePolyline = polyline;
-    
+
     // Calculate road distance
-    const roadDistance = window.RoadRouting ? 
-      window.RoadRouting.calculateRoadDistance(roadPath) : 
+    const roadDistance = window.RoadRouting ?
+      window.RoadRouting.calculateRoadDistance(roadPath) :
       GreenRoute.utils.calculateDistance(fromLat, fromLng, toLat, toLng);
-    
+
     // Fit map to show the entire route with proper padding
     const bounds = L.latLngBounds(roadPath);
     state.driverMap.fitBounds(bounds, { padding: [80, 80] });
@@ -326,27 +593,27 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
   const createRealisticPath = (startPoint, endPoint) => {
     const [fromLat, fromLng] = startPoint;
     const [toLat, toLng] = endPoint;
-    
+
     const path = [[fromLat, fromLng]];
-    
+
     // Add intermediate waypoints that simulate road bends
     const steps = 12;
     for (let i = 1; i < steps; i++) {
       const t = i / steps;
-      
+
       // Linear interpolation
       let lat = fromLat + (toLat - fromLat) * t;
       let lng = fromLng + (toLng - fromLng) * t;
-      
+
       // Add road-like curves (simulate following actual roads)
       const curve = Math.sin(t * Math.PI * 2) * 0.003;
       const bend = Math.cos(t * Math.PI * 1.5) * 0.002;
-      
+
       lng += curve + bend;
-      
+
       path.push([lat, lng]);
     }
-    
+
     path.push([toLat, toLng]);
     return path;
   };
@@ -365,7 +632,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
           state.driverMarker = L.marker([latitude, longitude], {
             icon: createDriverMarker(latitude, longitude)
           }).addTo(state.driverMap);
-          
+
           const credentials = getDriverCredentials();
           const popupContent = `
             <div style="min-width: 220px; font-family: system-ui;">
@@ -413,9 +680,9 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         },
         (error) => {
           console.error('Driver GPS error:', error);
-          
+
           let errorMessage = 'GPS tracking error';
-          switch(error.code) {
+          switch (error.code) {
             case error.PERMISSION_DENIED:
               errorMessage = 'Location access denied';
               break;
@@ -436,7 +703,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
       );
     }, GreenRoute.config.pollingInterval);
 
-    };
+  };
 
   // Stop GPS tracking
   const stopGpsTracking = () => {
@@ -444,7 +711,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
       clearInterval(state.locationInterval);
       state.locationInterval = null;
     }
-    };
+  };
 
   // Get initial location
   const getInitialLocation = () => {
@@ -457,16 +724,16 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
       (position) => {
         const { latitude, longitude } = position.coords;
         state.currentLocation = { lat: latitude, lng: longitude };
-        
+
         if (state.driverMap) {
           state.driverMap.setView([latitude, longitude], 15);
         }
-        
+
         if (state.driverMap) {
           state.driverMarker = L.marker([latitude, longitude], {
             icon: createDriverMarker(latitude, longitude)
           }).addTo(state.driverMap);
-          
+
           const credentials = getDriverCredentials();
           const popupContent = `
             <div style="min-width: 220px; font-family: system-ui;">
@@ -483,14 +750,14 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
           `;
           state.driverMarker.bindPopup(popupContent);
         }
-        
+
         updateDriverLocation(latitude, longitude, false);
       },
       (error) => {
         console.error('Failed to get initial location:', error);
-        
+
         let errorMessage = 'Failed to get location';
-        switch(error.code) {
+        switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = 'Location access denied. Location services are optional for route tracking.';
             // Set a default location (Accra central) as fallback
@@ -504,11 +771,14 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
             break;
         }
         console.error(errorMessage);
-        
+
         // Continue with map initialization even without location
         if (state.driverMap && !state.driverMarker) {
           const defaultLocation = state.currentLocation || { lat: 5.550, lng: -0.206 };
-          initDriverMarker(defaultLocation.lat, defaultLocation.lng);
+          state.driverMarker = L.marker([defaultLocation.lat, defaultLocation.lng], {
+            icon: createDriverMarker(defaultLocation.lat, defaultLocation.lng)
+          }).addTo(state.driverMap);
+          state.driverMap.setView([defaultLocation.lat, defaultLocation.lng], 15);
         }
       },
       {
@@ -524,22 +794,29 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     const value = parseFloat(event.target.value);
     if (!isNaN(value) && value >= 0.5 && value <= 100) {
       state.manualFare = value;
-      }
+    }
   };
 
   // Toggle online status with manual fare
   const toggleOnlineStatus = async () => {
     const isOnline = elements.onlineSwitch.checked;
-    
+
     if (isOnline) {
       const route = elements.startPoint?.value?.trim();
       const destination = elements.routeSelect?.value?.trim();
-      
+
       if (!route || !destination) {
         alert('Please set up your route before going online');
         elements.onlineSwitch.checked = false;
         return;
       }
+
+      // Parse stops
+      const stopsInput = document.getElementById('driver-stops-input')?.value || '';
+      const stops = stopsInput.split(',').map(s => s.trim()).filter(s => s !== '');
+      state.routeStops = [route, ...stops, destination];
+      state.currentStopIndex = 0;
+      updateCurrentStopDisplay();
 
       // Validate fare input
       const fare = parseFloat(elements.fareInput?.value || state.manualFare);
@@ -567,7 +844,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
           console.warn('Could not get route coordinates:', coordError);
           // Continue without coordinates
         }
-        
+
         const ride = await window.api.createRide(
           state.driverId,
           route,
@@ -581,9 +858,13 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         state.isOnline = true;
         state.hasActiveRoute = true;
         state.manualFare = fare; // Store the fare used
-        
+
         if (elements.onlineStatus) {
           elements.onlineStatus.textContent = 'ONLINE';
+        }
+        if (elements.statusText) {
+          elements.statusText.textContent = 'Active on Route';
+          elements.statusText.style.color = 'var(--primary)';
         }
         if (elements.setupPanel) {
           elements.setupPanel.hidden = true;
@@ -594,34 +875,41 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         if (elements.shiftToggle) {
           elements.shiftToggle.textContent = 'End Route';
         }
-        
+
         // Hide fare input when online to prevent changes during active trip
         if (elements.fareContainer) {
           elements.fareContainer.style.opacity = '0.5';
           elements.fareInput.disabled = true;
         }
-        
+
         // Create road-based route path
         if (routeCoords && destCoords) {
           await createRoadBasedRoutePath(routeCoords.lat, routeCoords.lng, destCoords.lat, destCoords.lng);
         }
-        
+
         startGpsTracking();
-        
+
         if (state.currentLocation) {
           await updateDriverLocation(
-            state.currentLocation.lat, 
-            state.currentLocation.lng, 
+            state.currentLocation.lat,
+            state.currentLocation.lng,
             true
           );
         }
-        
+
+        // Start tracking counter polling
+        updateTrackingCounter(); // Initial update
+        if (state.trackingCounterInterval) {
+          clearInterval(state.trackingCounterInterval);
+        }
+        state.trackingCounterInterval = setInterval(updateTrackingCounter, 5000); // Poll every 5 seconds
+
       } catch (error) {
         console.error('Failed to create ride:', error);
-        
+
         // Handle different types of errors
         let errorMessage = 'Failed to start route. Please try again.';
-        
+
         if (error.message) {
           if (error.message.includes('Failed to fetch')) {
             errorMessage = 'Network error. Please check your connection and try again.';
@@ -637,16 +925,20 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
             errorMessage = 'Failed to start route: ' + error.message;
           }
         }
-        
+
         alert(errorMessage);
         elements.onlineSwitch.checked = false;
       }
     } else {
       state.isOnline = false;
       state.hasActiveRoute = false;
-      
+
       if (elements.onlineStatus) {
         elements.onlineStatus.textContent = 'OFFLINE';
+      }
+      if (elements.statusText) {
+        elements.statusText.textContent = 'Ready for dispatch';
+        elements.statusText.style.color = '';
       }
       if (elements.setupPanel) {
         elements.setupPanel.hidden = false;
@@ -657,31 +949,37 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
       if (elements.shiftToggle) {
         elements.shiftToggle.textContent = 'Start Route';
       }
-      
+
       // Show fare input when offline
       if (elements.fareContainer) {
         elements.fareContainer.style.opacity = '1';
         elements.fareInput.disabled = false;
       }
-      
+
       // Remove route path
       if (state.routePolyline) {
         state.driverMap.removeLayer(state.routePolyline);
         state.routePolyline = null;
       }
-      
+
       stopGpsTracking();
-      
+
+      // Stop tracking counter polling
+      if (state.trackingCounterInterval) {
+        clearInterval(state.trackingCounterInterval);
+        state.trackingCounterInterval = null;
+      }
+
       if (state.currentLocation) {
         await updateDriverLocation(
-          state.currentLocation.lat, 
-          state.currentLocation.lng, 
+          state.currentLocation.lat,
+          state.currentLocation.lng,
           false
         );
       }
-      
+
       state.activeRide = null;
-      }
+    }
   };
 
   // Update seat counts and fare calculations using manual fare
@@ -689,29 +987,63 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     const capacity = parseInt(elements.vehicleCapacity?.value || 14);
     const onboard = parseInt(elements.onboardDisplay?.textContent || 0);
     const available = Math.max(0, capacity - onboard);
-    
+
     if (elements.availableSeats) {
       elements.availableSeats.textContent = available;
     }
-    
+
+    if (elements.totalCapacityDisplay) {
+      elements.totalCapacityDisplay.textContent = capacity;
+    }
+
     // Calculate current trip earnings using manual fare
     if (state.activeRide && state.isOnline) {
       const farePerPassenger = state.manualFare;
       state.currentTripEarnings = onboard * farePerPassenger;
-      
+
       if (elements.fareTotal) {
         elements.fareTotal.textContent = `GHS ${state.currentTripEarnings.toFixed(2)}`;
       }
-      
-      // Update ride seats
-      window.api.updateRideSeats(state.activeRide.id, available)
-        .catch(error => console.error('Failed to update seats:', error));
+
+      // Update ride seats and capacity
+      window.api.updateRideSeats(state.activeRide.id, available, capacity)
+        .catch(error => console.error('Failed to update seats/capacity:', error));
     }
-    
+
     // Update total earnings display
     if (elements.todayEarnings) {
       elements.todayEarnings.textContent = `GHS ${state.todayEarnings.toFixed(2)}`;
     }
+  };
+
+  const updateCurrentStopDisplay = () => {
+    if (!state.routeStops || state.routeStops.length === 0) {
+      if (elements.nextStop) elements.nextStop.textContent = 'None';
+      return;
+    }
+
+    const currentStop = state.routeStops[state.currentStopIndex];
+    if (elements.nextStop) {
+      elements.nextStop.textContent = currentStop;
+    }
+  };
+
+  const handleNextStop = () => {
+    if (!state.routeStops || state.routeStops.length === 0) return;
+    
+    state.currentStopIndex = (state.currentStopIndex + 1) % state.routeStops.length;
+    updateCurrentStopDisplay();
+  };
+
+  const focusOnTrackers = () => {
+    if (!state.driverMap || state.trackerMarkers.size === 0) return;
+
+    const group = new L.featureGroup(Array.from(state.trackerMarkers.values()));
+    if (state.driverMarker) {
+      group.addLayer(state.driverMarker);
+    }
+    
+    state.driverMap.fitBounds(group.getBounds().pad(0.2));
   };
 
   // Change onboard count with manual fare tracking
@@ -719,18 +1051,18 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     const current = parseInt(elements.onboardDisplay?.textContent || 0);
     const capacity = parseInt(elements.vehicleCapacity?.value || 14);
     const newCount = Math.max(0, Math.min(capacity, current + delta));
-    
+
     if (elements.onboardDisplay) {
       elements.onboardDisplay.textContent = newCount;
     }
-    
+
     // Update trip earnings when passengers board/alight using manual fare
     if (state.activeRide && state.isOnline) {
       const farePerPassenger = state.manualFare;
       const earningsChange = delta * farePerPassenger;
       state.todayEarnings += earningsChange;
       state.currentTripEarnings = newCount * farePerPassenger;
-      
+
       // Update displays
       if (elements.fareTotal) {
         elements.fareTotal.textContent = `GHS ${state.currentTripEarnings.toFixed(2)}`;
@@ -738,7 +1070,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
       if (elements.todayEarnings) {
         elements.todayEarnings.textContent = `GHS ${state.todayEarnings.toFixed(2)}`;
       }
-      
+
       // Update trip count when passengers board
       if (delta > 0) {
         state.todayTrips += delta;
@@ -747,7 +1079,7 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         }
       }
     }
-    
+
     updateSeatCounts();
   };
 
@@ -777,6 +1109,12 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         }
 
         console.log('Driver map initialized successfully');
+        renderDemandHeatZones();
+
+        if (state.demandZoneInterval) {
+          clearInterval(state.demandZoneInterval);
+        }
+        state.demandZoneInterval = setInterval(renderDemandHeatZones, 30000);
       } catch (error) {
         console.error('Failed to initialize driver map:', error);
       }
@@ -801,16 +1139,16 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         }
       });
     }
-    
+
     // Load road routing system
     if (!window.RoadRouting) {
       const script = document.createElement('script');
       script.src = '../../road-routing.js';
       script.onload = () => {
-        };
+      };
       document.head.appendChild(script);
     }
-    
+
     const credentials = getDriverCredentials();
     if (elements.displayName) {
       elements.displayName.textContent = credentials.name;
@@ -818,37 +1156,39 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
     if (elements.vehiclePlate) {
       elements.vehiclePlate.value = credentials.plate;
     }
-    
+
     // Initialize map
     initMap();
-    
+
     // Get initial location
     getInitialLocation();
-    
+    // Load driver profile to populate name and plate
+    loadDriverProfile();
+
     // Add SOS button event listener - Graceful handling
     if (elements.sosButton) {
       elements.sosButton.addEventListener('click', handleSOS);
-      } else {
-      }
-    
+    } else {
+    }
+
     // NEW: Set up manual fare input
     if (elements.fareInput) {
       elements.fareInput.value = state.manualFare.toFixed(2);
       elements.fareInput.addEventListener('input', handleFareInput);
       elements.fareInput.addEventListener('blur', handleFareInput);
-      }
-    
+    }
+
     // Show fare input field
     if (elements.fareContainer) {
       elements.fareContainer.hidden = false;
       elements.fareContainer.style.display = 'block';
     }
-    
+
     // Event listeners - Fixed null element handling
     if (elements.onlineSwitch) {
       elements.onlineSwitch.addEventListener('change', toggleOnlineStatus);
     }
-    
+
     if (elements.shiftToggle) {
       elements.shiftToggle.addEventListener('click', () => {
         if (elements.onlineSwitch) {
@@ -857,27 +1197,27 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
         }
       });
     }
-    
+
     if (elements.onboardMinus) {
       elements.onboardMinus.addEventListener('click', () => changeOnboardCount(-1));
     }
-    
+
     if (elements.onboardPlus) {
       elements.onboardPlus.addEventListener('click', () => changeOnboardCount(1));
     }
-    
+
     if (elements.syncOnboard) {
       elements.syncOnboard.addEventListener('click', updateSeatCounts);
     }
-    
+
     if (elements.recenterBtn) {
       elements.recenterBtn.addEventListener('click', () => {
         if (state.currentLocation && state.driverMap) {
           state.driverMap.setView([state.currentLocation.lat, state.currentLocation.lng], 15);
-          }
+        }
       });
     }
-    
+
     // Service mode buttons - Fixed null element handling
     if (elements.serviceModeButtons) {
       elements.serviceModeButtons.forEach(btn => {
@@ -886,12 +1226,18 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
             elements.serviceModeButtons.forEach(b => b.classList.remove('active'));
           }
           btn.classList.add('active');
-          
+
           const mode = btn.dataset.driverServiceMode;
+          GreenRoute.utils.setStorage('driverVehicleType', mode.charAt(0).toUpperCase() + mode.slice(1));
+          if (state.driverProfile) state.driverProfile.vehicleType = mode;
+          
           if (elements.serviceModePill) {
             elements.serviceModePill.textContent = `${mode.charAt(0).toUpperCase() + mode.slice(1)} mode`;
           }
-          
+
+          // Refresh UI components
+          refreshDriverMarker();
+
           // Update default fare based on vehicle type
           if (mode === 'trotro') {
             if (elements.vehicleCapacity) {
@@ -910,20 +1256,62 @@ Vehicle: ${getDriverCredentials().vehicleType} - ${getDriverCredentials().vehicl
               state.manualFare = 5.50;
             }
           }
-          
+
           updateSeatCounts();
         });
       });
     }
-    
+
+    // Legend toggle handling
+    const legendToggle = document.getElementById('driver-legend-toggle');
+    const legendContent = document.getElementById('driver-legend-content');
+    const legendChevron = document.getElementById('legend-chevron');
+    if (legendToggle && legendContent) {
+      legendToggle.addEventListener('click', () => {
+        legendContent.classList.toggle('is-collapsed');
+        if (legendChevron) legendChevron.classList.toggle('legend-chevron-rotated');
+      });
+    }
+
+    if (elements.updateCapacityBtn) {
+      elements.updateCapacityBtn.addEventListener('click', () => {
+        const current = parseInt(elements.vehicleCapacity?.value || 14);
+        const newVal = prompt('Enter new total vehicle capacity:', current);
+        if (newVal !== null) {
+          const parsed = parseInt(newVal);
+          if (!isNaN(parsed) && parsed > 0 && parsed <= 60) {
+            if (elements.vehicleCapacity) {
+              elements.vehicleCapacity.value = parsed;
+              updateSeatCounts();
+            }
+          } else {
+            alert('Please enter a valid capacity between 1 and 60');
+          }
+        }
+      });
+    }
+
+    if (elements.nextStopBtn) {
+      elements.nextStopBtn.addEventListener('click', handleNextStop);
+    }
+
+    if (elements.focusTrackersBtn) {
+      elements.focusTrackersBtn.addEventListener('click', focusOnTrackers);
+    }
+
     window.addEventListener('beforeunload', () => {
       stopGpsTracking();
+      if (state.demandZoneInterval) {
+        clearInterval(state.demandZoneInterval);
+        state.demandZoneInterval = null;
+      }
+      clearDemandZones();
       if (state.isOnline && state.currentLocation) {
         updateDriverLocation(state.currentLocation.lat, state.currentLocation.lng, false);
       }
     });
-    
-    };
+
+  };
 
   // Start app when DOM is ready
   if (document.readyState === 'loading') {

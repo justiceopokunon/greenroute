@@ -64,6 +64,7 @@
           localStorage.setItem('sessionId', data.sessionId);
         }
         GreenRoute.utils.setStorage(GreenRoute.storage.passengerId, data.id);
+        GreenRoute.utils.setStorage('userId', data.id || data.userId);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'passenger');
 
         setNote(signinForm, 'Signed in! Redirecting...');
@@ -107,12 +108,16 @@
         });
         const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message || data.error || 'Sign up failed');
+        if (!res.ok) {
+          const detailMsg = data && Array.isArray(data.details) ? data.details.join('; ') : null;
+          throw new Error(detailMsg || data.message || data.error || 'Sign up failed');
+        }
 
         if (data.sessionId) {
           localStorage.setItem('sessionId', data.sessionId);
         }
         GreenRoute.utils.setStorage(GreenRoute.storage.passengerId, data.id);
+        GreenRoute.utils.setStorage('userId', data.id || data.userId);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'passenger');
 
         setNote(signupForm, 'Account created! Redirecting...');
@@ -151,6 +156,7 @@
           localStorage.setItem('sessionId', data.sessionId);
         }
         GreenRoute.utils.setStorage(GreenRoute.storage.driverId, data.driverId);
+        GreenRoute.utils.setStorage('userId', data.userId || data.id);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'driver');
 
         setNote(driverSigninForm, 'Signed in! Redirecting...');
@@ -220,12 +226,16 @@
         });
         const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message || data.error || 'Sign up failed');
+        if (!res.ok) {
+          const detailMsg = data && Array.isArray(data.details) ? data.details.join('; ') : null;
+          throw new Error(detailMsg || data.message || data.error || 'Sign up failed');
+        }
 
         if (data.sessionId) {
           localStorage.setItem('sessionId', data.sessionId);
         }
         GreenRoute.utils.setStorage(GreenRoute.storage.driverId, data.driverId);
+        GreenRoute.utils.setStorage('userId', data.userId || data.id);
         GreenRoute.utils.setStorage(GreenRoute.storage.userRole, 'driver');
 
         setNote(driverSignupForm, 'Account created! Redirecting...');

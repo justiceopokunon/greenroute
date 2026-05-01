@@ -22,7 +22,17 @@
     passengerMap: null,
     userMarker: null,
     isTracking: false,
-    passengerId: GreenRoute.utils.getStorage(GreenRoute.storage.passengerId, null)
+    pendingTracking: false,
+    locationRetryAttempted: false,
+    selectedDriverId: null,
+    trackedDriverId: null,
+    trackedDriverData: null,
+    lastTrackedLocation: null,
+    nearbyVehiclesInterval: null,
+    trackingUpdateInterval: null,
+    passengerId: GreenRoute.utils.getStorage(GreenRoute.storage.passengerId, null),
+    passengerName: null,
+    passengerPhoto: null
   };
 
   const handleSignOut = async () => {
@@ -44,56 +54,7 @@
     window.location.href = '../index.html';
   };
 
-  const elements = {
-    // Map
-    map: byIds('map', 'passenger-map'),
-    
-    // Form elements
-    bookingForm: byIds('booking-form'),
-    pickupInput: byIds('pickup-input', 'pv2-origin'),
-    destinationInput: byIds('destination-input', 'pv2-destination'),
-    rideTypeInput: byIds('ride-type-input'),
-    findRideBtn: byIds('find-ride-btn', 'pv2-find-ride'),
-    passengersCount: byIds('passengers-count', 'pv2-passenger-count'),
-    
-    // Driver elements
-    driversPanel: byIds('drivers-panel', 'pv2-stats-pill'),
-    driversCount: byIds('drivers-count', 'pv2-stats-pill'),
-    
-    // Active booking elements
-    activeRide: byIds('active-booking', 'pv2-active-trip-panel'),
-    driverName: byIds('driver-name', 'pv2-driver-name'),
-    driverPhoto: byIds('driver-photo', 'pv2-driver-photo'),
-    driverRating: byIds('driver-rating'),
-    driverTrips: byIds('driver-trips'),
-    rideStatus: byIds('ride-status'),
-    arrivalTime: byIds('arrival-time', 'pv2-live-eta'),
-    rideDistance: byIds('ride-distance'),
-    
-    // Action buttons
-    cancelBtn: byIds('cancel-ride-btn', 'pv2-cancel-btn'),
-    contactDriverBtn: byIds('contact-driver-btn'),
-    
-    // Navigation
-    mobileSignoutBtn: byIds('mobile-signout-btn', 'passenger-logout-mobile'),
-    bookingsLink: byIds('bookings-link'),
-    mobileBookingsLink: byIds('mobile-bookings-link'),
-    profileLink: byIds('profile-link'),
-    mobileProfileLink: byIds('mobile-profile-link'),
-    
-    // Modals
-    bookingsModal: byIds('bookings-modal'),
-    profileModal: byIds('profile-modal'),
-    closeBookingsModal: byIds('close-bookings-modal'),
-    closeProfileModal: byIds('close-profile-modal'),
-    
-    // Notification element
-    notification: byIds('notification'),
-    notificationMessage: byIds('notification-message'),
-    notificationClose: byIds('notification-close'),
-    desktopSignoutBtn: byIds('passenger-logout'),
-    sosButton: byIds('panic-button')
-  };
+  let elements = {};
 
   const initMap = () => {
     if (!elements.map) {
@@ -101,20 +62,38 @@
       return;
     }
 
+    // Avoid double initialization
     if (state.passengerMap) {
-      console.log('Map already initialized');
+      console.warn('Map already initialized');
       return;
     }
 
-    // Initialize map immediately if L is available
-    if (typeof L !== 'undefined') {
+    if (window.L) {
       try {
-        state.passengerMap = L.map(elements.map).setView(GreenRoute.config.mapCenter, GreenRoute.config.defaultZoom);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        state.passengerMap = L.map(elements.map, {
+          center: GreenRoute.config.mapCenter,
+          zoom: GreenRoute.config.defaultZoom,
+          zoomControl: false,
+          attributionControl: false
+        });
+
+        const primaryTiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors',
           maxZoom: 19
-        }).addTo(state.passengerMap);
+        });
+
+        const fallbackTiles = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        });
+
+        primaryTiles.on('tileerror', () => {
+          if (!state.passengerMap.hasLayer(fallbackTiles)) {
+            fallbackTiles.addTo(state.passengerMap);
+          }
+        });
+
+        primaryTiles.addTo(state.passengerMap);
 
         // Hide loading indicator
         const mapLoading = document.querySelector('.map-loading');
@@ -122,13 +101,12 @@
           mapLoading.style.display = 'none';
         }
 
-        console.log('Map initialized successfully');
-        
+
         // Get user location after map loads
         setTimeout(() => {
           getUserLocation();
         }, 1000);
-        
+
       } catch (error) {
         console.error('Failed to initialize map:', error);
       }
@@ -144,7 +122,7 @@
     if (elements.sosButton) {
       elements.sosButton.style.background = '#ef4444';
       elements.sosButton.textContent = 'SOS SENT';
-      
+
       setTimeout(() => {
         elements.sosButton.style.background = '';
         elements.sosButton.textContent = 'SOS';
@@ -165,132 +143,143 @@
     if (elements.pickupInput) {
       elements.pickupInput.value = 'Detecting your location...';
     }
-    
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        state.userLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        
-        const address = await GreenRoute.utils.reverseGeocode(state.userLocation.lat, state.userLocation.lng);
-        if (elements.pickupInput) {
-          elements.pickupInput.value = address || 'Current location';
-        }
 
-        // Add user marker to map
-        if (state.passengerMap && state.userLocation) {
-          if (state.userMarker) {
-            state.userMarker.setLatLng([state.userLocation.lat, state.userLocation.lng]);
-          } else {
-            state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
-              icon: L.divIcon({
-                html: '<div style="background: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"></div>',
-                iconSize: [22, 22],
-                iconAnchor: [11, 11],
-                className: 'user-location-marker'
-              })
-            }).addTo(state.passengerMap);
-            
-            state.userMarker.bindPopup('<strong>Your Location</strong><br>You are here');
-            state.passengerMap.setView([state.userLocation.lat, state.userLocation.lng], 15);
+    const requestLocation = (options) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          state.locationRetryAttempted = false;
+          state.userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+
+          const address = await GreenRoute.utils.reverseGeocode(state.userLocation.lat, state.userLocation.lng);
+          if (elements.pickupInput) {
+            elements.pickupInput.value = address || 'Current location';
           }
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        if (elements.pickupInput) {
-          elements.pickupInput.value = 'Enable location to continue';
-          elements.pickupInput.disabled = false;
-        }
-        
-        let errorMessage = 'Enable location to continue';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied. Please enable location services.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable.';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'Location request timed out.';
-            break;
-        }
-        if (elements.pickupInput) {
-          elements.pickupInput.value = errorMessage;
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: GreenRoute.config.gpsTimeout,
-        maximumAge: 60000
-      }
-    );
+
+          // Add user marker to map
+          if (state.passengerMap && state.userLocation) {
+            if (state.userMarker) {
+              state.userMarker.setLatLng([state.userLocation.lat, state.userLocation.lng]);
+            } else {
+              state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
+                icon: L.divIcon({
+                  html: '<div style="background: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"></div>',
+                  iconSize: [22, 22],
+                  iconAnchor: [11, 11],
+                  className: 'user-location-marker'
+                })
+              }).addTo(state.passengerMap);
+
+              state.userMarker.bindPopup('<strong>Your Location</strong><br>You are here');
+              state.passengerMap.setView([state.userLocation.lat, state.userLocation.lng], 15);
+            }
+          }
+
+          if (state.pendingTracking) {
+            state.pendingTracking = false;
+            startTracking();
+          }
+        },
+        (error) => {
+          if (error.code === error.TIMEOUT && !state.locationRetryAttempted) {
+            console.warn('Geolocation timed out, retrying with relaxed settings');
+            state.locationRetryAttempted = true;
+            if (elements.pickupInput) {
+              elements.pickupInput.value = 'Location timed out. Retrying...';
+            }
+            requestLocation({
+              enableHighAccuracy: false,
+              timeout: Math.max(GreenRoute.config.gpsTimeout || 10000, 15000),
+              maximumAge: 300000
+            });
+            return;
+          }
+
+          console.error('Geolocation error:', error);
+
+          if (elements.pickupInput) {
+            elements.pickupInput.value = 'Enable location to continue';
+            elements.pickupInput.disabled = false;
+          }
+
+          let errorMessage = 'Enable location to continue';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access denied. Please enable location services.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out.';
+              break;
+          }
+          if (elements.pickupInput) {
+            elements.pickupInput.value = errorMessage;
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: GreenRoute.config.gpsTimeout,
+          maximumAge: 60000
+        });
+    };
+
+    requestLocation({
+      enableHighAccuracy: true,
+      timeout: GreenRoute.config.gpsTimeout,
+      maximumAge: 60000
+    });
   };
 
   // Create much better driver icons
   const createDriverMarker = (driver) => {
     const isTrotro = driver.vehicleType?.toLowerCase() === 'trotro';
+    const photoUrl = driver.driverPhoto || '../assets/default-driver.svg';
+    const borderColor = isTrotro ? '#f59e0b' : '#3b82f6';
     
-    if (isTrotro) {
-      // Trotro Bus Icon
-      const iconHtml = `<div style="
-        width: 50px;
-        height: 32px;
-        background: linear-gradient(180deg, #ff6b35 0%, #f7931e 100%);
-        border-radius: 4px;
-        border: 2px solid #c2410c;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    const iconHtml = `<div style="
+      width: 48px;
+      height: 48px;
+      position: relative;
+      cursor: pointer;
+    ">
+      <div style="
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid ${borderColor};
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       ">
-        <div style="position: absolute; top: 6px; left: 4px; right: 4px; height: 12px; background: rgba(255,255,255,0.2); border-radius: 2px;"></div>
-        <div style="position: absolute; top: 8px; left: 6px; width: 6px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 1px;"></div>
-        <div style="position: absolute; top: 8px; left: 14px; width: 6px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 1px;"></div>
-        <div style="position: absolute; top: 8px; left: 22px; width: 6px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 1px;"></div>
-        <div style="position: absolute; top: 8px; right: 6px; width: 6px; height: 8px; background: rgba(255,255,255,0.4); border-radius: 1px;"></div>
-        <div style="position: absolute; bottom: 2px; left: 8px; width: 8px; height: 8px; background: #1f2937; border-radius: 50%; border: 1px solid #374151;"></div>
-        <div style="position: absolute; bottom: 2px; right: 8px; width: 8px; height: 8px; background: #1f2937; border-radius: 50%; border: 1px solid #374151;"></div>
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 2px;">BUS</div>
-      </div>`;
+        <img src="${photoUrl}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='../assets/default-driver.svg'">
+      </div>
+    </div>`;
 
-      return L.divIcon({
-        html: iconHtml,
-        iconSize: [54, 36],
-        iconAnchor: [27, 18],
-        popupAnchor: [0, -18],
-        className: 'trotro-marker'
-      });
-    } else {
-      // Taxi Icon
-      const iconHtml = `<div style="
-        width: 38px;
-        height: 20px;
-        background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
-        border-radius: 12px 8px 8px 12px;
-        border: 2px solid #d97706;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <div style="position: absolute; top: 4px; left: 4px; right: 4px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 6px 4px 4px 6px;"></div>
-        <div style="position: absolute; top: 1px; left: 50%; transform: translateX(-50%); width: 12px; height: 6px; background: #000; border-radius: 2px; display: flex; align-items: center; justify-content: center;"><div style="color: #fbbf24; font-size: 4px; font-weight: bold;">TAXI</div></div>
-        <div style="position: absolute; bottom: 2px; left: 6px; width: 6px; height: 6px; background: #1f2937; border-radius: 50%; border: 1px solid #374151;"></div>
-        <div style="position: absolute; bottom: 2px; right: 6px; width: 6px; height: 6px; background: #1f2937; border-radius: 50%; border: 1px solid #374151;"></div>
-      </div>`;
+    return L.divIcon({
+      html: iconHtml,
+      iconSize: [48, 48],
+      iconAnchor: [24, 24],
+      popupAnchor: [0, -24],
+      className: 'driver-photo-marker'
+    });
+  };
 
-      return L.divIcon({
-        html: iconHtml,
-        iconSize: [42, 24],
-        iconAnchor: [21, 12],
-        popupAnchor: [0, -12],
-        className: 'taxi-marker'
-      });
+  const getDirectionText = (origin, destination) => {
+    if (!origin && !destination) {
+      return 'Direction unknown';
     }
+    if (origin && destination) {
+      return `${origin} → ${destination}`;
+    }
+    return origin || destination || 'Direction unknown';
+  };
+
+  const getVehicleLabel = (vehicleType) => {
+    return (vehicleType || 'taxi').toLowerCase() === 'trotro' ? 'Trotro' : 'Taxi';
   };
 
   // Get route coordinates for destination
@@ -365,7 +354,8 @@
   };
 
   // Create road-based route path - FIXED TO FOLLOW ACTUAL ROADS
-  const createRoadBasedRoutePath = async (fromLat, fromLng, toLat, toLng, routeId = 'default', color = '#3b82f6') => {
+  const createRoadBasedRoutePath = async (fromLat, fromLng, toLat, toLng, routeId = 'default', color = 'var(--primary)', skipFitBounds = false) => {
+    if (!state.passengerMap) return;
     // Remove existing route if it exists
     if (state.routePolylines.has(routeId)) {
       state.passengerMap.removeLayer(state.routePolylines.get(routeId));
@@ -389,31 +379,44 @@
     }
 
     if (!roadPath || roadPath.length < 2) {
-      console.warn('No valid road path found');
+      console.warn('No valid road path found', { fromLat, fromLng, toLat, toLng, roadPath });
       return;
     }
+
+    // Normalize path entries: allow objects {lat,lng} or arrays [lat,lng]
+    roadPath = roadPath.map(pt => {
+      if (Array.isArray(pt)) return pt;
+      if (pt && typeof pt === 'object' && ('lat' in pt) && ('lng' in pt)) return [pt.lat, pt.lng];
+      return null;
+    }).filter(Boolean);
 
     // Create the polyline with road-following appearance
     const polyline = L.polyline(roadPath, {
       color: color,
-      weight: 4,
-      opacity: 0.8,
+      weight: 6,
+      opacity: 0.9,
       dashArray: null,
       lineCap: 'round',
       lineJoin: 'round',
       className: 'road-route-path'
     }).addTo(state.passengerMap);
-
+    
     state.routePolylines.set(routeId, polyline);
-    
+
     // Calculate road distance
-    const roadDistance = window.RoadRouting ? 
-      window.RoadRouting.calculateRoadDistance(roadPath) : 
+    const roadDistance = window.RoadRouting ?
+      window.RoadRouting.calculateRoadDistance(roadPath) :
       GreenRoute.utils.calculateDistance(fromLat, fromLng, toLat, toLng);
-    
+
     // Fit map to show the entire route with proper padding
-    const bounds = L.latLngBounds(roadPath);
-    state.passengerMap.fitBounds(bounds, { padding: [80, 80] });
+    if (!skipFitBounds && roadPath.length > 0) {
+      try {
+        const bounds = L.latLngBounds(roadPath);
+        state.passengerMap.fitBounds(bounds, { padding: [50, 50] });
+      } catch (boundsErr) {
+        console.warn('Map: Failed to fit bounds:', boundsErr);
+      }
+    }
   };
 
   // Find nearest known stop to coordinates
@@ -449,95 +452,430 @@
   const createRealisticPath = (startPoint, endPoint) => {
     const [fromLat, fromLng] = startPoint;
     const [toLat, toLng] = endPoint;
-    
+
     const path = [[fromLat, fromLng]];
-    
+
     // Add intermediate waypoints that simulate road bends
     const steps = 12;
     for (let i = 1; i < steps; i++) {
       const t = i / steps;
-      
+
       // Linear interpolation
       let lat = fromLat + (toLat - fromLat) * t;
       let lng = fromLng + (toLng - fromLng) * t;
-      
+
       // Add road-like curves (simulate following actual roads)
       const curve = Math.sin(t * Math.PI * 2) * 0.003;
       const bend = Math.cos(t * Math.PI * 1.5) * 0.002;
-      
+
       lng += curve + bend;
-      
+
       path.push([lat, lng]);
     }
-    
+
     path.push([toLat, toLng]);
     return path;
   };
 
   // Update driver markers with improved icons
   let lastApiCall = 0;
-  const updateDriverMarkers = async () => {
+  const updateDriverMarkers = async (forceRefresh = false) => {
+    if (!state.passengerMap) return;
+    
     // Rate limiting: don't make API calls more frequently than every 5 seconds
-    const now = Date.now();
-    if (now - lastApiCall < 5000) {
-      return;
+    if (!forceRefresh) {
+      const now = Date.now();
+      if (now - lastApiCall < 5000) {
+        return;
+      }
+      lastApiCall = now;
     }
-    lastApiCall = now;
 
     try {
       const rides = await window.api.getAvailableRides();
-      
       if (!Array.isArray(rides)) {
         console.warn('No rides available');
         return;
       }
 
       const currentDriverIds = new Set();
-      
-      rides.forEach(ride => {
-        if (ride.latitude && ride.longitude && (ride.isOnline !== false)) {
-          currentDriverIds.add(ride.driverId);
-          
-          if (!state.driverMarkers.has(ride.driverId)) {
-            const marker = L.marker([ride.latitude, ride.longitude], {
-              icon: createDriverMarker(ride)
-            }).addTo(state.passengerMap);
-            
+      const nearbyVehicleRows = [];
+
+      // Update stats pill text instead of clearing it
+      if (elements.nearbyVehicles) elements.nearbyVehicles.innerHTML = '';
+
+      for (const ride of rides) {
+        if (!(ride.latitude && ride.longitude)) continue;
+        currentDriverIds.add(ride.driverId);
+
+        const vehicleLabel = getVehicleLabel(ride.vehicleType);
+        const directionText = getDirectionText(ride.origin, ride.destination);
+        const isTrotro = vehicleLabel === 'Trotro';
+        const distanceKm = state.userLocation
+          ? GreenRoute.utils.calculateDistance(ride.latitude, ride.longitude, state.userLocation.lat, state.userLocation.lng)
+          : null;
+
+        // Compute ETA if we have user location
+        let etaText = 'N/A';
+        if (state.userLocation) {
+          const distance = distanceKm;
+          try {
+            const eta = GreenRoute.utils.calculateETA(distance);
+            etaText = `${eta} min`;
+          } catch {
+            etaText = Math.ceil(distance * 2) + ' min';
+          }
+        }
+
+        // Create/update marker
+        if (!state.driverMarkers.has(ride.driverId)) {
+          if (state.passengerMap) {
+            const marker = L.marker([ride.latitude, ride.longitude], { icon: createDriverMarker(ride) }).addTo(state.passengerMap);
+            const photoUrl = ride.driverPhoto || '../assets/default-driver.svg';
             const popupContent = `
-              <div style="min-width: 220px; font-family: system-ui;">
-                <strong style="color: #1f2937; font-size: 14px;">${ride.driverName || 'Driver'}</strong><br>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Plate:</span> <span style="font-weight: 600;">${ride.licensePlate || 'N/A'}</span></div>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Type:</span> <span style="font-weight: 600; color: ${ride.vehicleType === 'Trotro' ? '#ff6b35' : '#fbbf24'};">${ride.vehicleType || 'Vehicle'}</span></div>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Seats:</span> <span style="font-weight: 600;">${ride.seats || 0}</span></div>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Fare:</span> <span style="font-weight: 600; color: #10b981;">GHS ${ride.fare || '5.50'}</span></div>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Rating:</span> <span style="font-weight: 600;">${ride.rating || '4.5'}</span></div>
-                <div style="margin: 4px 0;"><span style="color: #6b7280;">Route:</span> <span style="font-weight: 600; color: #3b82f6;">Follows actual roads</span></div>
+              <div style="min-width: 200px; font-family: system-ui; display: flex; gap: 12px; align-items: center;">
+                <img src="${photoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);" onerror="this.src='../assets/default-driver.svg'">
+                <div>
+                  <strong style="color: #1f2937; font-size: 14px; display: block;">${ride.driverName || 'Driver'}</strong>
+                  <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">${ride.licensePlate || 'N/A'} • ${vehicleLabel}</div>
+                  <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px;">ETA: ${etaText}</div>
+                </div>
               </div>
             `;
             marker.bindPopup(popupContent);
-            
             state.driverMarkers.set(ride.driverId, marker);
-          } else {
-            const marker = state.driverMarkers.get(ride.driverId);
-            marker.setLatLng([ride.latitude, ride.longitude]);
+          }
+        } else {
+          const marker = state.driverMarkers.get(ride.driverId);
+          marker.setLatLng([ride.latitude, ride.longitude]);
+          const photoUrl = ride.driverPhoto || '../assets/default-driver.svg';
+          marker.getPopup()?.setContent(`
+            <div style="min-width: 200px; font-family: system-ui; display: flex; gap: 12px; align-items: center;">
+              <img src="${photoUrl}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);" onerror="this.src='../assets/default-driver.svg'">
+              <div>
+                <strong style="color: #1f2937; font-size: 14px; display: block;">${ride.driverName || 'Driver'}</strong>
+                <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">${ride.licensePlate || 'N/A'} • ${vehicleLabel}</div>
+                <div style="font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px;">ETA: ${etaText}</div>
+              </div>
+            </div>
+          `);
+        }
+
+        nearbyVehicleRows.push({
+          driverName: ride.driverName || 'Driver',
+          driverPhoto: ride.driverPhoto,
+          plate: ride.licensePlate || 'N/A',
+          vehicleLabel,
+          directionText,
+          etaText,
+          isTrotro,
+          distanceKm: distanceKm ?? Number.POSITIVE_INFINITY,
+          trackerCount: ride.trackerCount || 0,
+          ride
+        });
+      }
+
+
+      if (elements.nearbyVehicles) {
+        const orderedVehicles = nearbyVehicleRows
+          .sort((a, b) => a.distanceKm - b.distanceKm)
+          .slice(0, 8);
+
+        elements.nearbyVehicles.innerHTML = orderedVehicles.map(vehicle => {
+          const isTracking = state.trackedDriverId && vehicle.ride && state.trackedDriverId === vehicle.ride.driverId;
+          const photoUrl = vehicle.driverPhoto || '../assets/default-driver.svg';
+          
+          return `
+          <div class="vehicle-row-v2 ${isTracking ? 'active' : ''}" data-driver-id="${vehicle.ride?.driverId || ''}">
+            <img src="${photoUrl}" alt="${vehicle.driverName}" class="vehicle-avatar-v2" onerror="this.src='../assets/default-driver.svg'">
+            <div class="vehicle-info-v2">
+              <div class="vehicle-name-v2">
+                ${vehicle.driverName}
+              </div>
+              <div class="vehicle-meta-v2">${vehicle.plate} • ${vehicle.vehicleLabel}</div>
+              <div class="vehicle-trackers-v2">
+                <span style="display:inline-block;width:6px;height:6px;background:var(--primary);border-radius:50%;animation:pulse 2s infinite;"></span>
+                ${vehicle.trackerCount} tracking
+              </div>
+              <div style="font-size:11px;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:4px;">
+                ${vehicle.directionText}
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;">
+              <div class="vehicle-eta-v2">
+                <strong>${vehicle.etaText}</strong>
+                <span>ETA</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="track-driver-btn btn-track-v2 ${isTracking ? 'active' : ''}" data-driver-id="${vehicle.ride?.driverId || ''}" data-driver-name="${vehicle.driverName}" data-ride-id="${vehicle.ride?.id || ''}">
+                  ${isTracking ? 'Tracking' : 'Track'}
+                </button>
+                <button class="book-driver-btn btn-book-v2" data-driver-id="${vehicle.ride?.driverId || ''}" data-driver-name="${vehicle.driverName}" data-ride-id="${vehicle.ride?.id || ''}" data-fare="${vehicle.ride?.fare || 5.50}">
+                  Book
+                </button>
+              </div>
+            </div>
+          </div>
+          `;
+        }).join('');
+
+        // Update tracking panel and live route
+        if (typeof updateTrackingList === 'function') {
+          updateTrackingList(orderedVehicles);
+        }
+
+        // Auto-update route for currently tracked driver if they moved
+        if (state.trackedDriverId && state.userLocation) {
+          const trackedRide = rides.find(r => r.driverId === state.trackedDriverId);
+          if (trackedRide && trackedRide.latitude && trackedRide.longitude) {
+            // Only update if driver has moved significantly (> 50m)
+            const lastLoc = state.lastTrackedLocation;
+            const hasMoved = !lastLoc || GreenRoute.utils.calculateDistance(
+              trackedRide.latitude, trackedRide.longitude, 
+              lastLoc.lat, lastLoc.lng
+            ) > 0.05;
+
+            if (hasMoved) {
+              createRoadBasedRoutePath(
+                trackedRide.latitude, trackedRide.longitude,
+                state.userLocation.lat, state.userLocation.lng,
+                'driver-to-passenger',
+                'var(--primary)',
+                true // skipFitBounds
+              );
+              state.lastTrackedLocation = { lat: trackedRide.latitude, lng: trackedRide.longitude };
+            }
           }
         }
-      });
 
+        const nearbyContainer = document.getElementById('nearby-vehicles-container');
+        if (!orderedVehicles.length) {
+          elements.nearbyVehicles.innerHTML = '<div style="opacity:0.75;padding:6px 0;text-align:center;">No nearby taxis or trotros found.</div>';
+          if (nearbyContainer) nearbyContainer.style.display = 'none';
+        } else {
+          if (nearbyContainer) nearbyContainer.style.display = 'block';
+        }
+
+        // Handle Booking from list
+        document.querySelectorAll('.book-driver-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const dest = btn.closest('div').parentElement.querySelector('[data-dest]')?.getAttribute('data-dest') || '';
+            // If the driver has a destination, we can use it, but usually passenger wants THEIR destination
+            if (elements.destinationInput && !elements.destinationInput.value) {
+              showNotification('Please enter your destination first', 'warning');
+              elements.destinationInput.focus();
+              return;
+            }
+            findRide();
+          });
+        });
+
+        // Add click handlers to track buttons
+        document.querySelectorAll('.track-driver-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const driverId = btn.getAttribute('data-driver-id');
+            const driverName = btn.getAttribute('data-driver-name');
+
+            if (!driverId) return;
+
+            try {
+              if (state.trackedDriverId === driverId) {
+                // Stop tracking
+                await window.api.stopTrackingDriver(state.passengerId, driverId);
+                state.trackedDriverId = null;
+                state.trackedDriverData = null;
+                localStorage.removeItem('greenroute-tracked-driver-id');
+                btn.textContent = 'Track';
+                btn.style.background = 'transparent';
+                btn.style.color = '#3b82f6';
+                if (state.trackingUpdateInterval) {
+                  clearInterval(state.trackingUpdateInterval);
+                  state.trackingUpdateInterval = null;
+                }
+                if (elements.nearbyVehicles && elements.nearbyVehicles.parentElement) {
+                  const statusDiv = elements.nearbyVehicles.parentElement.querySelector('.tracking-status');
+                  if (statusDiv) statusDiv.remove();
+                }
+                // Remove route polyline
+                if (state.routePolylines.has('driver-to-passenger')) {
+                  state.passengerMap.removeLayer(state.routePolylines.get('driver-to-passenger'));
+                  state.routePolylines.delete('driver-to-passenger');
+                }
+              } else {
+                // Start tracking
+                if (!state.userLocation) {
+                  showNotification('Please set your location on the map first to see the route.', 'warning');
+                }
+
+                if (state.trackedDriverId) {
+                  // Stop tracking previous driver
+                  await window.api.stopTrackingDriver(state.passengerId, state.trackedDriverId);
+                }
+                await window.api.startTrackingDriver(
+                  state.passengerId, 
+                  driverId, 
+                  state.userLocation ? state.userLocation.lat : null,
+                  state.userLocation ? state.userLocation.lng : null,
+                  elements.destinationInput?.value || ''
+                );
+                state.trackedDriverId = driverId;
+                state.trackedDriverData = { driverId, driverName };
+                localStorage.setItem('greenroute-tracked-driver-id', driverId);
+                btn.textContent = 'Tracking';
+                btn.style.background = '#3b82f6';
+                btn.style.color = 'white';
+
+                // Periodically update passenger location for the driver
+                if (state.trackingUpdateInterval) clearInterval(state.trackingUpdateInterval);
+                state.trackingUpdateInterval = setInterval(async () => {
+                  if (state.trackedDriverId && state.userLocation) {
+                    try {
+                      console.log(`[Tracking] Sending heartbeat for driver ${state.trackedDriverId}...`);
+                      await window.api.startTrackingDriver(
+                        state.passengerId, 
+                        state.trackedDriverId,
+                        state.userLocation.lat,
+                        state.userLocation.lng,
+                        elements.destinationInput?.value || '',
+                        state.passengerName,
+                        state.passengerPhoto
+                      );
+                    } catch (err) {
+                      console.error('[Tracking] Heartbeat failed:', err);
+                    }
+                  }
+                }, 10000); // Update location every 10 seconds
+
+                // Draw route from driver to passenger on the map
+                if (state.userLocation) {
+                  const rideId = btn.getAttribute('data-ride-id');
+                  if (rideId) {
+                    try {
+                      const rideData = await window.api.getRide(rideId);
+                      if (rideData && rideData.latitude && rideData.longitude) {
+                        await createRoadBasedRoutePath(
+                          rideData.latitude, rideData.longitude,
+                          state.userLocation.lat, state.userLocation.lng,
+                          'driver-to-passenger',
+                          '#3b82f6'
+                        );
+                      }
+                    } catch (routeErr) {
+                      // Silently fail if route cannot be drawn
+                    }
+                  }
+                }
+
+                // Show tracking status indicator
+                if (elements.nearbyVehicles && elements.nearbyVehicles.parentElement) {
+                  let statusDiv = elements.nearbyVehicles.parentElement.querySelector('.tracking-status');
+                  if (!statusDiv) {
+                    statusDiv = document.createElement('div');
+                    statusDiv.className = 'tracking-status';
+                    elements.nearbyVehicles.parentElement.insertBefore(statusDiv, elements.nearbyVehicles);
+                  }
+                  statusDiv.innerHTML = `Tracking <strong>${driverName}</strong> — Driver notified`;
+                }
+              }
+              // Re-render to show updated button states
+              updateDriverMarkers(true);
+            } catch (err) {
+              console.error('Failed to toggle tracking:', err);
+              alert('Failed to ' + (state.trackedDriverId === driverId ? 'stop' : 'start') + ' tracking: ' + err.message);
+            }
+          });
+        });
+
+        // Add click handlers to book buttons
+        document.querySelectorAll('.book-driver-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const rideId = btn.getAttribute('data-ride-id');
+            const driverId = btn.getAttribute('data-driver-id');
+            const driverName = btn.getAttribute('data-driver-name');
+            const fare = parseFloat(btn.getAttribute('data-fare') || '5.50');
+
+            if (!rideId || !driverId) return;
+
+            if (!state.passengerId) {
+              alert('Please sign in to book a ride');
+              return;
+            }
+
+            if (!state.userLocation) {
+              alert('Please enable location to book a ride');
+              return;
+            }
+
+            const getPassengersCount = () => {
+              if (!elements.passengersCount) return 1;
+              const val = elements.passengersCount.value || elements.passengersCount.textContent;
+              return parseInt(val || '1', 10) || 1;
+            };
+            const passengers = getPassengersCount();
+
+            try {
+              btn.disabled = true;
+              btn.textContent = 'Booking...';
+
+              const booking = await window.api.createBooking(
+                rideId,
+                state.passengerId,
+                passengers,
+                state.userLocation.lat,
+                state.userLocation.lng
+              );
+
+              const totalFare = fare * passengers;
+
+              state.activeBooking = {
+                ...booking,
+                rideId: rideId,
+                driverId: driverId,
+                driverName: booking.driverName || driverName,
+                licensePlate: booking.licensePlate || 'N/A',
+                fare: totalFare,
+                seats: passengers
+              };
+
+              // Hide nearby vehicles panel
+              const nearbyContainer = document.getElementById('nearby-vehicles-container');
+              if (nearbyContainer) nearbyContainer.style.display = 'none';
+
+              // Show active ride panel
+              showActiveRide(state.activeBooking, totalFare, passengers);
+
+              showNotification('Ride booked successfully!', 'success');
+
+              // Start tracking the ride
+              startTracking();
+
+            } catch (err) {
+              console.error('Failed to book ride:', err);
+              alert('Failed to book ride: ' + (err.message || 'Unknown error'));
+              btn.disabled = false;
+              btn.textContent = 'Book';
+            }
+          });
+        });
+      }
+
+      // Remove markers that are no longer active
       for (const [driverId, marker] of state.driverMarkers) {
         if (!currentDriverIds.has(driverId)) {
-          state.passengerMap.removeLayer(marker);
+          if (state.passengerMap) {
+            state.passengerMap.removeLayer(marker);
+          }
           state.driverMarkers.delete(driverId);
         }
       }
 
-      const activeDrivers = rides.filter(r => r.latitude && r.longitude && (r.isOnline !== false)).length;
       if (elements.driversCount) {
-        elements.driversCount.textContent = `${activeDrivers} drivers found`;
+        elements.driversCount.textContent = `${currentDriverIds.size} nearby vehicles`;
       }
-      
-      } catch (error) {
-      console.error('Failed to update driver markers:', error);
+    } catch (err) {
+      console.error('Failed to update driver markers:', err);
     }
   };
 
@@ -547,9 +885,20 @@
       return;
     }
 
+    if (!state.userLocation) {
+      if (elements.arrivalTime) {
+        elements.arrivalTime.textContent = 'Locating...';
+      }
+      return;
+    }
+
+    if (!elements.arrivalTime) {
+      return;
+    }
+
     try {
       const ride = await window.api.getRide(state.activeBooking.rideId);
-      
+
       if (ride && ride.latitude && ride.longitude) {
         // Update driver marker position
         const marker = state.driverMarkers.get(ride.driverId);
@@ -558,12 +907,12 @@
         }
 
         // Update ETA if user location is available
-        if (state.userLocation && elements.arrivalTime) {
+        if (state.userLocation) {
           const distance = GreenRoute.utils.calculateDistance(
             ride.latitude, ride.longitude,
             state.userLocation.lat, state.userLocation.lng
           );
-          
+
           // Calculate ETA with fallback
           let eta;
           try {
@@ -572,7 +921,7 @@
             console.warn('ETA calculation failed:', etaError.message);
             eta = Math.ceil(distance * 2); // Fallback: 2 minutes per km
           }
-          
+
           elements.arrivalTime.textContent = `${eta} min`;
           // Create road-based route from driver to passenger
           await createRoadBasedRoutePath(
@@ -581,32 +930,29 @@
             'driver-to-passenger',
             '#10b981'
           );
-        } else {
-          console.warn('Cannot update ETA - missing user location or arrivalTime element');
         }
       } else {
-        console.warn('No driver location available for tracking');
-        if (elements.arrivalTime) {
-          elements.arrivalTime.textContent = 'Searching...';
-        }
+        elements.arrivalTime.textContent = 'Searching...';
       }
     } catch (error) {
       console.error('Failed to track active trip:', error);
-      if (elements.arrivalTime) {
-        elements.arrivalTime.textContent = 'Error';
-      }
+      elements.arrivalTime.textContent = 'Error';
     }
   };
 
   // Start tracking
   const startTracking = () => {
     if (state.isTracking) return;
-    
+    if (!state.userLocation) {
+      state.pendingTracking = true;
+      return;
+    }
+
     state.isTracking = true;
     const interval = setInterval(trackActiveTrip, GreenRoute.config.pollingInterval);
     state.pollingIntervals.set('driverTracking', interval);
-    
-    };
+
+  };
 
   // Stop tracking
   const stopTracking = () => {
@@ -614,9 +960,9 @@
       clearInterval(interval);
       state.pollingIntervals.delete(key);
     });
-    
+
     state.isTracking = false;
-    };
+  };
 
   const restoreActiveBooking = async (showMessage = false) => {
     if (!state.passengerId) {
@@ -675,22 +1021,51 @@
 
   // Find and book ride with road-based routing
   const findRide = async () => {
+    console.log('findRide called');
     const origin = elements.pickupInput?.value.trim();
     const destination = elements.destinationInput?.value.trim();
     const passengerValue = elements.passengersCount?.value ?? elements.passengersCount?.textContent;
     const passengers = parseInt(String(passengerValue || '1').trim(), 10) || 1;
 
+    console.log('Form data:', { origin, destination, passengers, passengerId: state.passengerId });
+    console.log('nearbyVehicles element exists:', !!elements.nearbyVehicles);
+
     if (!origin || !destination) {
+      console.warn('Missing origin or destination');
       showNotification('Please enter both pickup and destination', 'error');
       return;
     }
 
-    if (!state.userLocation) {
-      showNotification('Location access is required to book a ride', 'error');
+    // Allow proceeding without GPS location if we have manual addresses
+    let userLocation = state.userLocation;
+    if (!userLocation) {
+      console.log('No GPS location, attempting to geocode origin address:', origin);
+      try {
+        const coords = await getDestinationCoordinates(origin);
+        if (coords) {
+          userLocation = { lat: coords.lat, lng: coords.lng };
+          console.log('Geocoded origin address:', userLocation);
+        }
+      } catch (e) {
+        console.warn('Could not geocode origin:', e.message);
+      }
+    }
+
+    if (!userLocation) {
+      console.error('No location available (GPS and geocoding both failed)');
+      showNotification('Unable to determine your location. Please enable location services or try another origin.', 'error');
+      return;
+    }
+
+    if (!state.passengerId) {
+      console.error('CRITICAL: passengerId is null/undefined!');
+      console.log('Checking localStorage:', localStorage.getItem('passengerId'));
+      showNotification('Not logged in. Please sign in first.', 'error');
       return;
     }
 
     if (state.activeBooking) {
+      console.log('Already has active booking');
       showNotification('You already have an active ride. Cancel it before booking another.', 'info');
       return;
     }
@@ -698,6 +1073,7 @@
     try {
       const resumed = await restoreActiveBooking(false);
       if (resumed) {
+        console.log('Resumed active booking');
         showNotification('You already have an active ride. Resuming it now.', 'info');
         return;
       }
@@ -709,86 +1085,62 @@
       }
 
       const rides = await window.api.getAvailableRides();
-      
-      const suitableRide = rides.find(ride => 
-        ride.status === 'available' && 
+      console.log(`Fetched ${rides.length} available rides`);
+
+      // Filter suitable rides
+      const suitableRides = rides.filter(ride =>
+        ride.status === 'available' &&
         ride.seats >= passengers &&
         ride.latitude && ride.longitude
       );
 
-      if (!suitableRide) {
+      if (suitableRides.length === 0) {
         showNotification('No available drivers found. Please try again later.', 'error');
+        if (elements.findRideBtn) {
+          elements.findRideBtn.disabled = false;
+          elements.findRideBtn.textContent = 'Find Available Rides';
+        }
         return;
       }
 
-      // Calculate fare before booking
-      const farePerPerson = suitableRide.fare || 5.50;
-      const totalFare = farePerPerson * passengers;
-
-      const booking = await window.api.createBooking(
-        suitableRide.id,
-        state.passengerId,
-        passengers,
-        state.userLocation.lat,
-        state.userLocation.lng
-      );
-
-      // Store booking with fare information
-      state.activeBooking = {
-        ...booking,
-        rideId: suitableRide.id,
-        driverId: suitableRide.driverId,
-        driverName: suitableRide.driverName,
-        driverPlate: suitableRide.licensePlate,
-        vehicleType: suitableRide.vehicleType,
-        destination: destination,
-        origin: origin,
-        fare: totalFare,
-        seats: passengers,
-        farePerPerson: farePerPerson
-      };
-
-      // Show active ride panel
-      showActiveRide(suitableRide, totalFare, passengers);
-      
-      // Create route to destination
-      const destCoords = await getDestinationCoordinates(destination);
-      if (destCoords) {
-        await createRoadBasedRoutePath(
-          state.userLocation.lat, state.userLocation.lng,
-          destCoords.lat, destCoords.lng,
-          'passenger-to-destination',
-          '#3b82f6'
-        );
-        
-        if (state.destinationMarker) {
-          state.passengerMap.removeLayer(state.destinationMarker);
-        }
-        
-        state.destinationMarker = L.marker([destCoords.lat, destCoords.lng], {
-          icon: L.divIcon({
-            html: `<div style="background: #ef4444; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">📍</div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-            className: 'destination-marker'
-          })
-        }).addTo(state.passengerMap);
-        
-        state.destinationMarker.bindPopup(`<strong>Destination</strong><br>${destination}`);
+      // Show nearby vehicles list with track buttons
+      const nearbyContainer = document.getElementById('nearby-vehicles-container');
+      if (nearbyContainer) {
+        nearbyContainer.style.display = 'block';
       }
-      
-      startTracking();
-      showNotification('Ride booked successfully!', 'success');
+
+      // Update driver markers to show available vehicles
+      console.log('Calling updateDriverMarkers...');
+      await updateDriverMarkers(true);
+
+      // Update stats pill with driver count
+      if (elements.driversPanel) {
+        elements.driversPanel.textContent = `${suitableRides.length} drivers active`;
+      }
+
+      showNotification(`Found ${suitableRides.length} available drivers. Click "Track" on a driver to let them know you want to board.`, 'info');
+
+      if (elements.findRideBtn) {
+        elements.findRideBtn.disabled = false;
+        elements.findRideBtn.textContent = 'Find Available Rides';
+      }
 
     } catch (error) {
       const errorText = String(error?.message || '');
       if (errorText.includes('You already have an active booking for this ride')) {
+        console.log('Attempting to resume active booking');
         const resumed = await restoreActiveBooking(true);
         if (!resumed) {
           showNotification('You already have an active booking. Refresh and try again.', 'error');
         }
       } else {
-        console.error('Failed to find ride:', error);
+        console.error('Booking failed with error:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          status: error?.status,
+          statusText: error?.statusText,
+          response: error?.response
+        });
         showNotification('Failed to book ride. Please try again.', 'error');
       }
     } finally {
@@ -806,7 +1158,7 @@
       elements.notificationMessage.textContent = message;
       elements.notification.className = `notification ${type}`;
       elements.notification.style.display = 'block';
-      
+
       // Auto-hide after 5 seconds
       setTimeout(() => {
         if (elements.notification) {
@@ -816,35 +1168,52 @@
     }
   };
 
+  window.GreenRoutePassenger = window.GreenRoutePassenger || {};
+  window.GreenRoutePassenger.findRide = findRide;
+  window.GreenRoutePassenger.init = () => init();
+  window.GreenRoutePassenger.initialized = false;
+
   // Show active ride panel
   const showActiveRide = (ride, totalFare, passengers) => {
     if (!elements.activeRide) return;
-    
+
     // Update driver information
     if (elements.driverName) {
       elements.driverName.textContent = ride.driverName || 'Driver';
     }
+    if (elements.driverPlate) {
+      elements.driverPlate.textContent = ride.licensePlate ? `Plate: ${ride.licensePlate}` : 'Plate: -';
+    }
     if (elements.driverPhoto) {
-      elements.driverPhoto.src = ride.driverPhoto || '/assets/default-driver.svg';
+      elements.driverPhoto.src = ride.driverPhoto || '../assets/default-driver.svg';
     }
     if (elements.driverRating) {
-      elements.driverRating.textContent = `⭐ ${ride.rating || '4.5'}`;
+      const rating = ride.rating || '4.5';
+      const ratingSpan = elements.driverRating.querySelector('span');
+      if (ratingSpan) ratingSpan.textContent = rating;
+      else elements.driverRating.textContent = `Rating: ${rating}`;
     }
     if (elements.driverTrips) {
       elements.driverTrips.textContent = `• ${ride.trips || '234'} trips`;
     }
     if (elements.rideStatus) {
-      elements.rideStatus.textContent = 'Driver confirmed';
+      elements.rideStatus.textContent = ride.status === 'confirmed' ? 'Driver confirmed' : ride.status;
     }
-    
+
+    // Update trip details
+    if (elements.rideFare) {
+      elements.rideFare.textContent = `GHS ${Number(totalFare || ride.fare || 0).toFixed(2)}`;
+    }
+    if (elements.arrivalTime) {
+      elements.arrivalTime.textContent = ride.eta || 'Calculating...';
+    }
+    if (elements.rideDistance) {
+      elements.rideDistance.textContent = ride.distance || 'Calculating...';
+    }
+
     // Show the active ride panel
     elements.activeRide.style.display = 'block';
     elements.activeRide.hidden = false;
-
-    const liveFare = byIds('pv2-live-fare');
-    if (liveFare) {
-      liveFare.textContent = `GHS ${Number(totalFare || 0).toFixed(2)}`;
-    }
   };
 
   // Handle contact driver
@@ -867,36 +1236,36 @@
 
     try {
       await window.api.cancelBooking(state.activeBooking.id);
-      
+
       state.activeBooking = null;
-      
+
       // Hide active ride panel
       if (elements.activeRide) {
         elements.activeRide.style.display = 'none';
         elements.activeRide.hidden = true;
       }
-      
+
       // Clear all route polylines
       state.routePolylines.forEach(polyline => {
         state.passengerMap.removeLayer(polyline);
       });
       state.routePolylines.clear();
-      
+
       // Remove destination marker
       if (state.destinationMarker) {
         state.passengerMap.removeLayer(state.destinationMarker);
         state.destinationMarker = null;
       }
-      
+
       stopTracking();
-      
+
       // Reset form inputs
       if (elements.destinationInput) {
         elements.destinationInput.value = '';
       }
-      
+
       showNotification('Ride cancelled successfully', 'success');
-      
+
     } catch (error) {
       console.error('Failed to cancel booking:', error);
       showNotification('Failed to cancel ride. Please try again.', 'error');
@@ -904,24 +1273,244 @@
   };
 
   // Initialize passenger app
+  const enableManualLocation = () => {
+    if (!state.passengerMap) return;
+
+    showNotification('Click on the map to set your pickup location', 'info');
+    state.passengerMap.getContainer().style.cursor = 'crosshair';
+
+    const onMapClick = async (e) => {
+      const { lat, lng } = e.latlng;
+      state.userLocation = { lat, lng };
+
+      // Update marker
+      if (state.userMarker) {
+        state.userMarker.setLatLng([lat, lng]);
+      } else {
+        state.userMarker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            html: '<div style="background: #3b82f6; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.4);"></div>',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+            className: 'user-location-marker'
+          })
+        }).addTo(state.passengerMap);
+      }
+
+      // Reverse geocode
+      const address = await GreenRoute.utils.reverseGeocode(lat, lng);
+      if (elements.pickupInput) {
+        elements.pickupInput.value = address || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+
+      state.passengerMap.getContainer().style.cursor = '';
+      state.passengerMap.off('click', onMapClick);
+      showNotification('Location set manually', 'success');
+    };
+
+    state.passengerMap.on('click', onMapClick);
+  };
+
+  const updateTrackingList = (allVehicles) => {
+    if (!elements.trackingList || !elements.trackingVehiclesContainer) return;
+
+    if (!state.trackedDriverId) {
+      elements.trackingVehiclesContainer.style.display = 'none';
+      return;
+    }
+
+    const trackedVehicle = allVehicles.find(v => v.ride?.driverId === state.trackedDriverId);
+
+    if (!trackedVehicle) {
+      elements.trackingList.innerHTML = `
+        <div style="padding: 10px; text-align: center; opacity: 0.7;">
+          <p style="font-size: 12px; margin-bottom: 5px;">Driver is currently offline.</p>
+          <button id="stop-tracking-missing" style="color: var(--alert); background: none; border: none; cursor: pointer; text-decoration: underline; font-size: 11px;">Stop Tracking</button>
+        </div>
+      `;
+      elements.trackingVehiclesContainer.style.display = 'block';
+
+      document.getElementById('stop-tracking-missing')?.addEventListener('click', () => {
+        state.trackedDriverId = null;
+        state.trackedDriverData = null;
+        localStorage.removeItem('greenroute-tracked-driver-id');
+        updateTrackingList(allVehicles);
+      });
+      return;
+    }
+
+    elements.trackingVehiclesContainer.style.display = 'block';
+    elements.trackingList.innerHTML = `
+      <div class="tracking-card-v2">
+        <div style="position: absolute; top: 0; right: 0; width: 40px; height: 40px; background: var(--primary); opacity: 0.1; border-radius: 0 0 0 40px;"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
+          <div>
+            <div style="font-weight: 800; font-size: 14px; color: var(--text);">${trackedVehicle.driverName}</div>
+            <div style="font-size: 11px; color: var(--muted); margin-top: 2px;">${trackedVehicle.plate} • ${trackedVehicle.vehicleLabel}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-weight: 800; color: var(--primary); font-size: 16px; line-height: 1;">${trackedVehicle.etaText}</div>
+            <div style="font-size: 9px; color: var(--muted); text-transform: uppercase; margin-top: 4px;">ETA</div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+          <div style="font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px;">
+            <span style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${trackedVehicle.directionText}</span>
+          </div>
+          <button id="stop-tracking-btn" style="background: var(--alert); color: white; border: none; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; cursor: pointer; transition: transform 0.2s;">Stop</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('stop-tracking-btn')?.addEventListener('click', async () => {
+      try {
+        await window.api.stopTrackingDriver(state.passengerId, state.trackedDriverId);
+        state.trackedDriverId = null;
+        state.trackedDriverData = null;
+        localStorage.removeItem('greenroute-tracked-driver-id');
+        updateTrackingList(allVehicles);
+        updateDriverMarkers(true);
+      } catch (err) {
+        console.error('Stop tracking error:', err);
+      }
+    });
+  };
+
+  // Load passenger profile
+  const loadPassengerProfile = async () => {
+    const pId = state.passengerId || GreenRoute.utils.getStorage('userId');
+    if (!pId) {
+      console.warn('[Passenger] No passenger ID found in state or storage');
+      return;
+    }
+    
+    try {
+      console.log(`[Passenger] Loading profile for ID: ${pId}`);
+      const profile = await window.api.getProfile(pId);
+      console.log('[Passenger] Profile loaded:', profile);
+      
+      if (profile.name) {
+        state.passengerName = profile.name;
+        if (elements.passengerDisplayName) {
+          elements.passengerDisplayName.textContent = profile.name;
+        }
+      }
+      
+      const photo = profile.profilePhoto || profile.photo || profile.driverPhoto;
+      if (photo) {
+        state.passengerPhoto = photo;
+        if (elements.passengerProfilePhoto) {
+          elements.passengerProfilePhoto.src = photo;
+          console.log('[Passenger] Profile photo updated');
+        }
+      } else if (elements.passengerProfilePhoto) {
+        console.warn('[Passenger] No photo found in profile data');
+      }
+    } catch (err) {
+      console.error('[Passenger] Could not load profile:', err.message || err);
+    }
+  };
+
   const init = () => {
+    if (window.GreenRoutePassenger && window.GreenRoutePassenger.initialized) {
+      console.warn('[Passenger] App already initialized');
+      return;
+    }
+    
+    // UI elements initialization
+    elements = {
+      // Map
+      map: byIds('map', 'passenger-map'),
+
+      // Form elements
+      bookingForm: byIds('booking-form', 'pv2-booking-form'),
+      pickupInput: byIds('pickup-input', 'pv2-origin'),
+      destinationInput: byIds('destination-input', 'pv2-destination'),
+      rideTypeInput: byIds('ride-type-input'),
+      findRideBtn: byIds('find-ride-btn', 'pv2-find-ride'),
+      passengersCount: byIds('passengers-count', 'pv2-passenger-count'),
+
+      // Driver elements
+      driversPanel: byIds('drivers-panel', 'pv2-stats-pill'),
+      driversCount: byIds('drivers-count', 'pv2-stats-pill'),
+      nearbyVehicles: byIds('pv2-nearby-vehicles'),
+
+      // Check for nearby vehicles container
+      nearbyVehiclesContainer: document.getElementById('nearby-vehicles-container'),
+
+      // Active booking elements
+      activeRide: byIds('active-booking', 'pv2-active-trip-panel'),
+      driverName: byIds('driver-name', 'pv2-driver-name'),
+      driverPlate: byIds('pv2-driver-plate'),
+      driverPhoto: byIds('driver-photo', 'pv2-driver-photo'),
+      driverRating: byIds('driver-rating'),
+      driverTrips: byIds('driver-trips'),
+      rideStatus: byIds('ride-status'),
+      arrivalTime: byIds('arrival-time', 'pv2-live-eta'),
+      rideFare: byIds('ride-fare', 'pv2-live-fare'),
+      rideDistance: byIds('ride-distance'),
+
+      // Action buttons
+      cancelBtn: byIds('cancel-ride-btn', 'pv2-cancel-btn'),
+      contactDriverBtn: byIds('contact-driver-btn'),
+
+      // Navigation
+      mobileSignoutBtn: byIds('mobile-signout-btn', 'passenger-logout-mobile'),
+      bookingsLink: byIds('bookings-link'),
+      mobileBookingsLink: byIds('mobile-bookings-link'),
+      profileLink: byIds('profile-link'),
+      mobileProfileLink: byIds('mobile-profile-link'),
+
+      // Modals
+      bookingsModal: byIds('bookings-modal'),
+      profileModal: byIds('profile-modal'),
+      closeBookingsModal: byIds('close-bookings-modal'),
+      closeProfileModal: byIds('close-profile-modal'),
+
+      // Notification element
+      notification: byIds('notification'),
+      notificationMessage: byIds('notification-message'),
+      notificationClose: byIds('notification-close'),
+      desktopSignoutBtn: byIds('passenger-logout'),
+      sosButton: byIds('panic-button'),
+      pickOnMapBtn: byIds('pick-on-map-btn'),
+      trackingVehiclesContainer: byIds('tracking-vehicles-container'),
+      trackingList: byIds('tracking-list'),
+      plusBtn: byIds('plus-btn', 'pv2-plus'),
+      minusBtn: byIds('minus-btn', 'pv2-minus'),
+      modalTrackBtn: byIds('pv2-track-map'),
+      modalCancelBtn: byIds('pv2-cancel-modal'),
+      modalRetryBtn: byIds('pv2-try-different'),
+      passengerDisplayName: byIds('passenger-display-name', 'pv2-user-name'),
+      passengerProfilePhoto: byIds('passenger-profile-photo', 'pv2-user-photo')
+    };
+
+    // Restore tracking state
+    const savedTrackedId = localStorage.getItem('greenroute-tracked-driver-id');
+    if (savedTrackedId) {
+      state.trackedDriverId = savedTrackedId;
+    }
+
     // Load road routing system
     if (!window.RoadRouting) {
       const script = document.createElement('script');
-      script.src = '../../road-routing.js';
+      script.src = '/road-routing.js';
       script.defer = true;
       document.head.appendChild(script);
     }
-    
+
     initMap();
     getUserLocation();
-    
+    loadPassengerProfile();
+
     // Event listeners
     elements.bookingForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       findRide();
     });
-    
+
     elements.findRideBtn?.addEventListener('click', findRide);
     elements.cancelBtn?.addEventListener('click', cancelBooking);
     elements.contactDriverBtn?.addEventListener('click', handleContactDriver);
@@ -932,14 +1521,14 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.choice-btn[data-ride-type]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        
+
         // Update hidden input if exists
         if (elements.rideTypeInput) {
           elements.rideTypeInput.value = btn.dataset.rideType;
         }
       });
     });
-    
+
     // Quick route buttons
     document.querySelectorAll('[data-pv2-from][data-pv2-to]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -951,7 +1540,7 @@
         }
       });
     });
-    
+
     // Sign out buttons
     elements.mobileSignoutBtn?.addEventListener('click', handleSignOut);
     elements.desktopSignoutBtn?.addEventListener('click', (e) => {
@@ -959,7 +1548,51 @@
       handleSignOut();
     });
     elements.sosButton?.addEventListener('click', handleSOS);
-    
+    elements.pickOnMapBtn?.addEventListener('click', enableManualLocation);
+
+    // Stepper logic
+    const updateStepper = (delta) => {
+      if (!elements.passengersCount) return;
+      let count = parseInt(elements.passengersCount.value || elements.passengersCount.textContent || '1', 10) || 1;
+      count = Math.max(1, Math.min(10, count + delta));
+      if (elements.passengersCount.tagName === 'INPUT') {
+        elements.passengersCount.value = count;
+      } else {
+        elements.passengersCount.textContent = count;
+      }
+    };
+
+    elements.plusBtn?.addEventListener('click', () => updateStepper(1));
+    elements.minusBtn?.addEventListener('click', () => updateStepper(-1));
+
+    // Modal actions
+    elements.modalCancelBtn?.addEventListener('click', () => {
+      const modal = byIds('pv2-modal');
+      if (modal) modal.hidden = true;
+      cancelBooking();
+    });
+
+    elements.modalRetryBtn?.addEventListener('click', () => {
+      const modal = byIds('pv2-modal');
+      if (modal) modal.hidden = true;
+    });
+
+    elements.modalTrackBtn?.addEventListener('click', () => {
+      const modal = byIds('pv2-modal');
+      if (modal) modal.hidden = true;
+    });
+
+    // Quick Routes logic
+    document.querySelectorAll('[data-pv2-from]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const from = chip.getAttribute('data-pv2-from');
+        const to = chip.getAttribute('data-pv2-to');
+        if (elements.pickupInput && from) elements.pickupInput.value = from;
+        if (elements.destinationInput && to) elements.destinationInput.value = to;
+        showNotification(`Route set: ${from} to ${to}`, 'info');
+      });
+    });
+
     // Navigation links
     elements.bookingsLink?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -977,7 +1610,25 @@
       e.preventDefault();
       showNotification('Profile management coming soon', 'info');
     });
+
+    // Nearby vehicles collapse logic
+    const nearbyHeader = document.getElementById('nearby-vehicles-header');
+    const nearbyContainer = document.getElementById('nearby-vehicles-container');
+    const nearbyCollapseBtn = document.getElementById('nearby-collapse-btn');
     
+    if (nearbyHeader && nearbyContainer) {
+      nearbyHeader.addEventListener('click', () => {
+        const isCollapsed = nearbyContainer.style.maxHeight === '45px';
+        if (isCollapsed) {
+          nearbyContainer.style.maxHeight = '250px';
+          if (nearbyCollapseBtn) nearbyCollapseBtn.style.transform = 'rotate(0deg)';
+        } else {
+          nearbyContainer.style.maxHeight = '45px';
+          if (nearbyCollapseBtn) nearbyCollapseBtn.style.transform = 'rotate(180deg)';
+        }
+      });
+    }
+
     // Modal close buttons
     elements.closeBookingsModal?.addEventListener('click', () => {
       if (elements.bookingsModal) {
@@ -989,7 +1640,7 @@
         elements.profileModal.style.display = 'none';
       }
     });
-    
+
     // Notification close
     elements.notificationClose?.addEventListener('click', () => {
       if (elements.notification) {
@@ -999,9 +1650,25 @@
 
     // Restore any server-side active booking on load to avoid duplicate booking attempts.
     restoreActiveBooking(false);
-    
+
+    updateDriverMarkers();
+    if (state.nearbyVehiclesInterval) {
+      clearInterval(state.nearbyVehiclesInterval);
+    }
+    state.nearbyVehiclesInterval = setInterval(updateDriverMarkers, GreenRoute.config.pollingInterval);
+
+    window.GreenRoutePassenger = {
+      initialized: true,
+      findRide: findRide,
+      cancelBooking: cancelBooking
+    };
+
     window.addEventListener('beforeunload', () => {
       stopTracking();
+      if (state.nearbyVehiclesInterval) {
+        clearInterval(state.nearbyVehiclesInterval);
+        state.nearbyVehiclesInterval = null;
+      }
     });
   };
 

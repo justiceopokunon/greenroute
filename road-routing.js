@@ -162,7 +162,38 @@
     findNearestStop,
     getAllStops,
     areDirectlyConnected,
-    calculateDistance
+    calculateDistance,
+    getRoute: async (fromLat, fromLng, toLat, toLng) => {
+      const fromStop = findNearestStop(fromLat, fromLng);
+      const toStop = findNearestStop(toLat, toLng);
+      
+      if (!fromStop || !toStop) {
+        // Fallback to straight line if outside known network
+        return {
+          path: [[fromLat, fromLng], [toLat, toLng]],
+          distance: calculateDistance(fromLat, fromLng, toLat, toLng)
+        };
+      }
+      
+      const roadPath = getRoadPath(fromStop, toStop);
+      if (!roadPath) {
+        return {
+          path: [[fromLat, fromLng], [toLat, toLng]],
+          distance: calculateDistance(fromLat, fromLng, toLat, toLng)
+        };
+      }
+      
+      const coordsPath = roadPath.map(p => [p.lat, p.lng]);
+      
+      // Add precise start and end points
+      coordsPath.unshift([fromLat, fromLng]);
+      coordsPath.push([toLat, toLng]);
+      
+      return {
+        path: coordsPath,
+        distance: calculateRoadDistance(coordsPath)
+      };
+    }
   };
 
   console.log('Road routing system loaded');

@@ -108,7 +108,8 @@ router.post('/signup', async (req, res) => {
       });
     }
 
-    const existingUser = await get('SELECT id, role FROM users WHERE email = ?', [email.toLowerCase()]);
+    // Only conflict if an account with the same email AND same role exists
+    const existingUser = await get('SELECT id, role FROM users WHERE email = ? AND role = ?', [email.toLowerCase(), role]);
     if (existingUser) {
       const roleLabel = existingUser.role === 'driver' ? 'driver' : 'passenger';
       return res.status(409).json({
@@ -174,7 +175,7 @@ router.post('/signin', async (req, res) => {
 
     // Find user
     const user = await get(
-      'SELECT id, email, password, name, phone, role FROM users WHERE email = ? AND role = ?',
+      'SELECT id, email, password, name, phone, role, profilePhoto FROM users WHERE email = ? AND role = ?',
       [email.toLowerCase(), 'passenger']
     );
 
@@ -217,6 +218,7 @@ router.post('/signin', async (req, res) => {
       name: user.name,
       phone: user.phone,
       role: user.role,
+      profilePhoto: user.profilePhoto,
       sessionId: sessionId,
       message: 'Sign in successful'
     });
@@ -242,7 +244,7 @@ router.get('/:userId', async (req, res) => {
     }
 
     const user = await get(
-      'SELECT id, email, name, phone, role, createdAt FROM users WHERE id = ?',
+      'SELECT id, email, name, phone, role, profilePhoto, createdAt FROM users WHERE id = ?',
       [userId]
     );
 
@@ -314,7 +316,8 @@ router.post('/driver-signup', async (req, res) => {
     }
 
     // Check if an account already exists with this email
-    const existingUser = await get('SELECT id, role FROM users WHERE email = ?', [email.toLowerCase()]);
+    // Only conflict if an account with the same email AND role exists
+    const existingUser = await get('SELECT id, role FROM users WHERE email = ? AND role = ?', [email.toLowerCase(), 'driver']);
     if (existingUser) {
       const roleLabel = existingUser.role === 'driver' ? 'driver' : 'passenger';
       return res.status(409).json({
@@ -391,7 +394,7 @@ router.post('/driver-signin', async (req, res) => {
 
     // Find driver user
     const user = await get(
-      'SELECT id, email, password, name, phone, role FROM users WHERE email = ? AND role = ?',
+      'SELECT id, email, password, name, phone, role, profilePhoto FROM users WHERE email = ? AND role = ?',
       [email.toLowerCase(), 'driver']
     );
 
@@ -444,6 +447,7 @@ router.post('/driver-signin', async (req, res) => {
       name: user.name,
       phone: user.phone,
       role: user.role,
+      profilePhoto: user.profilePhoto,
       sessionId: sessionId,
       vehicle: driver ? {
         type: driver.vehicleType,

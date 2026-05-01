@@ -41,6 +41,12 @@ const api = {
     return response.json();
   },
 
+  getDriverProfile: async (driverId) => {
+    const response = await fetch(`${API_BASE}/rides/driver/${driverId}/profile`, addSessionHeader());
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+
   // Rides
   getAvailableRides: async () => {
     const response = await fetch(`${API_BASE}/rides/available`, addSessionHeader());
@@ -74,11 +80,11 @@ const api = {
     return response.json();
   },
 
-  updateRideSeats: async (rideId, availableSeats) => {
+  updateRideSeats: async (rideId, availableSeats, capacity) => {
     const response = await fetch(`${API_BASE}/rides/${rideId}/seats`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ availableSeats })
+      headers: addSessionHeader({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ availableSeats, capacity })
     });
     if (!response.ok) throw new Error(await response.text());
     return response.json();
@@ -140,7 +146,7 @@ const api = {
     try {
       const response = await fetch(`${API_BASE}/auth/signout`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'x-session-id': currentSessionId
         }
@@ -154,6 +160,35 @@ const api = {
     } catch {
       return null;
     }
+  },
+
+  // Driver tracking
+  startTrackingDriver: async (passengerId, driverId, latitude, longitude, destination, name, photo) => {
+    const response = await fetch(`${API_BASE}/rides/driver/${driverId}/track-start`, {
+      method: 'POST',
+      headers: addSessionHeader({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ passengerId, latitude, longitude, destination, name, photo })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+
+  stopTrackingDriver: async (passengerId, driverId) => {
+    const response = await fetch(`${API_BASE}/rides/driver/${driverId}/track-stop`, {
+      method: 'POST',
+      headers: addSessionHeader({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ passengerId })
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  },
+
+  getDriverTrackers: async (driverId) => {
+    const response = await fetch(`${API_BASE}/rides/driver/${driverId}/trackers`, {
+      headers: addSessionHeader()
+    });
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
   }
 };
 
@@ -178,9 +213,9 @@ Object.keys(api).forEach(key => {
     const originalMethod = api[key];
     api[key] = async (...args) => {
       // Add session header to fetch calls
-      if (args.length > 0 && typeof args[0] === 'object' && args[0].url) {
+      if (args.length > 0 && args[0] && typeof args[0] === 'object' && args[0].url) {
         args[0] = addSessionHeader(args[0]);
-      } else if (typeof args[0] === 'string' && args[0].startsWith(API_BASE)) {
+      } else if (args[0] && typeof args[0] === 'string' && args[0].startsWith(API_BASE)) {
         // For calls like fetch(url, options)
         const urlIndex = args.findIndex(arg => typeof arg === 'string' && arg.startsWith(API_BASE));
         const optionsIndex = urlIndex + 1;

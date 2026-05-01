@@ -1,0 +1,568 @@
+/**
+ * GreenRoute - Consolidated Stylesheet
+ * Combines app.css and app-responsive.css with improved organization
+ * Mobile-first responsive design approach
+ */
+
+/* ============================================================================
+   PART 1: IMPORTS & CSS RESET
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+/* CSS Reset and normalization */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding-top: 64px;
+  overflow-x: hidden;
+}
+
+/* ============================================================================
+   PART 2: DESIGN TOKENS & THEME VARIABLES
+   ============================================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* Fonts */
+  --font-body: 'Manrope', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'Space Grotesk', 'Manrope', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'Courier New', monospace;
+
+  /* Colors - Dark Theme (default) */
+  --bg: #0d0d0d;
+  --bg-2: #141414;
+  --panel: rgba(29, 29, 29, 0.94);
+  --panel-2: rgba(38, 38, 38, 0.94);
+  --panel-3: rgba(21, 21, 21, 0.95);
+  --line: rgba(255, 255, 255, 0.06);
+  --text: #e7ebe5;
+  --muted: #8c938b;
+  --muted-strong: #bfc6bb;
+
+  /* Primary Colors */
+  --primary: #5ce07a;
+  --primary-deep: #20b954;
+  --primary-soft: rgba(92, 224, 122, 0.18);
+
+  /* Secondary Colors */
+  --accent: #1a7c45;
+  --alert: #FF6B6B;
+  --alert-soft: rgba(255, 107, 107, 0.1);
+  --warning: #FFA500;
+  --warning-soft: rgba(255, 165, 0, 0.1);
+  --success: #5ce07a;
+  --success-soft: rgba(92, 224, 122, 0.1);
+  --info: #3b82f6;
+  --info-soft: rgba(59, 130, 246, 0.1);
+
+  /* Sizing & Spacing */
+  --btn-height: 46px;
+  --btn-height-compact: 40px;
+  --btn-height-touch: 48px;
+  --btn-pad-x: 16px;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 14px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 30px;
+
+  /* Effects */
+  --blur: 22px;
+  --shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.35);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-index scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+}
+
+/* Light Theme */
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f3f6ef;
+  --bg-2: #e8efe4;
+  --panel: rgba(255, 255, 255, 0.9);
+  --panel-2: rgba(246, 249, 243, 0.96);
+  --panel-3: rgba(236, 241, 232, 0.98);
+  --line: rgba(19, 24, 16, 0.1);
+  --text: #121812;
+  --muted: #616a5f;
+  --muted-strong: #263026;
+  --primary: #179d47;
+  --primary-deep: #0f8237;
+  --primary-soft: rgba(23, 157, 71, 0.1);
+  --accent: #18793f;
+  --alert: #E74C3C;
+  --alert-soft: rgba(231, 76, 60, 0.1);
+  --shadow: 0 18px 45px rgba(26, 34, 22, 0.1);
+}
+
+/* ============================================================================
+   PART 3: BASE STYLES & TYPOGRAPHY
+   ============================================================================ */
+
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-2);
+  min-height: 100vh;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+  color: var(--text);
+}
+
+h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.5rem, 4vw, 2rem); }
+h3 { font-size: clamp(1.25rem, 3.5vw, 1.75rem); }
+h4 { font-size: clamp(1.1rem, 3vw, 1.5rem); }
+h5 { font-size: clamp(1rem, 2.5vw, 1.25rem); }
+h6 { font-size: clamp(0.875rem, 2vw, 1.1rem); }
+
+p {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  margin-bottom: 1rem;
+  line-height: 1.7;
+}
+
+small { font-size: 0.875em; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+
+/* Links */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+a:hover {
+  color: var(--primary-deep);
+  text-decoration: underline;
+}
+
+/* Code blocks */
+code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  color: var(--primary);
+}
+
+pre {
+  background: var(--panel);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  line-height: 1.4;
+}
+
+/* ============================================================================
+   PART 4: FORM ELEMENTS
+   ============================================================================ */
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  color: var(--text);
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+button {
+  cursor: pointer;
+  background: var(--primary);
+  color: #000;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  transition: var(--transition);
+  min-height: var(--btn-height-compact);
+}
+
+button:hover {
+  background: var(--primary-deep);
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   PART 5: LAYOUT & CONTAINER SYSTEM
+   ============================================================================ */
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.container-sm { max-width: 640px; }
+.container-md { max-width: 768px; }
+.container-lg { max-width: 1024px; }
+.container-xl { max-width: 1280px; }
+
+/* Flexbox utilities */
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-around { justify-content: space-around; }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+/* Grid system */
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.grid-cols-1 { grid-template-columns: 1fr; }
+.grid-cols-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+
+/* Stack layouts */
+.stack-horizontal {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.stack-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ============================================================================
+   PART 6: COMPONENTS
+   ============================================================================ */
+
+/* SVG Icons */
+svg.icon-xs { width: 1rem; height: 1rem; display: inline-block; }
+svg.icon-sm { width: 1.25rem; height: 1.25rem; display: inline-block; vertical-align: middle; margin-right: 0.5rem; color: var(--primary); }
+svg.icon-md { width: 1.5rem; height: 1.5rem; display: inline-block; vertical-align: middle; }
+svg.icon-lg { width: 2rem; height: 2rem; display: inline-block; }
+.btn-icon svg { width: 1.25rem; height: 1.25rem; }
+
+/* Cards & Panels */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: var(--transition);
+}
+
+.card:hover {
+  border-color: var(--primary-soft);
+  box-shadow: var(--shadow-md);
+}
+
+.card-compact {
+  padding: 1rem;
+}
+
+.panel {
+  background: var(--panel);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--primary-soft);
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-primary { background: var(--primary-soft); color: var(--primary); }
+.badge-success { background: var(--success-soft); color: var(--success); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); }
+.badge-alert { background: var(--alert-soft); color: var(--alert); }
+
+/* Alert messages */
+.alert {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+  margin-bottom: 1rem;
+}
+
+.alert-primary { background: var(--primary-soft); border-left-color: var(--primary); }
+.alert-success { background: var(--success-soft); border-left-color: var(--success); }
+.alert-warning { background: var(--warning-soft); border-left-color: var(--warning); }
+.alert-error { background: var(--alert-soft); border-left-color: var(--alert); }
+
+/* ============================================================================
+   PART 7: RESPONSIVE BREAKPOINTS
+   ============================================================================ */
+
+/* Extra Small (320px) - Mobile phones */
+@media (max-width: 479px) {
+  html { font-size: 14px; }
+  body { padding-top: 56px; }
+  .grid-cols-2 { grid-template-columns: 1fr; }
+  .grid-cols-3 { grid-template-columns: 1fr; }
+  .grid-cols-4 { grid-template-columns: 1fr; }
+}
+
+/* Small (480px) - Larger phones */
+@media (min-width: 480px) and (max-width: 639px) {
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: 1fr; }
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Medium (640px) - Tablets portrait */
+@media (min-width: 640px) and (max-width: 767px) {
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+  .stack-horizontal { flex-wrap: wrap; }
+}
+
+/* Large (768px) - Tablets landscape & small desktops */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Extra Large (1024px) - Desktops */
+@media (min-width: 1024px) {
+  .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* 2XL (1440px) - Large desktops */
+@media (min-width: 1440px) {
+  .container { max-width: 1400px; }
+}
+
+/* ============================================================================
+   PART 8: UTILITY CLASSES
+   ============================================================================ */
+
+/* Spacing utilities */
+.m-0 { margin: 0; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.mb-xs { margin-bottom: var(--space-xs); }
+.mb-sm { margin-bottom: var(--space-sm); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.mb-xl { margin-bottom: var(--space-xl); }
+
+.p-0 { padding: 0; }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.px-md { padding-left: var(--space-md); padding-right: var(--space-md); }
+.py-md { padding-top: var(--space-md); padding-bottom: var(--space-md); }
+
+/* Display utilities */
+.hidden { display: none !important; }
+.visible { display: block !important; }
+.invisible { visibility: hidden; }
+
+.d-none { display: none; }
+.d-block { display: block; }
+.d-flex { display: flex; }
+.d-inline { display: inline; }
+.d-inline-block { display: inline-block; }
+.d-grid { display: grid; }
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-justify { text-align: justify; }
+
+.text-primary { color: var(--primary); }
+.text-muted { color: var(--muted); }
+.text-muted-strong { color: var(--muted-strong); }
+.text-alert { color: var(--alert); }
+.text-success { color: var(--success); }
+
+.font-bold { font-weight: 700; }
+.font-semi { font-weight: 600; }
+.font-medium { font-weight: 500; }
+.font-normal { font-weight: 400; }
+
+.line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+/* Opacity utilities */
+.opacity-50 { opacity: 0.5; }
+.opacity-75 { opacity: 0.75; }
+.opacity-100 { opacity: 1; }
+
+/* Shadows */
+.shadow-none { box-shadow: none; }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* Border utilities */
+.border-none { border: none; }
+.border-thin { border: 1px solid var(--line); }
+.border-top { border-top: 1px solid var(--line); }
+.border-bottom { border-bottom: 1px solid var(--line); }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* Position */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; top: 0; z-index: var(--z-sticky); }
+
+/* Sizing */
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+
+/* ============================================================================
+   PART 9: PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  body { background: #fff; color: #000; }
+  .no-print { display: none; }
+  a { text-decoration: underline; }
+  button { display: none; }
+}
+
+/* ============================================================================
+   PART 10: ACCESSIBILITY
+   ============================================================================ */
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: more) {
+  --line: rgba(255, 255, 255, 0.2);
+  button { border: 2px solid var(--text); }
+}

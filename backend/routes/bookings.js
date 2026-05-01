@@ -71,6 +71,14 @@ router.post('/create', async (req, res) => {
       }
     ]);
 
+    // Get driver details for the response
+    const driverDetails = await get(`
+      SELECT u.name as driverName, u.profilePhoto as driverPhoto, d.licensePlate 
+      FROM drivers d 
+      JOIN users u ON d.userId = u.id 
+      WHERE d.id = ?
+    `, [ride.driverId]);
+
     res.status(201).json({ 
       id: bookingId, 
       message: 'Booking confirmed successfully',
@@ -78,7 +86,9 @@ router.post('/create', async (req, res) => {
       passengerId,
       fare: totalFare,
       seats: seatsNum,
-      driverName: ride.driverName || 'Driver'
+      driverName: driverDetails?.driverName || 'Driver',
+      driverPhoto: driverDetails?.driverPhoto || null,
+      licensePlate: driverDetails?.licensePlate || 'N/A'
     });
   } catch (err) {
     console.error('Create booking error:', err);

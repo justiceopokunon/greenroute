@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Green Route | Driver</title>
   <meta name="description" content="Driver dashboard for managing routes and seats." />
   <link rel="stylesheet" href="../css/app.css" />
+  <link rel="stylesheet" href="../css/app-responsive.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script defer src="../api.js"></script>
@@ -14,6 +16,7 @@
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
 </head>
+
 <body class="driver-page focus-page">
   <header class="top-navbar">
     <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
@@ -45,10 +48,14 @@
     <aside class="driver-sidebar" aria-label="Driver controls">
       <section class="driver-panel driver-identity" aria-label="Driver identity">
         <div class="driver-identity-row">
-          <div class="driver-avatar" aria-hidden="true">DO</div>
+          <div class="driver-avatar">
+            <img id="driver-profile-photo" src="../assets/default-driver.svg" alt="Profile">
+          </div>
           <div>
-            <strong id="driver-display-name">Driver Opoku</strong>
-            <p class="driver-muted">Ready for dispatch</p>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong id="driver-display-name">Driver Opoku</strong>
+            </div>
+            <p id="driver-status-text" class="driver-muted">Ready for dispatch</p>
           </div>
         </div>
         <label class="driver-switch-row" for="driver-online-switch">
@@ -63,8 +70,10 @@
       <section id="driver-setup-panel" class="driver-panel" aria-label="Route setup">
         <h2 class="driver-panel-title">Route Setup</h2>
         <div class="service-toggle" role="group" aria-label="Driver service mode">
-          <button class="service-toggle-btn active" type="button" data-driver-service-mode="trotro" aria-pressed="true">Trotro</button>
-          <button class="service-toggle-btn" type="button" data-driver-service-mode="taxi" aria-pressed="false">Taxi</button>
+          <button class="service-toggle-btn active" type="button" data-driver-service-mode="trotro"
+            aria-pressed="true">Trotro</button>
+          <button class="service-toggle-btn" type="button" data-driver-service-mode="taxi"
+            aria-pressed="false">Taxi</button>
           <span class="mini-pill" id="driver-service-mode-pill">Trotro mode</span>
         </div>
         <label class="field">
@@ -85,7 +94,7 @@
         </label>
         <label class="field">
           <span>Total Seats</span>
-          <input id="driver-vehicle-capacity" type="number" min="1" max="20" value="14" readonly />
+          <input id="driver-vehicle-capacity" type="number" min="1" max="60" value="14" />
         </label>
         <label class="field">
           <span>Fare per person (GHS)</span>
@@ -96,9 +105,14 @@
       <section id="driver-live-panel" class="driver-panel" aria-label="Live route stats" hidden>
         <h2 class="driver-panel-title">Live Stats</h2>
         <div class="driver-live-grid">
-          <div class="driver-stat-item">
-            <small>Seats Available</small>
-            <strong id="driver-available-seats">0</strong>
+          <div class="driver-stat-item" style="grid-column: span 2;">
+            <small>Seats (Left / Total)</small>
+            <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+              <strong id="driver-available-seats">0</strong>
+              <span style="opacity: 0.3; font-weight: 300; font-size: 1.2em;">/</span>
+              <strong id="driver-total-capacity" style="opacity: 0.6;">0</strong>
+              <button id="update-capacity-btn" type="button" class="mini-pill" style="border: none; cursor: pointer; background: var(--primary-deep); color: var(--primary); padding: 4px 10px; font-size: 10px; margin-left: 4px;">Edit Total</button>
+            </div>
           </div>
           <div class="driver-stat-item">
             <small>Riders Onboard</small>
@@ -106,11 +120,21 @@
           </div>
           <div class="driver-stat-item">
             <small>Current Stop</small>
-            <strong id="next-stop">-</strong>
+            <div style="display: flex; align-items: center; gap: 8px; justify-content: center;">
+              <strong id="next-stop">Origin</strong>
+              <button id="next-stop-btn" type="button" class="mini-pill" style="border: none; cursor: pointer; background: var(--primary-deep); color: var(--primary); padding: 4px 10px; font-size: 10px;">Next</button>
+            </div>
           </div>
           <div class="driver-stat-item">
             <small>Fare Total</small>
             <strong id="driver-fare-total">GHS 0.00</strong>
+          </div>
+          <div class="driver-stat-item" id="tracking-stat-item" hidden>
+            <small>Tracking You</small>
+            <div style="display: flex; align-items: center; gap: 8px; justify-content: center;">
+              <strong id="tracking-count-display">0</strong>
+              <button id="focus-trackers-btn" type="button" class="mini-pill" style="border: none; cursor: pointer; background: var(--primary-soft); color: var(--primary); padding: 4px 10px; font-size: 10px;">Focus</button>
+            </div>
           </div>
         </div>
         <div class="driver-live-actions">
@@ -145,7 +169,8 @@
 
     <section class="driver-map-stage" aria-label="Driver awareness map">
       <div id="driver-map" class="driver-map-canvas"></div>
-      <button id="driver-recenter-btn" class="driver-recenter-btn" type="button" aria-label="Recenter to current location">
+      <button id="driver-recenter-btn" class="driver-recenter-btn" type="button"
+        aria-label="Recenter to current location">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"></path>
@@ -153,13 +178,20 @@
         Recenter
       </button>
       <div class="driver-legend-pill" id="driver-legend-pill">
-        <button id="driver-legend-toggle" type="button" class="ghost">Demand Legend</button>
+        <button id="driver-legend-toggle" type="button" class="ghost">
+          <span>Demand Legend</span>
+          <svg id="legend-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.3s;">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
         <div id="driver-legend-content" class="driver-legend-content">
-          <span><i class="legend-dot red"></i> Red = high demand</span>
-          <span><i class="legend-dot green"></i> Green = moderate</span>
+          <span><i class="legend-dot red"></i> High Demand</span>
+          <span><i class="legend-dot yellow"></i> Moderate Demand</span>
+          <span><i class="legend-dot blue"></i> Low Demand</span>
         </div>
       </div>
     </section>
   </main>
 </body>
+
 </html>

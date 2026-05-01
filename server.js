@@ -175,50 +175,50 @@ app.use((err, req, res, next) => {
 // Start server
 const startServer = async () => {
   try {
-    console.log('🚀 Starting GreenRoute server...');
+    console.log('Starting GreenRoute server...');
     
     // Initialize database with better error handling
-    console.log('📊 Initializing database...');
+    console.log('Initializing database...');
     try {
       await initDB();
-      console.log('✅ Database initialized successfully');
+      console.log('Database initialized successfully');
     } catch (dbError) {
-      console.warn('⚠️  Database initialization failed:', dbError.message);
-      console.log('🔄 Continuing server startup without database...');
+      console.warn('Database initialization failed:', dbError.message);
+      console.log('Continuing server startup without database...');
     }
     
     const server = app.listen(PORT, () => {
-      console.log(`🌐 Server running on http://localhost:${PORT}`);
-      console.log(`📍 Frontend: http://localhost:${PORT}`);
-      console.log(`📍 API: http://localhost:${PORT}/api`);
-      console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Frontend: http://localhost:${PORT}`);
+      console.log(`API: http://localhost:${PORT}/api`);
+      console.log(`Health check: http://localhost:${PORT}/api/health`);
       console.log('');
-      console.log('🎯 GreenRoute is ready!');
+      console.log('GreenRoute is ready!');
     });
 
     server.on('error', (err) => {
-      console.error('❌ Server error:', err);
+      console.error('Server error:', err);
       if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use. Please kill the process or use a different port.`);
+        console.error(`Port ${PORT} is already in use. Please kill the process or use a different port.`);
       }
       process.exit(1);
     });
 
     return server;
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 
@@ -226,17 +226,17 @@ startServer();
 
 // Handle shutdown gracefully
 const gracefulShutdown = async (signal) => {
-  console.log(`\n🔄 Received ${signal}. Starting graceful shutdown...`);
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
   
   try {
     // Close database connection
     await close();
-    console.log('✅ Database connection closed');
+    console.log('Database connection closed');
     
-    console.log('✅ Graceful shutdown completed');
+    console.log('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during shutdown:', error);
+    console.error('Error during shutdown:', error);
     process.exit(1);
   }
 };

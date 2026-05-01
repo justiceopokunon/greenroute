@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,6 +17,7 @@
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <link rel="icon" type="image/x-icon" href="../assets/favicon.ico" />
 </head>
+
 <body class="focus-page passenger-focus-page">
   <header class="top-navbar">
     <a class="navbar-brand" href="./index.html" aria-label="Green Route home">
@@ -45,51 +47,45 @@
   </nav>
 
   <main class="focus-shell passenger-focus-shell">
-      <aside class="sidebar-card surface focus-sidebar passenger-focus-sidebar">
-        <div class="brand-link focus-brand" aria-label="Green Route brand">
-          <span class="brand-mark">GR</span>
-        </div>
-
-        <section class="stack-block">
-          <div class="section-head compact">
-            <span class="eyebrow">Book Your Ride</span>
-            <h2>Where to?</h2>
+    <aside class="sidebar-card surface focus-sidebar passenger-focus-sidebar">
+      <section class="stack-block passenger-identity">
+        <div class="driver-identity-row">
+          <div class="driver-avatar">
+            <img id="passenger-profile-photo" src="../assets/default-passenger.svg" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
           </div>
+          <div>
+            <strong id="passenger-display-name">Justice Opoku</strong>
+            <p class="driver-muted">Regular Rider</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="stack-block">
+        <div class="section-head compact">
+          <span class="eyebrow">Book Your Ride</span>
+          <h2>Where to?</h2>
+        </div>
         <form id="booking-form" class="stack-block">
           <div class="fields">
             <div class="field">
               <span>Pickup Location</span>
-              <input 
-                type="text" 
-                id="pickup-input" 
-                name="pickup" 
-                placeholder="Enter pickup location"
-                autocomplete="off"
-                required
-              />
+              <input type="text" id="pickup-input" name="pickup" placeholder="Enter pickup location" autocomplete="off"
+                required />
             </div>
             <div class="field">
               <span>Destination</span>
-              <input 
-                type="text" 
-                id="destination-input" 
-                name="destination" 
-                placeholder="Where are you going?"
-                autocomplete="off"
-                required
-              />
+              <input type="text" id="destination-input" name="destination" placeholder="Where are you going?"
+                autocomplete="off" required />
             </div>
           </div>
 
           <div class="choice-grid">
             <input type="hidden" name="rideType" id="ride-type-input" value="taxi" />
             <button type="button" class="choice-btn active" data-ride-type="taxi">
-              <span>🚗</span>
               <strong>Taxi</strong>
               <small>Quick and affordable</small>
             </button>
             <button type="button" class="choice-btn" data-ride-type="trotro">
-              <span>🚐</span>
               <strong>Trotro</strong>
               <small>Shared ride, best value</small>
             </button>
@@ -127,6 +123,12 @@
           <span id="drivers-count">0 drivers nearby</span>
         </div>
 
+        <!-- Nearby Vehicles List with Track Buttons -->
+        <div id="nearby-vehicles-container" class="driver-floating-card surface"
+          style="display: none; max-height: 300px; overflow-y: auto; position: absolute; bottom: 20px; left: 20px; right: 20px; z-index: 1000; padding: 15px;">
+          <div id="pv2-nearby-vehicles"></div>
+        </div>
+
         <!-- Active Booking Panel -->
         <div id="active-booking" class="driver-floating-card surface" style="display: none;">
           <div class="section-head">
@@ -137,11 +139,21 @@
             <img id="driver-photo" src="" alt="Driver" class="driver-avatar">
             <div>
               <h4 id="driver-name">-</h4>
-              <p id="driver-rating">⭐ 4.5</p>
+              <p id="pv2-driver-plate" class="passenger-v2-sub">Plate: -</p>
+              <p id="driver-rating" style="display: flex; align-items: center; gap: 4px;">
+                <svg class="icon-xs" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span>4.5</span>
+              </p>
               <p id="driver-trips">• 234 trips</p>
             </div>
           </div>
           <div class="ride-progress">
+            <div class="progress-item">
+              <span class="progress-label">Fare</span>
+              <strong id="pv2-live-fare">GHS 0.00</strong>
+            </div>
             <div class="progress-item">
               <span class="progress-label">ETA</span>
               <span id="arrival-time">5 min</span>
@@ -210,5 +222,6 @@
     </div>
   </div>
 
-  </body>
+</body>
+
 </html>
