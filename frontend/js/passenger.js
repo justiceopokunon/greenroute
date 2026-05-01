@@ -530,16 +530,39 @@
         // Create/update marker
         if (!state.driverMarkers.has(ride.driverId)) {
           if (state.passengerMap) {
-            const marker = L.marker([ride.latitude, ride.longitude], { icon: createDriverMarker(ride) }).addTo(state.passengerMap);
-            const popupContent = `<div style="min-width: 220px; font-family: system-ui;"><strong style="color: #1f2937; font-size: 14px;">${ride.driverName || 'Driver'}</strong><br><div style="margin:4px 0;"><span style="color:#6b7280;">Plate:</span> <span style="font-weight:600;">${ride.licensePlate || 'N/A'}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">Type:</span> <span style="font-weight:600;">${vehicleLabel}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">Route:</span> <span style="font-weight:600;">${directionText}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">ETA:</span> <span style="font-weight:600;">${etaText}</span></div></div>`;
-            marker.bindPopup(popupContent);
-            state.driverMarkers.set(ride.driverId, marker);
-          }
-        } else {
-          const marker = state.driverMarkers.get(ride.driverId);
-          marker.setLatLng([ride.latitude, ride.longitude]);
-          marker.getPopup()?.setContent(`<div style="min-width: 220px; font-family: system-ui;"><strong style="color: #1f2937; font-size: 14px;">${ride.driverName || 'Driver'}</strong><br><div style="margin:4px 0;"><span style="color:#6b7280;">Plate:</span> <span style="font-weight:600;">${ride.licensePlate || 'N/A'}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">Type:</span> <span style="font-weight:600;">${vehicleLabel}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">Route:</span> <span style="font-weight:600;">${directionText}</span></div><div style="margin:4px 0;"><span style="color:#6b7280;">ETA:</span> <span style="font-weight:600;">${etaText}</span></div></div>`);
+          const marker = L.marker([ride.latitude, ride.longitude], { icon: createDriverMarker(ride) }).addTo(state.passengerMap);
+          const popupContent = `
+            <div style="min-width: 220px; font-family: system-ui; display: flex; gap: 12px; align-items: center;">
+              <div style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary); flex-shrink: 0;">
+                <img src="${ride.driverPhoto || '../assets/default-driver.svg'}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='../assets/default-driver.svg'">
+              </div>
+              <div style="flex-grow: 1;">
+                <strong style="color: #1f2937; font-size: 14px;">${ride.driverName || 'Driver'}</strong>
+                <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">Plate:</span> <span style="font-weight: 600;">${ride.licensePlate || 'N/A'}</span></div>
+                <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">Type:</span> <span style="font-weight: 600;">${vehicleLabel}</span></div>
+                <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">ETA:</span> <span style="font-weight: 600;">${etaText}</span></div>
+              </div>
+            </div>`;
+          marker.bindPopup(popupContent);
+          state.driverMarkers.set(ride.driverId, marker);
         }
+      } else {
+        const marker = state.driverMarkers.get(ride.driverId);
+        marker.setLatLng([ride.latitude, ride.longitude]);
+        const popupContent = `
+          <div style="min-width: 220px; font-family: system-ui; display: flex; gap: 12px; align-items: center;">
+            <div style="width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 2px solid var(--primary); flex-shrink: 0;">
+              <img src="${ride.driverPhoto || '../assets/default-driver.svg'}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='../assets/default-driver.svg'">
+            </div>
+            <div style="flex-grow: 1;">
+              <strong style="color: #1f2937; font-size: 14px;">${ride.driverName || 'Driver'}</strong>
+              <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">Plate:</span> <span style="font-weight: 600;">${ride.licensePlate || 'N/A'}</span></div>
+              <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">Type:</span> <span style="font-weight: 600;">${vehicleLabel}</span></div>
+              <div style="margin: 2px 0; font-size: 12px;"><span style="color: #6b7280;">ETA:</span> <span style="font-weight: 600;">${etaText}</span></div>
+            </div>
+          </div>`;
+        marker.getPopup()?.setContent(popupContent);
+      }
 
         nearbyVehicleRows.push({
           driverName: ride.driverName || 'Driver',
