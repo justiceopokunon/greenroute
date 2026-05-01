@@ -1,227 +1,193 @@
 const path = require('path');
+const { Pool } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
 
-const dbPath = path.join(__dirname, 'data/greenroute.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err);
-  }
-});
+// Connection logic: Use PostgreSQL if DATABASE_URL is present (e.g., Supabase/Railway)
+// Otherwise fallback to local SQLite for development
+const isPostgres = !!process.env.DATABASE_URL;
+let db;
+let pool;
 
-const initDB = () => {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      // Ensure users table exists and supports multiple accounts per email if roles differ.
-      // We'll create or migrate the table so that `email` is NOT globally UNIQUE,
-      // and instead enforce uniqueness on (email, role).
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS users (
-          id TEXT PRIMARY KEY,
-          email TEXT NOT NULL,
-          password TEXT NOT NULL,
-          name TEXT NOT NULL,
-          role TEXT NOT NULL CHECK(role IN ('passenger', 'driver')),
-          phone TEXT,
-          profilePhoto TEXT,
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      // Create a unique index on (email, role) to allow same email across different roles
-      db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
-
-      // Migrate existing DB if it had a single-column unique constraint on email
-      db.all("PRAGMA index_list('users')", (err, indexes) => {
-        if (err || !indexes) return;
-
-        const emailUniqueIndex = indexes.find(idx => idx.unique === 1);
-        if (!emailUniqueIndex) return;
-
-        // Check if the unique index is on the single column 'email'
-        db.all(`PRAGMA index_info(${emailUniqueIndex.name})`, (err2, cols) => {
-          if (err2 || !cols) return;
-          if (cols.length === 1 && cols[0].name === 'email') {
-            // Perform migration: recreate table without single-column unique on email
-            db.serialize(() => {
-              db.run('BEGIN TRANSACTION');
-              db.run(`
-                CREATE TABLE IF NOT EXISTS users_new (
-                  id TEXT PRIMARY KEY,
-                  email TEXT NOT NULL,
-                  password TEXT NOT NULL,
-                  name TEXT NOT NULL,
-                  role TEXT NOT NULL CHECK(role IN ('passenger', 'driver')),
-                  phone TEXT,
-                  profilePhoto TEXT,
-                  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-              `);
-              db.run(`INSERT OR IGNORE INTO users_new (id, email, password, name, role, phone, profilePhoto, createdAt) SELECT id, email, password, name, role, phone, profilePhoto, createdAt FROM users`);
-              db.run('DROP TABLE users');
-              db.run('ALTER TABLE users_new RENAME TO users');
-              db.run('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)');
-              db.run('COMMIT');
-            });
-          }
-        });
-      });
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS drivers (
-          id TEXT PRIMARY KEY,
-          userId TEXT NOT NULL,
-          vehicleType TEXT,
-          licensePlate TEXT,
-          vehicleModel TEXT,
-          rating REAL DEFAULT 0,
-          trustScore REAL DEFAULT 0,
-          isOnline BOOLEAN DEFAULT 0,
-          latitude REAL,
-          longitude REAL,
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updatedAt DATETIME,
-          FOREIGN KEY (userId) REFERENCES users (id)
-        )
-      `);
-
-      // Ensure existing databases have the updatedAt column on drivers
-      db.all("PRAGMA table_info(drivers)", (err, cols) => {
-        if (err || !cols) return;
-        const hasUpdatedAt = cols.some(c => c && c.name === 'updatedAt');
-        if (!hasUpdatedAt) {
-          // Add updatedAt column if it doesn't exist
-          db.run('ALTER TABLE drivers ADD COLUMN updatedAt DATETIME', (alterErr) => {
-            if (alterErr) {
-              // Not critical; log and continue
-              console.warn('Could not add updatedAt column to drivers table:', alterErr.message || alterErr);
-            }
-          });
-        }
-      });
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS rides (
-          id TEXT PRIMARY KEY,
-          driverId TEXT NOT NULL,
-          origin TEXT NOT NULL,
-          destination TEXT NOT NULL,
-          fare REAL NOT NULL,
-          seats INTEGER NOT NULL,
-          capacity INTEGER NOT NULL,
-          status TEXT DEFAULT 'available',
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (driverId) REFERENCES drivers (id)
-        )
-      `);
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS bookings (
-          id TEXT PRIMARY KEY,
-          rideId TEXT NOT NULL,
-          passengerId TEXT NOT NULL,
-          status TEXT DEFAULT 'pending',
-          passengerLat REAL,
-          passengerLon REAL,
-          fare REAL,
-          seats INTEGER,
-          createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (rideId) REFERENCES rides (id),
-          FOREIGN KEY (passengerId) REFERENCES users (id)
-        )
-      `, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+if (isPostgres) {
+  console.log('Using PostgreSQL database');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for most cloud DBs
   });
+} else {
+  console.log('Using local SQLite database');
+  const dbPath = path.join(__dirname, 'data/greenroute.db');
+  db = new sqlite3.Database(dbPath, (err) => {
+    if (err) console.error('Error opening SQLite database:', err);
+  });
+}
+
+// Helper to convert SQLite '?' placeholders to Postgres '$1, $2'
+const convertSql = (sql) => {
+  if (!isPostgres) return sql;
+  let count = 1;
+  return sql.replace(/\?/g, () => `$${count++}`);
+};
+
+const initDB = async () => {
+  const schema = [
+    `CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      password TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      phone TEXT,
+      profilePhoto TEXT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS drivers (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      vehicleType TEXT,
+      licensePlate TEXT,
+      vehicleModel TEXT,
+      rating REAL DEFAULT 0,
+      trustScore REAL DEFAULT 0,
+      isOnline BOOLEAN DEFAULT false,
+      latitude REAL,
+      longitude REAL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updatedAt TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users (id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS rides (
+      id TEXT PRIMARY KEY,
+      driverId TEXT NOT NULL,
+      origin TEXT NOT NULL,
+      destination TEXT NOT NULL,
+      fare REAL NOT NULL,
+      seats INTEGER NOT NULL,
+      capacity INTEGER NOT NULL,
+      status TEXT DEFAULT 'available',
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (driverId) REFERENCES drivers (id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS bookings (
+      id TEXT PRIMARY KEY,
+      rideId TEXT NOT NULL,
+      passengerId TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      passengerLat REAL,
+      passengerLon REAL,
+      fare REAL,
+      seats INTEGER,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (rideId) REFERENCES rides (id),
+      FOREIGN KEY (passengerId) REFERENCES users (id)
+    )`
+  ];
+
+  for (const sql of schema) {
+    await run(sql);
+  }
+
+  // Create unique index for email/role
+  try {
+    if (isPostgres) {
+      await run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
+    } else {
+      await run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_role ON users(email, role)`);
+    }
+  } catch (e) {
+    // Index might already exist
+  }
 };
 
 const run = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ id: this.lastID, changes: this.changes });
+  const finalSql = convertSql(sql);
+  if (isPostgres) {
+    return pool.query(finalSql, params).then(res => ({ id: null, changes: res.rowCount }));
+  } else {
+    return new Promise((resolve, reject) => {
+      db.run(finalSql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ id: this.lastID, changes: this.changes });
+      });
     });
-  });
+  }
 };
 
 const get = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
+  const finalSql = convertSql(sql);
+  if (isPostgres) {
+    return pool.query(finalSql, params).then(res => res.rows[0]);
+  } else {
+    return new Promise((resolve, reject) => {
+      db.get(finalSql, params, (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
     });
-  });
+  }
 };
 
 const all = (sql, params = []) => {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
+  const finalSql = convertSql(sql);
+  if (isPostgres) {
+    return pool.query(finalSql, params).then(res => res.rows);
+  } else {
+    return new Promise((resolve, reject) => {
+      db.all(finalSql, params, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
     });
-  });
+  }
 };
 
 const transaction = async (operations) => {
-  return new Promise((resolve, reject) => {
-    db.serialize(() => {
-      db.run('BEGIN TRANSACTION', (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        let completed = 0;
-        const total = operations.length;
-
-        operations.forEach(({ sql, params = [] }, index) => {
-          db.run(sql, params, function(err) {
-            if (err) {
-              db.run('ROLLBACK');
-              reject(err);
-              return;
-            }
-
-            completed++;
-            if (completed === total) {
-              db.run('COMMIT', (commitErr) => {
-                if (commitErr) {
-                  reject(commitErr);
-                } else {
-                  resolve();
-                }
-              });
-            }
+  if (isPostgres) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      for (const op of operations) {
+        await client.query(convertSql(op.sql), op.params || []);
+      }
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
+  } else {
+    return new Promise((resolve, reject) => {
+      db.serialize(() => {
+        db.run('BEGIN TRANSACTION', (err) => {
+          if (err) return reject(err);
+          let completed = 0;
+          operations.forEach(({ sql, params = [] }) => {
+            db.run(convertSql(sql), params, (err) => {
+              if (err) {
+                db.run('ROLLBACK');
+                return reject(err);
+              }
+              completed++;
+              if (completed === operations.length) {
+                db.run('COMMIT', (commitErr) => {
+                  if (commitErr) reject(commitErr);
+                  else resolve();
+                });
+              }
+            });
           });
         });
       });
     });
-  });
+  }
 };
 
 const close = () => {
+  if (isPostgres) return pool.end();
   return new Promise((resolve, reject) => {
-    db.close((err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
+    db.close(err => err ? reject(err) : resolve());
   });
 };
 
-module.exports = {
-  db,
-  initDB,
-  run,
-  get,
-  all,
-  transaction,
-  close
-};
+module.exports = { initDB, run, get, all, transaction, close };
