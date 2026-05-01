@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route | Find Rides Fast</title>
+  <meta name="description" content="Green Route helps you find a ride quickly and move around the city with less stress." />
+  <link rel="stylesheet" href="/frontend/css/app.css" />
+  <link rel="stylesheet" href="/frontend/css/app-responsive.css" />
+  <script defer src="/frontend/api.js"></script>
+  <script defer src="/app.js"></script>
+  <script defer src="/frontend/js/auth-check.js"></script>
+  <link rel="icon" type="image/svg+xml" href="/frontend/assets/favicon.svg" />
+  <link rel="icon" type="image/x-icon" href="/frontend/assets/favicon.ico" />
+</head>
+<body class="focus-page landing-focus-page">
+  <header class="top-navbar">
+    <a class="navbar-brand" href="/" aria-label="Green Route home">
+      <span class="brand-mark">GR</span>
+      <span class="brand-name">Green Route</span>
+    </a>
+    <nav class="navbar-menu" id="navbar-menu" aria-label="Primary navigation">
+      <a href="/passenger">Passenger App</a>
+      <a href="/driver">Driver App</a>
+    </nav>
+    <div class="navbar-actions">
+      <button id="theme-toggle" class="ghost" type="button">Theme</button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Toggle menu" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="mobile-nav-overlay" id="mobile-nav-overlay" aria-label="Mobile navigation">
+    <a href="/passenger">Passenger App</a>
+    <a href="/driver">Driver App</a>
+  </nav>
+
+  <main class="focus-shell landing-focus-shell">
+    <aside class="sidebar-card surface focus-sidebar landing-focus-sidebar">
+      <div class="brand-link focus-brand" aria-label="Green Route brand">
+        <span class="brand-mark">GR</span>
+      </div>
+
+      <section class="stack-block">
+        <div class="section-head compact">
+          <div>
+            <span class="eyebrow">Welcome to Green Route</span>
+            <h1 class="landing-title">Demand meets supply in real time.</h1>
+          </div>
+        </div>
+        <p class="landing-copy">Drivers find high-demand areas. Passengers get rides fast. No waiting forever.</p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Drivers: See where passengers are waiting.
+          </div>
+          <div class="feature-item">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+            </svg>
+            Passengers: Know your car is coming.
+          </div>
+          <div class="feature-item">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"></line>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Everyone: Fair pricing, real transparency.
+          </div>
+        </div>
+      </section>
+
+      <div class="focus-sidebar-footer landing-focus-links" aria-label="Entry actions">
+        <a class="cta pad-md" href="/signup">Booking a ride?</a>
+        <a class="cta secondary pad-md" href="/driver-signup">Want to earn?</a>
+      </div>
+    </aside>
+
+    <section class="map-column landing-focus-main">
+      <section class="map-stage surface focus-map-stage landing-map-stage">
+        <iframe
+          class="map-frame"
+          title="Accra route map"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          src="https://www.openstreetmap.org/export/embed.html?bbox=-0.244%2C5.529%2C-0.124%2C5.686&layer=mapnik"
+        ></iframe>
+        <div class="map-overlay">
+          <div class="map-overlay-header">
+            <div class="map-label primary">Active in Accra & beyond</div>
+            <div class="map-label secondary">See live routes across the city</div>
+          </div>
+        </div>
+
+        <article class="tracker-card surface focus-tracker-card landing-tracker-card">
+          <div class="section-head compact">
+            <div>
+              <span class="eyebrow primary">Why choose Green Route</span>
+              <h2>Trusted by thousands</h2>
+            </div>
+          </div>
+          <div class="feature-grid">
+            <div class="feature-grid-item">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+                <path d="M12 6v6l4 2.4"></path>
+              </svg>
+              <div class="feature-content">
+                <strong>Live demand zones</strong>
+                <span>Drivers see where passengers wait</span>
+              </div>
+            </div>
+            <div class="feature-grid-item">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+              </svg>
+              <div class="feature-content">
+                <strong>Real assurance</strong>
+                <span>Passengers know car is coming</span>
+              </div>
+            </div>
+            <div class="feature-grid-item">
+              <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.267 4.859A1 1 0 018 4h6a2 2 0 110 4h-1.052A2 2 0 1110 8v3.5H8V8a2 2 0 10-1.733 3.854z"></path>
+              </svg>
+              <div class="feature-content">
+                <strong>No more waiting</strong>
+                <span>Match happens in seconds</span>
+              </div>
+            </div>
+          </div>
+          <p class="driver-subtext">Join us and experience the difference.</p>
+        </article>
+      </section>
+    </section>
+  </main>
+  <script>
+    // Simple mobile menu toggle
+    document.getElementById('hamburger-btn').addEventListener('click', function() {
+      document.getElementById('mobile-nav-overlay').classList.toggle('active');
+    });
+  </script>
+</body>
+</html>

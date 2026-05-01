@@ -18,7 +18,13 @@ if (isPostgres) {
   console.log('Using PostgreSQL database');
   
   // Parse DATABASE_URL manually to ensure dots in usernames are handled correctly
-  const connectionString = process.env.DATABASE_URL;
+  let connectionString = (process.env.DATABASE_URL || '').trim();
+  
+  // Clean up the string if it was pasted with the variable name prefix
+  if (connectionString.startsWith('DATABASE_URL=')) {
+    connectionString = connectionString.replace('DATABASE_URL=', '').trim();
+  }
+  
   const dbUrl = new URL(connectionString);
   
   pool = new Pool({

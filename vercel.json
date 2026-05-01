@@ -1,16 +1,15 @@
 {
   "version": 2,
+  "name": "greenroute",
   "cleanUrls": true,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/", "destination": "/frontend/html/index.html" },
-    { "source": "/css/(.*)", "destination": "/frontend/css/$1" },
-    { "source": "/js/(.*)", "destination": "/frontend/js/$1" },
-    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" },
-    { "source": "/api.js", "destination": "/frontend/api.js" },
-    { "source": "/app.js", "destination": "/app.js" },
-    { "source": "/road-routing.js", "destination": "/road-routing.js" },
-    { "source": "/(.*).html", "destination": "/frontend/html/$1.html" },
-    { "source": "/(signin|signup|passenger|driver|code)", "destination": "/frontend/html/$1.html" }
+    { "source": "/passenger", "destination": "/frontend/html/passenger.html" },
+    { "source": "/driver", "destination": "/frontend/html/driver.html" },
+    { "source": "/signup", "destination": "/frontend/html/signup.html" },
+    { "source": "/signin", "destination": "/frontend/html/signin.html" },
+    { "source": "/driver-signup", "destination": "/frontend/html/driver-signup.html" },
+    { "source": "/driver-signin", "destination": "/frontend/html/driver-signin.html" },
+    { "source": "/code", "destination": "/frontend/html/code.html" }
   ]
 }
