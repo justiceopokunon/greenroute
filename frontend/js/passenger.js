@@ -613,7 +613,7 @@
                 <button class="track-driver-btn btn-track-v2 ${isTracking ? 'active' : ''}" data-driver-id="${vehicle.ride?.driverId || ''}" data-driver-name="${vehicle.driverName}" data-ride-id="${vehicle.ride?.id || ''}">
                   ${isTracking ? 'Tracking' : 'Track'}
                 </button>
-                <button class="book-driver-btn btn-book-v2" data-driver-id="${vehicle.ride?.driverId || ''}" data-driver-name="${vehicle.driverName}" data-ride-id="${vehicle.ride?.id || ''}" data-fare="${vehicle.ride?.fare || 5.50}">
+                <button class="book-driver-btn btn-book-v2" data-driver-id="${vehicle.ride?.driverId || ''}" data-driver-name="${vehicle.driverName}" data-driver-photo="${vehicle.driverPhoto || ''}" data-ride-id="${vehicle.ride?.id || ''}" data-fare="${vehicle.ride?.fare || 5.50}">
                   Book
                 </button>
               </div>
@@ -797,6 +797,7 @@
             const rideId = btn.getAttribute('data-ride-id');
             const driverId = btn.getAttribute('data-driver-id');
             const driverName = btn.getAttribute('data-driver-name');
+            const driverPhoto = btn.getAttribute('data-driver-photo');
             const fare = parseFloat(btn.getAttribute('data-fare') || '5.50');
 
             if (!rideId || !driverId) return;
@@ -837,6 +838,7 @@
                 rideId: rideId,
                 driverId: driverId,
                 driverName: booking.driverName || driverName,
+                driverPhoto: booking.driverPhoto || driverPhoto,
                 licensePlate: booking.licensePlate || 'N/A',
                 fare: totalFare,
                 seats: passengers
@@ -985,6 +987,7 @@
         ...existing,
         rideId: existing.rideId,
         driverName: existing.driverName,
+        driverPhoto: existing.driverPhoto,
         driverPlate: existing.licensePlate,
         vehicleType: existing.vehicleType,
         destination: existing.destination,
@@ -1189,6 +1192,7 @@
     }
     if (elements.driverPhoto) {
       elements.driverPhoto.src = ride.driverPhoto || '../assets/default-driver.svg';
+      elements.driverPhoto.onerror = function() { this.src = '../assets/default-driver.svg'; };
     }
     if (elements.driverRating) {
       const rating = ride.rating || '4.5';
